@@ -1,0 +1,146 @@
+import edu.wpi.first.gradlerio.GradleRIOPlugin
+
+plugins {
+    id("org.jetbrains.kotlin.jvm").version("2.1.0")
+    id("edu.wpi.first.GradleRIO").version("2025.1.1-beta-3")
+    id("com.google.devtools.ksp").version("2.1.0-1.0.29")
+    id("com.peterabeles.gversion").version("1.10.3")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+def ROBOT_MAIN_CLASS = "org.team9432.frc2025.robot.MainKt"
+
+// Define my targets (RoboRIO) and artifacts (deployable files)
+// This is added by GradleRIO's backing project DeployUtils.
+deploy {
+    targets {
+        roborio(getTargetTypeClass('RoboRIO')) {
+            // Team number is loaded either from the .wpilib/wpilib_preferences.json
+            // or from command line. If not found an exception will be thrown.
+            // You can use getTeamOrDefault(team) instead of getTeamNumber if you
+            // want to store a team number in this file.
+            team = project.frc.getTeamOrDefault(9432)
+            debug = project.frc.getDebugOrDefault(false)
+
+            artifacts {
+                // First part is artifact name, 2nd is artifact type
+                // getTargetTypeClass is a shortcut to get the class type using a string
+
+                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
+                    jvmArgs.add("-XX:+UnlockExperimentalVMOptions")
+                    jvmArgs.add("-XX:GCTimeRatio=5")
+                    jvmArgs.add("-XX:+UseSerialGC")
+                    jvmArgs.add("-XX:MaxGCPauseMillis=50")
+
+                    final MAX_JAVA_HEAP_SIZE_MB = 100
+                    jvmArgs.add("-Xmx" + MAX_JAVA_HEAP_SIZE_MB + "M")
+                    jvmArgs.add("-Xms" + MAX_JAVA_HEAP_SIZE_MB + "M")
+                    jvmArgs.add("-XX:+AlwaysPreTouch")
+                }
+
+                // Static files artifact
+                frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
+                    files = project.fileTree('src/main/deploy')
+                    directory = '/home/lvuser/deploy'
+                }
+            }
+        }
+    }
+}
+
+tasks.register('replayWatch', JavaExec) {
+    mainClass = "org.littletonrobotics.junction.ReplayWatch"
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+
+// Check robot type when deploying, taken from 6328 <3
+tasks.register('checkRobot', JavaExec) {
+    dependsOn "classes"
+    getMainClass().set("org.team9432.frc2025.ConstantsKt")
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+
+deployroborio.dependsOn(checkRobot)
+
+project.compileKotlin.dependsOn(createVersionFile)
+gversion {
+    srcDir = "src/main/kotlin/"
+    classPackage = "org.team9432.frc2025.robot"
+    className = "BuildConstants"
+    dateFormat = "yyyy-MM-dd '@' h:mm:ss a z"
+    timeZone = "MST"
+    language = "kotlin"
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url = uri("https://maven.pkg.github.com/Mechanical-Advantage/AdvantageKit")
+        credentials {
+            username = "Mechanical-Advantage-Bot"
+            password = "\u0067\u0068\u0070\u005f\u006e\u0056\u0051\u006a\u0055\u004f\u004c\u0061\u0079\u0066\u006e\u0078\u006e\u0037\u0051\u0049\u0054\u0042\u0032\u004c\u004a\u006d\u0055\u0070\u0073\u0031\u006d\u0037\u004c\u005a\u0030\u0076\u0062\u0070\u0063\u0051"
+        }
+    }
+}
+
+def deployArtifact = deploy.targets.roborio.artifacts.frcJava
+
+// Set to true to use debug for JNI.
+wpi.java.debugJni = false
+
+// Set this to true to enable desktop support.
+def includeDesktopSupport = false
+
+dependencies {
+    // Team libraries
+    implementation("org.team9432.lib:annotation")
+    ksp("org.team9432.lib:annotation")
+
+    wpi.java.deps.wpilib().forEach { implementation(it) }
+    wpi.java.vendor.java().forEach { implementation(it) }
+
+    wpi.java.deps.wpilibJniDebug(wpi.platforms.roborio).forEach { roborioDebug(it) }
+    wpi.java.vendor.jniDebug(wpi.platforms.roborio).forEach { roborioDebug(it) }
+
+    wpi.java.deps.wpilibJniRelease(wpi.platforms.roborio).forEach { roborioRelease(it) }
+    wpi.java.vendor.jniRelease(wpi.platforms.roborio).forEach { roborioRelease(it) }
+
+    wpi.java.deps.wpilibJniDebug(wpi.platforms.desktop).forEach { nativeDebug(it) }
+    wpi.java.vendor.jniDebug(wpi.platforms.desktop).forEach { nativeDebug(it) }
+    wpi.sim.enableDebug().forEach { simulationDebug(it) }
+
+    wpi.java.deps.wpilibJniRelease(wpi.platforms.desktop).forEach { nativeRelease(it) }
+    wpi.java.vendor.jniRelease(wpi.platforms.desktop).forEach { nativeRelease(it) }
+
+    wpi.sim.enableRelease().forEach { simulationRelease(it) }
+}
+
+// Simulation configuration (e.g. environment variables).
+wpi.sim.addGui().defaultEnabled = true
+wpi.sim.addDriverstation().defaultEnabled = true
+
+// Setting up my Jar File. In this case, adding all libraries into the main jar ('fat jar')
+// in order to make them all available at runtime. Also adding the manifest so WPILib
+// knows where to look for our Robot Class.
+jar {
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from sourceSets.main.allSource
+    manifest GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+// Configure jar and deploy tasks
+deployArtifact.jarTask = jar
+wpi.java.configureExecutableTasks(jar)
+wpi.java.configureTestTasks(test)
+
+tasks.withType(JavaCompile).configureEach {
+    // Configure string concat to always inline compile
+    options.compilerArgs.add '-XDstringConcat=inline'
+}

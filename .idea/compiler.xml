@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel target="1.6">
+      <module name="choreo-generator" target="17" />
+      <module name="choreo-generator.main" target="17" />
+      <module name="choreo-generator.test" target="17" />
+      <module name="dashboard" target="17" />
+      <module name="dashboard.dashboard-app" target="17" />
+      <module name="dashboard.dashboard-app.main" target="17" />
+      <module name="dashboard.dashboard-app.test" target="17" />
+      <module name="dashboard.dashboard-lib" target="17" />
+      <module name="dashboard.dashboard-lib.main" target="17" />
+      <module name="dashboard.dashboard-lib.test" target="17" />
+      <module name="dashboard.dashboard-shared" target="17" />
+      <module name="dashboard.dashboard-shared.main" target="17" />
+      <module name="dashboard.dashboard-shared.test" target="17" />
+      <module name="dashboard.main" target="17" />
+      <module name="dashboard.test" target="17" />
+      <module name="lib" target="17" />
+      <module name="lib.annotation" target="17" />
+      <module name="lib.annotation.main" target="17" />
+      <module name="lib.annotation.test" target="17" />
+      <module name="lib.choreo-generator" target="17" />
+      <module name="lib.choreo-generator.main" target="17" />
+      <module name="lib.choreo-generator.test" target="17" />
+      <module name="lib.choreo-plugin" target="17" />
+      <module name="lib.choreo-plugin.main" target="17" />
+      <module name="lib.choreo-plugin.test" target="17" />
+      <module name="lib.lib.main" target="11" />
+      <module name="lib.lib.test" target="11" />
+      <module name="lib.main" target="17" />
+      <module name="lib.robot-lib" target="17" />
+      <module name="lib.robot-lib.main" target="17" />
+      <module name="lib.robot-lib.test" target="17" />
+      <module name="lib.test" target="17" />
+      <module name="robot-lib" target="17" />
+      <module name="robot-lib.main" target="17" />
+      <module name="robot-lib.test" target="17" />
+      <module name="robotbase.main" target="17" />
+      <module name="robotbase.test" target="17" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

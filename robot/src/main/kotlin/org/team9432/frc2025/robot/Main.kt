@@ -44,8 +44,7 @@ import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
 
-
-object Robot: LoggedRobot() {
+object Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
 
     private val drive: Drive
@@ -69,68 +68,81 @@ object Robot: LoggedRobot() {
             // Switch based on the selected robot
             when (Constants.robot) {
                 Constants.RobotType.COMP -> {
-                    drive = Drive(
-                        GyroIOPigeon2(),
-                        ModuleIOKraken(ModuleConfig.FRONT_LEFT),
-                        ModuleIOKraken(ModuleConfig.FRONT_RIGHT),
-                        ModuleIOKraken(ModuleConfig.BACK_LEFT),
-                        ModuleIOKraken(ModuleConfig.BACK_RIGHT),
-                    )
+                    drive =
+                        Drive(
+                            GyroIOPigeon2(),
+                            ModuleIOKraken(ModuleConfig.FRONT_LEFT),
+                            ModuleIOKraken(ModuleConfig.FRONT_RIGHT),
+                            ModuleIOKraken(ModuleConfig.BACK_LEFT),
+                            ModuleIOKraken(ModuleConfig.BACK_RIGHT),
+                        )
 
                     setSimulationPose = null
                     driveSim = null
                 }
 
                 Constants.RobotType.SIM -> {
-                    val swerveSim = SwerveDriveSimulation(
-                        DriveTrainSimulationConfig.Default()
-                            .withSwerveModule {
-                                SwerveModuleSimulation(
-                                    /* driveMotorModel = */ DCMotor.getKrakenX60Foc(1),
-                                    /* steerMotorModel = */ DCMotor.getKrakenX60Foc(1),
-                                    /* driveGearRatio = */ DrivetrainConstants.DRIVE_RATIO,
-                                    /* steerGearRatio = */ DrivetrainConstants.STEER_RATIO,
-                                    /* driveFrictionVoltage = */ Volts.of(0.1), // Just the value used in the maplesim MK4i default
-                                    /* steerFrictionVoltage = */ Volts.of(0.2),// Just the value used in the maplesim MK4i default
-                                    /* wheelRadius = */ Inches.of(DrivetrainConstants.WHEEL_RADIUS_INCHES),
-                                    /* steerRotationalInertia = */ KilogramSquareMeters.of(0.03),// Just the value used in the maplesim MK4i default
-                                    /* tireCoefficientOfFriction = */ COTS.WHEELS.DEFAULT_NEOPRENE_TREAD.cof,
-                                )
-                            }
-                            .withGyro(COTS.ofPigeon2())
-                            .withTrackLengthTrackWidth(Inches.of(24.0), Inches.of(24.0))
-                            .withBumperSize(Inches.of(30.0), Inches.of(30.0))
-                            .withRobotMass(Pounds.of(120.0)),
-                        /* initialPoseOnField = */ Pose2d(3.0, 3.0, Rotation2d())
-                    )
+                    val swerveSim =
+                        SwerveDriveSimulation(
+                            DriveTrainSimulationConfig.Default()
+                                .withSwerveModule {
+                                    SwerveModuleSimulation(
+                                        /* driveMotorModel = */ DCMotor.getKrakenX60Foc(1),
+                                        /* steerMotorModel = */ DCMotor.getKrakenX60Foc(1),
+                                        /* driveGearRatio = */ DrivetrainConstants.DRIVE_RATIO,
+                                        /* steerGearRatio = */ DrivetrainConstants.STEER_RATIO,
+                                        /* driveFrictionVoltage = */ Volts.of(
+                                            0.1
+                                        ), // Just the value used in the maplesim MK4i default
+                                        /* steerFrictionVoltage = */ Volts.of(
+                                            0.2
+                                        ), // Just the value used in the maplesim MK4i default
+                                        /* wheelRadius = */ Inches.of(DrivetrainConstants.WHEEL_RADIUS_INCHES),
+                                        /* steerRotationalInertia = */ KilogramSquareMeters.of(
+                                            0.03
+                                        ), // Just the value used in the maplesim MK4i default
+                                        /* tireCoefficientOfFriction = */ COTS.WHEELS.DEFAULT_NEOPRENE_TREAD.cof,
+                                    )
+                                }
+                                .withGyro(COTS.ofPigeon2())
+                                .withTrackLengthTrackWidth(Inches.of(24.0), Inches.of(24.0))
+                                .withBumperSize(Inches.of(30.0), Inches.of(30.0))
+                                .withRobotMass(Pounds.of(120.0)),
+                            /* initialPoseOnField = */ Pose2d(3.0, 3.0, Rotation2d()),
+                        )
 
                     val gyroIO = GyroIOSim(swerveSim.gyroSimulation)
 
                     val (frontLeft, frontRight, backLeft, backRight) = swerveSim.modules
 
-                    drive = Drive(
-                        gyroIO,
-                        ModuleIOSim(frontLeft),
-                        ModuleIOSim(frontRight),
-                        ModuleIOSim(backLeft),
-                        ModuleIOSim(backRight)
-                    )
+                    drive =
+                        Drive(
+                            gyroIO,
+                            ModuleIOSim(frontLeft),
+                            ModuleIOSim(frontRight),
+                            ModuleIOSim(backLeft),
+                            ModuleIOSim(backRight),
+                        )
 
                     driveSim = swerveSim
                     SimulatedArena.getInstance().addDriveTrainSimulation(swerveSim)
 
-                    setSimulationPose = { swerveSim.setSimulationWorldPose(it); gyroIO.setAngle(it.rotation) }
+                    setSimulationPose = {
+                        swerveSim.setSimulationWorldPose(it)
+                        gyroIO.setAngle(it.rotation)
+                    }
                 }
             }
         } else {
             // No-op replay implementations
-            drive = Drive(
-                object: GyroIO {},
-                object: ModuleIO {},
-                object: ModuleIO {},
-                object: ModuleIO {},
-                object: ModuleIO {}
-            )
+            drive =
+                Drive(
+                    object : GyroIO {},
+                    object : ModuleIO {},
+                    object : ModuleIO {},
+                    object : ModuleIO {},
+                    object : ModuleIO {},
+                )
 
             setSimulationPose = null
             driveSim = null
@@ -148,11 +160,12 @@ object Robot: LoggedRobot() {
     }
 
     private fun bindButtons() {
-        val joystickDriveController = JoystickDriveController(
-            controllerX = { -controller.leftY },
-            controllerY = { -controller.leftX },
-            controllerR = { controller.leftTriggerAxis - controller.rightTriggerAxis }
-        )
+        val joystickDriveController =
+            JoystickDriveController(
+                controllerX = { -controller.leftY },
+                controllerY = { -controller.leftX },
+                controllerR = { controller.leftTriggerAxis - controller.rightTriggerAxis },
+            )
 
         val alignStraightController = JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero })
 
@@ -162,29 +175,44 @@ object Robot: LoggedRobot() {
     }
 
     private var currentAuto = Commands.none()
-    private val autoChoosers = List(5) { AutoSelector.DashboardQuestion("Option $it Chooser", "Option $it Question") }.toSet()
+    private val autoChoosers =
+        List(5) { AutoSelector.DashboardQuestion("Option $it Chooser", "Option $it Question") }.toSet()
 
-    private val autoChooser = AutoSelector(autoChoosers) {
-        addQuestion("Which Auto?", { currentAuto = it }) {
-            addOption("Do Nothing", Commands::none)
+    private val autoChooser =
+        AutoSelector(autoChoosers) {
+                addQuestion("Which Auto?", { currentAuto = it }) {
+                    addOption("Do Nothing", Commands::none)
 
-            var characterizationAuto = Commands.none()
-            addOption("Characterization", { characterizationAuto }) {
-                addQuestion("Which routine?", { characterizationAuto = it }) {
-                    val driveRoutines = DrivetrainSysIdCommands(drive)
-                    addOption("Drive Wheel Radius Characterization", { WheelRadiusCharacterization(drive) })
-                    addOption("Drive Linear SysId (Quasistatic Forward)", { driveRoutines.linearQuasistaticForward })
-                    addOption("Drive Linear SysId (Quasistatic Reverse)", { driveRoutines.linearQuasistaticReverse })
-                    addOption("Drive Linear SysId (Dynamic Forward)", { driveRoutines.linearDynamicForward })
-                    addOption("Drive Linear SysId (Dynamic Reverse)", { driveRoutines.linearDynamicReverse })
-                    addOption("Drive Angular SysId (Quasistatic Forward)", { driveRoutines.angularQuasistaticForward })
-                    addOption("Drive Angular SysId (Quasistatic Reverse)", { driveRoutines.angularQuasistaticReverse })
-                    addOption("Drive Angular SysId (Dynamic Forward)", { driveRoutines.angularDynamicForward })
-                    addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
+                    var characterizationAuto = Commands.none()
+                    addOption("Characterization", { characterizationAuto }) {
+                        addQuestion("Which routine?", { characterizationAuto = it }) {
+                            val driveRoutines = DrivetrainSysIdCommands(drive)
+                            addOption("Drive Wheel Radius Characterization", { WheelRadiusCharacterization(drive) })
+                            addOption(
+                                "Drive Linear SysId (Quasistatic Forward)",
+                                { driveRoutines.linearQuasistaticForward },
+                            )
+                            addOption(
+                                "Drive Linear SysId (Quasistatic Reverse)",
+                                { driveRoutines.linearQuasistaticReverse },
+                            )
+                            addOption("Drive Linear SysId (Dynamic Forward)", { driveRoutines.linearDynamicForward })
+                            addOption("Drive Linear SysId (Dynamic Reverse)", { driveRoutines.linearDynamicReverse })
+                            addOption(
+                                "Drive Angular SysId (Quasistatic Forward)",
+                                { driveRoutines.angularQuasistaticForward },
+                            )
+                            addOption(
+                                "Drive Angular SysId (Quasistatic Reverse)",
+                                { driveRoutines.angularQuasistaticReverse },
+                            )
+                            addOption("Drive Angular SysId (Dynamic Forward)", { driveRoutines.angularDynamicForward })
+                            addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
+                        }
+                    }
                 }
             }
-        }
-    }.also { it.update() }
+            .also { it.update() }
 
     override fun autonomousInit() {
         currentAuto.schedule()
@@ -215,9 +243,12 @@ object Robot: LoggedRobot() {
 
             Constants.Mode.REPLAY -> {
                 setUseTiming(false) // Run as fast as possible
-                val logPath = LogFileUtil.findReplayLog() // Pull the replay log from AdvantageScope (or prompt the user)
+                val logPath =
+                    LogFileUtil.findReplayLog() // Pull the replay log from AdvantageScope (or prompt the user)
                 Logger.setReplaySource(WPILOGReader(logPath)) // Read replay log
-                Logger.addDataReceiver(WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_replay"))) // Save outputs to a new log
+                Logger.addDataReceiver(
+                    WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_replay"))
+                ) // Save outputs to a new log
             }
         }
 
@@ -270,20 +301,15 @@ object Robot: LoggedRobot() {
 }
 
 /**
- * Main initialization function. Do not perform any initialization here
- * other than calling `RobotBase.startRobot`. Do not modify this file
- * except to change the object passed to the `startRobot` call.
+ * Main initialization function. Do not perform any initialization here other than calling `RobotBase.startRobot`. Do
+ * not modify this file except to change the object passed to the `startRobot` call.
  *
- * If you change the package of this file, you must also update the
- * `ROBOT_MAIN_CLASS` variable in the gradle build file. Note that
- * this file has a `@file:JvmName` annotation so that its compiled
- * Java class name is "Main" rather than "MainKt". This is to prevent
- * any issues/confusion if this file is ever replaced with a Java class.
+ * If you change the package of this file, you must also update the `ROBOT_MAIN_CLASS` variable in the gradle build
+ * file. Note that this file has a `@file:JvmName` annotation so that its compiled Java class name is "Main" rather than
+ * "MainKt". This is to prevent any issues/confusion if this file is ever replaced with a Java class.
  *
- * If you change your main Robot object (name), change the parameter of the
- * `RobotBase.startRobot` call to the new name. (If you use the IDE's Rename
- * Refactoring when renaming the object, it will get changed everywhere
- * including here.)
+ * If you change your main Robot object (name), change the parameter of the `RobotBase.startRobot` call to the new name.
+ * (If you use the IDE's Rename Refactoring when renaming the object, it will get changed everywhere including here.)
  */
 fun main() {
     RobotBase.startRobot { Robot }

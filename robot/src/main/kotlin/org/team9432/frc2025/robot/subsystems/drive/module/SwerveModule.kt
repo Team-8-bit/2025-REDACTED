@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj.Alert.AlertType
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-
 class SwerveModule(private val io: ModuleIO, private val name: String) {
     private val inputs: LoggedModuleIOInputs = LoggedModuleIOInputs()
 
@@ -31,7 +30,9 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
         io.updateInputs(inputs)
         Logger.processInputs("Drive/${name}", inputs)
 
-        DrivetrainConstants.checkDriveFFChange(hashCode()) { kS, kV -> driveFeedforward = SimpleMotorFeedforward(kS, kV) }
+        DrivetrainConstants.checkDriveFFChange(hashCode()) { kS, kV ->
+            driveFeedforward = SimpleMotorFeedforward(kS, kV)
+        }
         DrivetrainConstants.checkDrivePidChange(hashCode()) { kP, kD -> io.setDrivePID(kP, 0.0, kD) }
         DrivetrainConstants.checkSteerPidChange(hashCode()) { kP, kD -> io.setSteerPID(kP, 0.0, kD) }
 
@@ -60,26 +61,34 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
         currentSetpoint = setpoint
         val wheelTorqueNm = torqueFF.speedMetersPerSecond
 
-        val velocityRadPerSec = setpoint.speedMetersPerSecond / Units.inchesToMeters(DrivetrainConstants.WHEEL_RADIUS_INCHES)
-        val feedforward = driveFeedforward.calculate(velocityRadPerSec) + ((wheelTorqueNm / DrivetrainConstants.DRIVE_RATIO) * DrivetrainConstants.ffkT)
+        val velocityRadPerSec =
+            setpoint.speedMetersPerSecond / Units.inchesToMeters(DrivetrainConstants.WHEEL_RADIUS_INCHES)
+        val feedforward =
+            driveFeedforward.calculate(velocityRadPerSec) +
+                ((wheelTorqueNm / DrivetrainConstants.DRIVE_RATIO) * DrivetrainConstants.ffkT)
         io.runDriveVelocity(velocityRadPerSec, feedforward)
         io.runSteerPosition(setpoint.angle)
     }
 
     /** The current angle of the module. */
-    val angle get() = inputs.steerAbsolutePosition
+    val angle
+        get() = inputs.steerAbsolutePosition
 
     /** Current module state as reported by the robot's sensors. */
-    val measuredState get() = SwerveModuleState(driveWheelRadsToMeters(inputs.driveVelocityRadPerSecond), angle)
+    val measuredState
+        get() = SwerveModuleState(driveWheelRadsToMeters(inputs.driveVelocityRadPerSecond), angle)
 
     /** Current module position as reported by the robot's sensors. */
-    val measuredPosition get() = SwerveModulePosition(driveWheelRadsToMeters(inputs.drivePositionRads), angle)
+    val measuredPosition
+        get() = SwerveModulePosition(driveWheelRadsToMeters(inputs.drivePositionRads), angle)
 
     /** Current wheel position in radians, used for characterization routines. */
-    val characterizationWheelPositionRads get() = inputs.drivePositionRads
+    val characterizationWheelPositionRads
+        get() = inputs.drivePositionRads
 
     /** The number of cached odometry readings. */
-    val odometrySampleSize get() = minOf(inputs.odometryDrivePositionsRads.size, inputs.odometrySteerPositions.size)
+    val odometrySampleSize
+        get() = minOf(inputs.odometryDrivePositionsRads.size, inputs.odometrySteerPositions.size)
 
     /** Converts rotations of the drive wheel into meters travelled */
     private fun driveWheelRadsToMeters(driveWheelRads: Double): Double {

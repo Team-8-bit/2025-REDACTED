@@ -6,14 +6,10 @@ import edu.wpi.first.units.Units.*
 import org.ironmaple.simulation.drivesims.SwerveModuleSimulation
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO.ModuleIOInputs
 
-class ModuleIOSim(private val moduleSim: SwerveModuleSimulation): ModuleIO {
-    private val driveMotor = moduleSim
-        .useGenericMotorControllerForDrive()
-        .withCurrentLimit(Amps.of(60.0))
+class ModuleIOSim(private val moduleSim: SwerveModuleSimulation) : ModuleIO {
+    private val driveMotor = moduleSim.useGenericMotorControllerForDrive().withCurrentLimit(Amps.of(60.0))
 
-    private val steerMotor = moduleSim
-        .useGenericControllerForSteer()
-        .withCurrentLimit(Amps.of(20.0))
+    private val steerMotor = moduleSim.useGenericControllerForSteer().withCurrentLimit(Amps.of(20.0))
 
     private val driveFeedback: PIDController = PIDController(1.0, 0.0, 0.0)
     private val steerFeedback: PIDController = PIDController(8.0, 0.0, 0.2)
@@ -53,7 +49,8 @@ class ModuleIOSim(private val moduleSim: SwerveModuleSimulation): ModuleIO {
         inputs.steerAppliedVolts = moduleSim.driveMotorAppliedVoltage.`in`(Volts)
         inputs.steerSupplyCurrentAmps = moduleSim.steerMotorSupplyCurrent.`in`(Amps)
 
-        inputs.odometryDrivePositionsRads = moduleSim.cachedDriveWheelFinalPositions.map { it.`in`(Radians) }.toDoubleArray()
+        inputs.odometryDrivePositionsRads =
+            moduleSim.cachedDriveWheelFinalPositions.map { it.`in`(Radians) }.toDoubleArray()
         inputs.odometrySteerPositions = moduleSim.cachedSteerAbsolutePositions
     }
 

@@ -17,5 +17,6 @@ object EvergreenFieldConstants {
     val centerX = lengthX / 2.0
 
     fun Pose2d.isOnField() = (x in 0.0..lengthX) && (y in 0.0..lengthY)
+
     fun Pose3d.isOnField() = (x in 0.0..lengthX) && (y in 0.0..lengthY)
 }

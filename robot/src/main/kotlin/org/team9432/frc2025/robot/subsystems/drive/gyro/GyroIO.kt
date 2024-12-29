@@ -13,5 +13,6 @@ interface GyroIO {
     }
 
     fun updateInputs(inputs: GyroIOInputs) {}
+
     fun setAngle(angle: Rotation2d) {}
 }

@@ -7,19 +7,19 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
+import kotlin.math.hypot
+import kotlin.math.pow
+import kotlin.math.withSign
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.RobotState
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
-import kotlin.math.hypot
-import kotlin.math.pow
-import kotlin.math.withSign
 
 class JoystickDriveController(
     private val controllerX: () -> Double,
     private val controllerY: () -> Double,
     private val controllerR: () -> Double,
-): DriveController {
+) : DriveController {
     private val ratelimitX = SlewRateLimiter(20.0)
     private val ratelimitY = SlewRateLimiter(20.0)
 
@@ -40,7 +40,7 @@ class JoystickDriveController(
             ratelimitX.calculate(linearSpeed.x * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             ratelimitY.calculate(linearSpeed.y * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             rotationSpeed * DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
-            RobotState.currentPose.rotation
+            RobotState.currentPose.rotation,
         )
     }
 
@@ -59,9 +59,7 @@ class JoystickDriveController(
 
         // Calculate new linear velocity
         val linearVelocity =
-            Pose2d(0.0, 0.0, linearDirection)
-                .transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d()))
-                .translation
+            Pose2d(0.0, 0.0, linearDirection).transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d())).translation
 
         return linearVelocity
     }

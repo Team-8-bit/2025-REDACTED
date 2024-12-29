@@ -6,7 +6,6 @@ import org.team9432.frc2025.lib.constants.MK4ISwerveConstants
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 
-
 object DrivetrainConstants {
     /** The current at which the drive wheels start to slip, used as a current limit on the drive motors. */
     const val SLIP_CURRENT_AMPS = 60.0
@@ -43,7 +42,7 @@ object DrivetrainConstants {
             Constants.RobotType.COMP -> {
                 ffkS = 5.0
                 ffkV = 0.0
-                ffkT = 1.0 / DCMotor.getKrakenX60Foc(1).KtNMPerAmp  // A/(N*m)
+                ffkT = 1.0 / DCMotor.getKrakenX60Foc(1).KtNMPerAmp // A/(N*m)
                 drivekP = 35.0
                 drivekD = 0.0
                 steerkP = 4000.0
@@ -68,7 +67,13 @@ object DrivetrainConstants {
     private val tunableDrivekV = LoggedTunableNumber("Drive/Module/DrivekV", ffkV)
     private val tunableSteerkP = LoggedTunableNumber("Drive/Module/SteerkP", steerkP)
     private val tunableSteerkD = LoggedTunableNumber("Drive/Module/SteerkD", steerkD)
-    fun checkDriveFFChange(id: Int, action: (Double, Double) -> Unit) = LoggedTunableNumber.ifChanged(id, tunableDrivekS, tunableDrivekV) { (kS, kV) -> action.invoke(kS, kV) }
-    fun checkDrivePidChange(id: Int, action: (Double, Double) -> Unit) = LoggedTunableNumber.ifChanged(id, tunableDrivekP, tunableDriveKd) { (kP, kD) -> action.invoke(kP, kD) }
-    fun checkSteerPidChange(id: Int, action: (Double, Double) -> Unit) = LoggedTunableNumber.ifChanged(id, tunableSteerkP, tunableSteerkD) { (kP, kD) -> action.invoke(kP, kD) }
+
+    fun checkDriveFFChange(id: Int, action: (Double, Double) -> Unit) =
+        LoggedTunableNumber.ifChanged(id, tunableDrivekS, tunableDrivekV) { (kS, kV) -> action.invoke(kS, kV) }
+
+    fun checkDrivePidChange(id: Int, action: (Double, Double) -> Unit) =
+        LoggedTunableNumber.ifChanged(id, tunableDrivekP, tunableDriveKd) { (kP, kD) -> action.invoke(kP, kD) }
+
+    fun checkSteerPidChange(id: Int, action: (Double, Double) -> Unit) =
+        LoggedTunableNumber.ifChanged(id, tunableSteerkP, tunableSteerkD) { (kP, kD) -> action.invoke(kP, kD) }
 }

@@ -9,7 +9,7 @@ object PhoenixUtil {
         return this
     }
 
-    /** Attempts to run the command until no error is produced.  */
+    /** Attempts to run the command until no error is produced. */
     fun tryUntilOk(maxAttempts: Int, command: () -> StatusCode) {
         for (i in 0 until maxAttempts) {
             val error = command.invoke()

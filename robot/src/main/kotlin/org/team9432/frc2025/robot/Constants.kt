@@ -7,25 +7,40 @@ object Constants {
     val robot: RobotType = RobotType.SIM
 
     enum class RobotType {
-        COMP, SIM;
+        COMP,
+        SIM;
 
-        val isComp get() = this == COMP
-        val isSim get() = this == SIM
+        val isComp
+            get() = this == COMP
+
+        val isSim
+            get() = this == SIM
     }
 
     enum class Mode {
-        REAL, SIM, REPLAY;
+        REAL,
+        SIM,
+        REPLAY;
 
-        val isReal get() = this == REAL
-        val isSim get() = this == SIM
-        val isReplay get() = this == REPLAY
+        val isReal
+            get() = this == REAL
+
+        val isSim
+            get() = this == SIM
+
+        val isReplay
+            get() = this == REPLAY
     }
 
     val mode
-        get() = when (robot) {
-            RobotType.COMP -> if (RobotBase.isReal()) Mode.REAL else Mode.REPLAY // If the competition robot is selected but the robot isn't real, it is running replay
-            RobotType.SIM -> Mode.SIM
-        }
+        get() =
+            when (robot) {
+                RobotType.COMP ->
+                    if (RobotBase.isReal()) Mode.REAL
+                    else Mode.REPLAY // If the competition robot is selected but the robot isn't
+                // real, it is running replay
+                RobotType.SIM -> Mode.SIM
+            }
 }
 
 /** Checks whether the correct robot is selected when deploying. From team 6328. */

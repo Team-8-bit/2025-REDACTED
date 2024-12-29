@@ -61,7 +61,7 @@ tasks.register('replayWatch', JavaExec) {
 // Check robot type when deploying, taken from 6328 <3
 tasks.register('checkRobot', JavaExec) {
     dependsOn "classes"
-    getMainClass().set("org.team9432.frc2025.ConstantsKt")
+    getMainClass().set("org.team9432.frc2025.robot.ConstantsKt")
     classpath = sourceSets.main.runtimeClasspath
 }
 

@@ -1,0 +1,78 @@
+plugins {
+    id("org.jetbrains.kotlin.jvm").version("2.1.0")
+    id("com.diffplug.spotless").version("7.0.0.BETA4")
+}
+
+repositories {
+    mavenCentral()
+}
+
+spotless {
+    enforceCheck = false
+    encoding("UTF-8")
+    kotlin {
+        toggleOffOn() // Lets you do spotless:off and spotless:on to exclude areas from formatting
+
+        target("**/*.kt")
+        targetExclude("**/generated/**")
+        targetExclude("**/BuildConstants.kt")
+
+        ktfmt("0.51").googleStyle().configure {
+            it.setMaxWidth(120)
+            it.setBlockIndent(4)
+            it.setContinuationIndent(4)
+            it.setRemoveUnusedImports(true)
+            it.setManageTrailingCommas(true)
+        }
+    }
+
+    kotlinGradle {
+        target('*.gradle.kts') // default target for kotlinGradle
+    }
+
+    groovyGradle {
+        greclipse()
+        indentWithSpaces(4)
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    format 'misc', {
+        target fileTree ('.') {
+            include '**/.gitattributes', '**/.gitignore', '**/*.md'
+            exclude "**/build/**", "**/build-*/**"
+        }
+
+        // define the steps to apply to those files
+        trimTrailingWhitespace()
+        indentWithSpaces(4)
+        endWithNewline()
+    }
+}
+
+tasks.register("robotDeploy") {
+    dependsOn(":spotlessApply")
+    dependsOn(":robot:deploy")
+}
+
+tasks.register("robotBuild") {
+    dependsOn(":spotlessApply")
+    dependsOn(":robot:build")
+}
+
+tasks.register("robotCleanDeploy") {
+    dependsOn(":spotlessApply")
+    dependsOn(":robot:clean")
+    dependsOn(":robot:deploy")
+}
+
+tasks.register("robotCleanBuild") {
+    dependsOn(":spotlessApply")
+    dependsOn(":robot:clean")
+    dependsOn(":robot:build")
+}
+
+tasks.register("robotSimulateJava") {
+    dependsOn(":spotlessApply")
+    dependsOn(":robot:simulateJava")
+}

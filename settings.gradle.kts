@@ -1,4 +1,4 @@
 rootProject.name = "Robot-2025"
 
-includeBuild("robot")
+include("robot")
 includeBuild("annotation")

@@ -8,13 +8,13 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.measure.Angle
 import edu.wpi.first.units.measure.AngularVelocity
+import java.util.*
 import org.team9432.frc2025.robot.RobotMap
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
-import java.util.*
 
-/** IO implementation for Pigeon2  */
-class GyroIOPigeon2: GyroIO {
+/** IO implementation for Pigeon2 */
+class GyroIOPigeon2 : GyroIO {
     private val pigeon = Pigeon2(RobotMap.pigeon.canID, RobotMap.pigeon.canBus)
     private val yaw: StatusSignal<Angle> = pigeon.yaw
     private var yawPositionQueue: Queue<Double>

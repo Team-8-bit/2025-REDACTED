@@ -14,56 +14,62 @@ import com.squareup.kotlinpoet.ksp.writeTo
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
-class LoggedProcessor(private val codeGenerator: CodeGenerator): SymbolProcessor {
+class LoggedProcessor(private val codeGenerator: CodeGenerator) : SymbolProcessor {
     private val logTableType = LogTable::class
     private val loggableInputsType = LoggableInputs::class
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        val annotatedClasses = resolver.getSymbolsWithAnnotation("org.team9432.annotation.Logged").filterIsInstance<KSClassDeclaration>()
+        val annotatedClasses =
+            resolver.getSymbolsWithAnnotation("org.team9432.annotation.Logged").filterIsInstance<KSClassDeclaration>()
         annotatedClasses.forEach { process(it) }
         return annotatedClasses.filterNot { it.validate() }.toList()
     }
 
     private fun process(classDeclaration: KSClassDeclaration) {
-        if (!classDeclaration.modifiers.contains(Modifier.OPEN)) throw Exception("""[Logged] Please ensure the class you are annotating (${classDeclaration.simpleName.asString()}) has the open modifier!""")
+        if (!classDeclaration.modifiers.contains(Modifier.OPEN))
+            throw Exception(
+                """[Logged] Please ensure the class you are annotating (${classDeclaration.simpleName.asString()}) has the open modifier!"""
+            )
 
         val packageName = classDeclaration.packageName.asString()
         val className = classDeclaration.simpleName.asString()
 
         val newClassName = "Logged${className}"
 
-        val toLogBuilder = FunSpec.builder("toLog")
-            .addModifiers(KModifier.OVERRIDE)
-            .addParameter("table", logTableType)
-        val fromLogBuilder = FunSpec.builder("fromLog")
-            .addModifiers(KModifier.OVERRIDE)
-            .addParameter("table", logTableType)
+        val toLogBuilder = FunSpec.builder("toLog").addModifiers(KModifier.OVERRIDE).addParameter("table", logTableType)
+        val fromLogBuilder =
+            FunSpec.builder("fromLog").addModifiers(KModifier.OVERRIDE).addParameter("table", logTableType)
 
         classDeclaration.getAllProperties().forEach { property ->
             val simpleName = property.simpleName.asString()
             val logName = simpleName.substring(0, 1).uppercase() + simpleName.substring(1)
 
-            if (!property.isMutable) throw Exception("""[Logged] Please ensure the class you are annotating (${classDeclaration.simpleName.asString()}) has only mutable properties!""")
+            if (!property.isMutable)
+                throw Exception(
+                    """[Logged] Please ensure the class you are annotating (${classDeclaration.simpleName.asString()}) has only mutable properties!"""
+                )
 
             toLogBuilder.addCode(
                 """ |table.kPut("$logName", $simpleName)
                     |
-                """.trimMargin()
+                """
+                    .trimMargin()
             )
 
             fromLogBuilder.addCode(
                 """ |$simpleName = table.kGet("$logName", $simpleName)
                     |
-                """.trimMargin()
+                """
+                    .trimMargin()
             )
         }
 
-        val type = TypeSpec.classBuilder(newClassName)
-            .addSuperinterface(loggableInputsType)
-            .superclass(classDeclaration.toClassName())
-            .addFunction(toLogBuilder.build())
-            .addFunction(fromLogBuilder.build())
-
+        val type =
+            TypeSpec.classBuilder(newClassName)
+                .addSuperinterface(loggableInputsType)
+                .superclass(classDeclaration.toClassName())
+                .addFunction(toLogBuilder.build())
+                .addFunction(fromLogBuilder.build())
 
         val file = FileSpec.builder(packageName, newClassName)
         file.addType(type.build())
@@ -73,8 +79,7 @@ class LoggedProcessor(private val codeGenerator: CodeGenerator): SymbolProcessor
     }
 }
 
-class Provider: SymbolProcessorProvider {
-    override fun create(environment: SymbolProcessorEnvironment) = LoggedProcessor(
-        codeGenerator = environment.codeGenerator
-    )
+class Provider : SymbolProcessorProvider {
+    override fun create(environment: SymbolProcessorEnvironment) =
+        LoggedProcessor(codeGenerator = environment.codeGenerator)
 }

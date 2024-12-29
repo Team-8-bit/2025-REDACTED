@@ -22,18 +22,17 @@ import edu.wpi.first.units.measure.Angle
 import edu.wpi.first.units.measure.AngularVelocity
 import edu.wpi.first.units.measure.Current
 import edu.wpi.first.units.measure.Voltage
+import java.util.*
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import org.team9432.frc2025.lib.util.PhoenixUtil
 import org.team9432.frc2025.lib.util.PhoenixUtil.printOnError
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO.ModuleIOInputs
-import java.util.*
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 
-
-class ModuleIOKraken(private val config: ModuleConfig): ModuleIO {
+class ModuleIOKraken(private val config: ModuleConfig) : ModuleIO {
     /* Motors & Sensors */
     private val driveMotor = TalonFX(config.driveInformation.canID, config.driveInformation.canBus)
     private val steerMotor = TalonFX(config.steerInformation.canID, config.steerInformation.canBus)
@@ -44,14 +43,16 @@ class ModuleIOKraken(private val config: ModuleConfig): ModuleIO {
     private val driveAppliedVolts: StatusSignal<Voltage> = driveMotor.motorVoltage
     private val driveSupplyCurrent: StatusSignal<Current> = driveMotor.supplyCurrent
     private val driveTorqueCurrent: StatusSignal<Current> = driveMotor.torqueCurrent
-    private val lowFrequencyDriveSignals = arrayOf(driveVelocity, driveAppliedVolts, driveSupplyCurrent, driveTorqueCurrent)
+    private val lowFrequencyDriveSignals =
+        arrayOf(driveVelocity, driveAppliedVolts, driveSupplyCurrent, driveTorqueCurrent)
 
     /* Steer Signals */
     private val steerVelocity: StatusSignal<AngularVelocity> = steerMotor.velocity
     private val steerAppliedVolts: StatusSignal<Voltage> = steerMotor.motorVoltage
     private val steerSupplyCurrent: StatusSignal<Current> = steerMotor.supplyCurrent
     private val steerTorqueCurrent: StatusSignal<Current> = steerMotor.torqueCurrent
-    private val lowFrequencySteerSignals = arrayOf(steerVelocity, steerAppliedVolts, steerSupplyCurrent, steerTorqueCurrent)
+    private val lowFrequencySteerSignals =
+        arrayOf(steerVelocity, steerAppliedVolts, steerSupplyCurrent, steerTorqueCurrent)
 
     /* CANCoder Signals */
     private val steerAbsolutePosition: StatusSignal<Angle> = cancoder.absolutePosition
@@ -82,15 +83,37 @@ class ModuleIOKraken(private val config: ModuleConfig): ModuleIO {
     private val cancoderConnectedDebounce = Debouncer(0.5)
 
     init {
-        // Configure motors and sensors, also reset the drive motor's position to zero (don't know why it doesn't do this by itself)
-        PhoenixUtil.tryUntilOk(5) { driveMotor.configurator.apply(driveConfig, 0.25).printOnError { "${config.driveInformation} failed config: ${it.name} ${it.description}" } }
-        PhoenixUtil.tryUntilOk(5) { steerMotor.configurator.apply(steerConfig, 0.25).printOnError { "${config.steerInformation} failed config: ${it.name} ${it.description}" } }
-        PhoenixUtil.tryUntilOk(5) { cancoder.configurator.apply(encoderConfig, 0.25).printOnError { "${config.cancoderInformation} failed config: ${it.name} ${it.description}" } }
-        PhoenixUtil.tryUntilOk(5) { driveMotor.setPosition(0.0, 0.25).printOnError { "${config.cancoderInformation} failed to set position: ${it.name} ${it.description}" } }
+        // Configure motors and sensors, also reset the drive motor's position to zero (don't know
+        // why it doesn't do this by itself)
+        PhoenixUtil.tryUntilOk(5) {
+            driveMotor.configurator.apply(driveConfig, 0.25).printOnError {
+                "${config.driveInformation} failed config: ${it.name} ${it.description}"
+            }
+        }
+        PhoenixUtil.tryUntilOk(5) {
+            steerMotor.configurator.apply(steerConfig, 0.25).printOnError {
+                "${config.steerInformation} failed config: ${it.name} ${it.description}"
+            }
+        }
+        PhoenixUtil.tryUntilOk(5) {
+            cancoder.configurator.apply(encoderConfig, 0.25).printOnError {
+                "${config.cancoderInformation} failed config: ${it.name} ${it.description}"
+            }
+        }
+        PhoenixUtil.tryUntilOk(5) {
+            driveMotor.setPosition(0.0, 0.25).printOnError {
+                "${config.cancoderInformation} failed to set position: ${it.name} ${it.description}"
+            }
+        }
 
         // Set signal update frequency
         BaseStatusSignal.setUpdateFrequencyForAll(DrivetrainConstants.ODOMETRY_FREQUENCY, *highFrequencySignals)
-        BaseStatusSignal.setUpdateFrequencyForAll(50.0, *lowFrequencyDriveSignals, *lowFrequencySteerSignals, *lowFrequencyCANCoderSignals)
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            50.0,
+            *lowFrequencyDriveSignals,
+            *lowFrequencySteerSignals,
+            *lowFrequencyCANCoderSignals,
+        )
 
         // Optimize bus utilization
         ParentDevice.optimizeBusUtilizationForAll(driveMotor, steerMotor, cancoder)
@@ -103,7 +126,8 @@ class ModuleIOKraken(private val config: ModuleConfig): ModuleIO {
         val steerStatus = BaseStatusSignal.refreshAll(*lowFrequencySteerSignals, steerPosition)
         val cancoderStatus = BaseStatusSignal.refreshAll(*lowFrequencyCANCoderSignals)
 
-        // Debounce connection status to remove false positives, if a device is actually disconnected it will stay that way for a while
+        // Debounce connection status to remove false positives, if a device is actually
+        // disconnected it will stay that way for a while
         inputs.driveConnected = driveConnectedDebounce.calculate(driveStatus.isOK)
         inputs.steerConnected = steerConnectedDebounce.calculate(steerStatus.isOK)
         inputs.cancoderConnected = cancoderConnectedDebounce.calculate(cancoderStatus.isOK)
@@ -161,10 +185,7 @@ class ModuleIOKraken(private val config: ModuleConfig): ModuleIO {
 
     /** Runs the steer motor to the specified position. */
     override fun runSteerPosition(angle: Rotation2d) {
-        steerMotor.setControl(
-            positionTorqueCurrentFOC
-                .withPosition(angle.rotations)
-        )
+        steerMotor.setControl(positionTorqueCurrentFOC.withPosition(angle.rotations))
     }
 
     /** Sets the pid constants of the drive motor. */
@@ -204,38 +225,45 @@ class ModuleIOKraken(private val config: ModuleConfig): ModuleIO {
     }
 
     /** Get the drive motor configuration. */
-    private fun getDriveConfig() = TalonFXConfiguration().apply {
-        MotorOutput.Inverted = if (config.driveMotorInverted) InvertedValue.Clockwise_Positive else InvertedValue.CounterClockwise_Positive
-        MotorOutput.NeutralMode = NeutralModeValue.Brake
+    private fun getDriveConfig() =
+        TalonFXConfiguration().apply {
+            MotorOutput.Inverted =
+                if (config.driveMotorInverted) InvertedValue.Clockwise_Positive
+                else InvertedValue.CounterClockwise_Positive
+            MotorOutput.NeutralMode = NeutralModeValue.Brake
 
-        TorqueCurrent.PeakForwardTorqueCurrent = DrivetrainConstants.SLIP_CURRENT_AMPS
-        TorqueCurrent.PeakReverseTorqueCurrent = -DrivetrainConstants.SLIP_CURRENT_AMPS
-        CurrentLimits.StatorCurrentLimit = DrivetrainConstants.SLIP_CURRENT_AMPS
-        CurrentLimits.StatorCurrentLimitEnable = true
+            TorqueCurrent.PeakForwardTorqueCurrent = DrivetrainConstants.SLIP_CURRENT_AMPS
+            TorqueCurrent.PeakReverseTorqueCurrent = -DrivetrainConstants.SLIP_CURRENT_AMPS
+            CurrentLimits.StatorCurrentLimit = DrivetrainConstants.SLIP_CURRENT_AMPS
+            CurrentLimits.StatorCurrentLimitEnable = true
 
-        Feedback.SensorToMechanismRatio = DrivetrainConstants.DRIVE_RATIO
-    }
+            Feedback.SensorToMechanismRatio = DrivetrainConstants.DRIVE_RATIO
+        }
 
     /** Get the steer motor configuration. */
-    private fun getSteerConfig() = TalonFXConfiguration().apply {
-        MotorOutput.Inverted = if (config.steerMotorInverted) InvertedValue.Clockwise_Positive else InvertedValue.CounterClockwise_Positive
-        MotorOutput.NeutralMode = NeutralModeValue.Brake
+    private fun getSteerConfig() =
+        TalonFXConfiguration().apply {
+            MotorOutput.Inverted =
+                if (config.steerMotorInverted) InvertedValue.Clockwise_Positive
+                else InvertedValue.CounterClockwise_Positive
+            MotorOutput.NeutralMode = NeutralModeValue.Brake
 
-        TorqueCurrent.PeakForwardTorqueCurrent = DrivetrainConstants.STEER_CURRENT_LIMIT_AMPS
-        TorqueCurrent.PeakReverseTorqueCurrent = -DrivetrainConstants.STEER_CURRENT_LIMIT_AMPS
-        CurrentLimits.StatorCurrentLimit = DrivetrainConstants.STEER_CURRENT_LIMIT_AMPS
-        CurrentLimits.StatorCurrentLimitEnable = true
+            TorqueCurrent.PeakForwardTorqueCurrent = DrivetrainConstants.STEER_CURRENT_LIMIT_AMPS
+            TorqueCurrent.PeakReverseTorqueCurrent = -DrivetrainConstants.STEER_CURRENT_LIMIT_AMPS
+            CurrentLimits.StatorCurrentLimit = DrivetrainConstants.STEER_CURRENT_LIMIT_AMPS
+            CurrentLimits.StatorCurrentLimitEnable = true
 
-        Feedback.FeedbackRemoteSensorID = config.cancoderInformation.canID
-        Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder
-        Feedback.RotorToSensorRatio = DrivetrainConstants.STEER_RATIO
+            Feedback.FeedbackRemoteSensorID = config.cancoderInformation.canID
+            Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder
+            Feedback.RotorToSensorRatio = DrivetrainConstants.STEER_RATIO
 
-        ClosedLoopGeneral.ContinuousWrap = true
-    }
+            ClosedLoopGeneral.ContinuousWrap = true
+        }
 
     /** Get the cancoder configuration. */
-    private fun getEncoderConfig() = CANcoderConfiguration().apply {
-        MagnetSensor.MagnetOffset = config.moduleSensorOffset.rotations
-        MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive
-    }
+    private fun getEncoderConfig() =
+        CANcoderConfiguration().apply {
+            MagnetSensor.MagnetOffset = config.moduleSensorOffset.rotations
+            MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive
+        }
 }

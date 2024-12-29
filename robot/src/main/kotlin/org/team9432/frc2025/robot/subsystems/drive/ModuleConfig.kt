@@ -19,7 +19,7 @@ enum class ModuleConfig(
         RobotMap.frontLeftEncoder,
         Rotation2d.fromDegrees(0.0),
         driveMotorInverted = false,
-        steerMotorInverted = false
+        steerMotorInverted = false,
     ),
     FRONT_RIGHT(
         RobotMap.frontRightDrive,
@@ -27,7 +27,7 @@ enum class ModuleConfig(
         RobotMap.frontRightEncoder,
         Rotation2d.fromDegrees(0.0),
         driveMotorInverted = false,
-        steerMotorInverted = false
+        steerMotorInverted = false,
     ),
     BACK_LEFT(
         RobotMap.backLeftDrive,
@@ -35,7 +35,7 @@ enum class ModuleConfig(
         RobotMap.backLeftEncoder,
         Rotation2d.fromDegrees(0.0),
         driveMotorInverted = false,
-        steerMotorInverted = false
+        steerMotorInverted = false,
     ),
     BACK_RIGHT(
         RobotMap.backRightDrive,
@@ -43,6 +43,6 @@ enum class ModuleConfig(
         RobotMap.backRightEncoder,
         Rotation2d.fromDegrees(0.0),
         driveMotorInverted = false,
-        steerMotorInverted = false
+        steerMotorInverted = false,
     ),
 }

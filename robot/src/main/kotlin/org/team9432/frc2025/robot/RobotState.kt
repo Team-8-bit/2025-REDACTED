@@ -8,23 +8,28 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
+import kotlin.math.max
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.RobotPeriodicManager
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
-import kotlin.math.max
 
 object RobotState {
-    private val poseEstimator: SwerveDrivePoseEstimator = SwerveDrivePoseEstimator(
-        DrivetrainConstants.KINEMATICS,
-        Rotation2d(),
-        Array(4) { SwerveModulePosition() },
-        Pose2d()
-    )
+    private val poseEstimator: SwerveDrivePoseEstimator =
+        SwerveDrivePoseEstimator(
+            DrivetrainConstants.KINEMATICS,
+            Rotation2d(),
+            Array(4) { SwerveModulePosition() },
+            Pose2d(),
+        )
 
     private var currentChassisSpeeds = ChassisSpeeds()
     private var previousVisionMeasurementTimeStamp: Double = -1.0
 
-    fun applyOdometryObservation(currentTimeSeconds: Double, gyroRotation: Rotation2d, modulePositions: Array<SwerveModulePosition?>) {
+    fun applyOdometryObservation(
+        currentTimeSeconds: Double,
+        gyroRotation: Rotation2d,
+        modulePositions: Array<SwerveModulePosition?>,
+    ) {
         poseEstimator.updateWithTime(currentTimeSeconds, gyroRotation, modulePositions)
     }
 
@@ -41,7 +46,8 @@ object RobotState {
         currentChassisSpeeds = velocity
     }
 
-    val currentPose: Pose2d get() = poseEstimator.estimatedPosition
+    val currentPose: Pose2d
+        get() = poseEstimator.estimatedPosition
 
     fun resetOdometry(pose: Pose2d, rawGyro: Rotation2d, modulePositions: Array<SwerveModulePosition>) {
         poseEstimator.resetPosition(rawGyro, modulePositions, pose)
@@ -53,7 +59,10 @@ object RobotState {
         RobotPeriodicManager.startPeriodic {
             Logger.recordOutput("RobotState/CurrentPose", currentPose)
             Logger.recordOutput("RobotState/CurrentSpeeds", getRobotRelativeChassisSpeeds())
-            Logger.recordOutput("RobotState/CurrentFieldRelativeSpeeds", ChassisSpeeds.fromRobotRelativeSpeeds(getRobotRelativeChassisSpeeds(), currentPose.rotation))
+            Logger.recordOutput(
+                "RobotState/CurrentFieldRelativeSpeeds",
+                ChassisSpeeds.fromRobotRelativeSpeeds(getRobotRelativeChassisSpeeds(), currentPose.rotation),
+            )
         }
     }
 }

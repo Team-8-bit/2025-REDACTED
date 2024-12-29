@@ -31,7 +31,7 @@ class SwitchableChooser(tablePath: String, name: String) {
         RobotPeriodicManager.startPeriodic { periodic() }
     }
 
-    /** Updates the set of available options.  */
+    /** Updates the set of available options. */
     fun setOptions(options: Array<String>) {
         if (options.contentEquals(this.options)) return
         this.options = if (options.isNotEmpty()) options else arrayOf(PLACEHOLDER)
@@ -39,7 +39,7 @@ class SwitchableChooser(tablePath: String, name: String) {
         periodic()
     }
 
-    /** Returns the selected option.  */
+    /** Returns the selected option. */
     fun get(): String? = if (active == PLACEHOLDER) null else active
 
     private fun periodic() {

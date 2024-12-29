@@ -3,9 +3,7 @@ package org.team9432.frc2025.lib.dashboard
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import java.util.*
 
-/**
- * Class for selecting different auto configurations.
- */
+/** Class for selecting different auto configurations. */
 class AutoSelector(private val choosers: Set<DashboardQuestion>, buildQuestions: AutoSelectorQuestionScope.() -> Unit) {
     private val baseQuestions = AutoSelectorQuestionScope().apply(buildQuestions)
 
@@ -25,18 +23,26 @@ class AutoSelector(private val choosers: Set<DashboardQuestion>, buildQuestions:
         private val questions = mutableListOf<AutoSelectorQuestion<*>>()
 
         /** Add a new question */
-        fun <T> addQuestion(question: String, onSelect: ((T) -> Unit)? = null, addOptions: AutoSelectorOptionScope<T>.() -> Unit) {
+        fun <T> addQuestion(
+            question: String,
+            onSelect: ((T) -> Unit)? = null,
+            addOptions: AutoSelectorOptionScope<T>.() -> Unit,
+        ) {
             questions.add(AutoSelectorQuestion(AutoSelectorOptionScope<T>(question).apply(addOptions), onSelect))
         }
 
         // Returns true if something changed
         internal fun update(choosers: Queue<DashboardQuestion>): Boolean {
-            // This can't be shortened to questions.any {...} because it will stop after the first changed one
+            // This can't be shortened to questions.any {...} because it will stop after the first
+            // changed one
             return questions.map { it.update(choosers) }.any { it }
         }
 
         // This class is needed to retain the type of the question so it can be passed to onSelect()
-        private data class AutoSelectorQuestion<T>(private val options: AutoSelectorOptionScope<T>, private val onSelect: ((T) -> Unit)?) {
+        private data class AutoSelectorQuestion<T>(
+            private val options: AutoSelectorOptionScope<T>,
+            private val onSelect: ((T) -> Unit)?,
+        ) {
             // Returns true if something changed
             fun update(choosers: Queue<DashboardQuestion>): Boolean {
                 val (valueUpdated, newValue) = options.update(choosers)
@@ -52,7 +58,11 @@ class AutoSelector(private val choosers: Set<DashboardQuestion>, buildQuestions:
         private val options = mutableMapOf<String, Pair<(() -> T)?, AutoSelectorQuestionScope?>>()
 
         /** Add an option to the question, with optional nested questions to show if this option is selected. */
-        fun addOption(answer: String, value: (() -> T)? = null, buildQuestions: (AutoSelectorQuestionScope.() -> Unit)? = null) {
+        fun addOption(
+            answer: String,
+            value: (() -> T)? = null,
+            buildQuestions: (AutoSelectorQuestionScope.() -> Unit)? = null,
+        ) {
             options[answer] = value to buildQuestions?.let { AutoSelectorQuestionScope().apply(it) }
         }
 
@@ -82,7 +92,9 @@ class AutoSelector(private val choosers: Set<DashboardQuestion>, buildQuestions:
     }
 
     data class DashboardQuestion(private val chooserKey: String, private val questionKey: String) {
-        // The leading '/' before "AutoSelector" is needed for this to work: https://discord.com/channels/176186766946992128/528555967827148801/1322768035198795836 (read up for the problem)
+        // The leading '/' before "AutoSelector" is needed for this to work:
+        // https://discord.com/channels/176186766946992128/528555967827148801/1322768035198795836
+        // (read up for the problem)
         internal val chooser = SwitchableChooser("/AutoSelector", chooserKey)
 
         internal fun clear() = set("", emptySet())

@@ -6,15 +6,14 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
-import org.team9432.frc2025.robot.RobotState
-import org.team9432.frc2025.robot.subsystems.drive.Drive
-import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import java.text.DecimalFormat
 import java.text.NumberFormat
 import kotlin.math.abs
+import org.team9432.frc2025.robot.RobotState
+import org.team9432.frc2025.robot.subsystems.drive.Drive
+import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-
-class WheelRadiusCharacterization(private val drive: Drive): Command() {
+class WheelRadiusCharacterization(private val drive: Drive) : Command() {
     private val maxAccelDegreesPerSecPerSec = 3.0
     private val maxVelocityDegreesPerSec = 15.0
 
@@ -60,11 +59,13 @@ class WheelRadiusCharacterization(private val drive: Drive): Command() {
         // Calculate the average wheel distance driven
         val finalPositions = drive.getModuleCharacterizationPositionRads()
         val wheelDistance =
-            initialPositions?.zip(finalPositions) // Combine the two lists into one List<Pair<Double, Double>>
+            initialPositions
+                ?.zip(finalPositions) // Combine the two lists into one List<Pair<Double, Double>>
                 ?.map { (initialPos, finalPos) -> abs(initialPos - finalPos) } // Get the difference between each pair
                 ?.average() // Take the average
 
-        // Make sure the wheel initial positions were actually recorded and our wheel distance isn't null
+        // Make sure the wheel initial positions were actually recorded and our wheel distance isn't
+        // null
         if (wheelDistance == null) {
             println("Failed to start routine, please wait at LEAST a second before stopping the routine.")
             return

@@ -17,7 +17,10 @@ object MK4ISwerveConstants {
 
     const val STEER_REDUCTION = 21.43
 
-    /** Returns an array of [Translation2d] of Mk4i swerve module positions given a frame size. Useful for WPILib odometry classes. */
+    /**
+     * Returns an array of [Translation2d] of Mk4i swerve module positions given a frame size. Useful for WPILib
+     * odometry classes.
+     */
     fun getModuleTranslationsForFrameSize(frameSizeInches: Double): Array<Translation2d> {
         val distanceFromCenterXY = (frameSizeInches / 2) - 2.625
         val distanceInches = hypot(distanceFromCenterXY, distanceFromCenterXY)

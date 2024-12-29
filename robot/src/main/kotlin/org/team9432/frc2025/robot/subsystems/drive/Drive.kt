@@ -10,6 +10,9 @@ import edu.wpi.first.wpilibj.Alert.AlertType
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+import kotlin.math.min
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.RobotState
 import org.team9432.frc2025.robot.subsystems.drive.controllers.DriveController
@@ -17,10 +20,6 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIO
 import org.team9432.frc2025.robot.subsystems.drive.gyro.LoggedGyroIOInputs
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.SwerveModule
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
-import kotlin.math.min
-
 
 class Drive(
     private val gyroIO: GyroIO,
@@ -28,16 +27,17 @@ class Drive(
     frontRight: ModuleIO,
     backLeft: ModuleIO,
     backRight: ModuleIO,
-): SubsystemBase() {
+) : SubsystemBase() {
     private val gyroInputs = LoggedGyroIOInputs()
     private val odometryThreadInputs = LoggedOdometryThreadInputs()
 
-    private val modules: Array<SwerveModule> = arrayOf(
-        SwerveModule(frontLeft, "Front Left"),
-        SwerveModule(frontRight, "Front Right"),
-        SwerveModule(backLeft, "Back Left"),
-        SwerveModule(backRight, "Back Right"),
-    )
+    private val modules: Array<SwerveModule> =
+        arrayOf(
+            SwerveModule(frontLeft, "Front Left"),
+            SwerveModule(frontRight, "Front Right"),
+            SwerveModule(backLeft, "Back Left"),
+            SwerveModule(backRight, "Back Right"),
+        )
 
     private val gyroDisconnectedAlert = Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError)
 
@@ -66,8 +66,10 @@ class Drive(
             runVelocity(ChassisSpeeds())
         }
 
-        // On the real robot these will be the same because the module's sensor samples are recorded at the same time as the timestamps
-        // However, in simulation we don't actually have motor sensors to read from so they aren't necessarily the same
+        // On the real robot these will be the same because the module's sensor samples are recorded
+        // at the same time as the timestamps
+        // However, in simulation we don't actually have motor sensors to read from so they aren't
+        // necessarily the same
         val minSamples = min(odometryThreadInputs.timestamps.size, modules[0].odometrySampleSize)
 
         for (timestampIndex in 0..<minSamples) {
@@ -77,10 +79,11 @@ class Drive(
             for (moduleIndex in modules.indices) {
                 val currentPosition = modules[moduleIndex].getOdometryModulePositions()[timestampIndex]
                 modulePositions[moduleIndex] = currentPosition
-                moduleDeltas[moduleIndex] = SwerveModulePosition(
-                    currentPosition.distanceMeters - lastModulePositions[moduleIndex].distanceMeters,
-                    currentPosition.angle
-                )
+                moduleDeltas[moduleIndex] =
+                    SwerveModulePosition(
+                        currentPosition.distanceMeters - lastModulePositions[moduleIndex].distanceMeters,
+                        currentPosition.angle,
+                    )
                 lastModulePositions[moduleIndex] = currentPosition
             }
 
@@ -91,7 +94,11 @@ class Drive(
                 rawGyroRotation += Rotation2d(twist.dtheta)
             }
 
-            RobotState.applyOdometryObservation(odometryThreadInputs.timestamps[timestampIndex], rawGyroRotation, modulePositions)
+            RobotState.applyOdometryObservation(
+                odometryThreadInputs.timestamps[timestampIndex],
+                rawGyroRotation,
+                modulePositions,
+            )
         }
 
         // Add velocity to RobotState
@@ -108,6 +115,7 @@ class Drive(
     fun controllerCommand(controller: DriveController): Command = run { runVelocity(controller.calculate()) }
 
     private val zeroSwerveModuleState = SwerveModuleState()
+
     fun runVelocity(speeds: ChassisSpeeds, torqueFF: Array<SwerveModuleState>? = null) {
         // Calculate module setpoints
         val discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02)
@@ -131,7 +139,7 @@ class Drive(
         Logger.recordOutput("SwerveStates/SetpointsOptimized", *setpointStates)
     }
 
-    /** Stops the drivetrain. Equivalent to running `runVelocity(ChassisSpeeds())`.*/
+    /** Stops the drivetrain. Equivalent to running `runVelocity(ChassisSpeeds())`. */
     fun stop() = runVelocity(ChassisSpeeds())
 
     /** Sets the steer motors to the given setpoints and applies the given number of amps to the drive motors. */

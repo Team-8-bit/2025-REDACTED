@@ -19,14 +19,17 @@ class LoggedProcessor(private val codeGenerator: CodeGenerator) : SymbolProcesso
     private val loggableInputsType = LoggableInputs::class
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        val annotatedClasses =           resolver.getSymbolsWithAnnotation("org.team9432.annotation.Logged").filterIsInstance<KSClassDeclaration>()
+        val annotatedClasses =
+            resolver.getSymbolsWithAnnotation("org.team9432.annotation.Logged").filterIsInstance<KSClassDeclaration>()
         annotatedClasses.forEach { process(it) }
         return annotatedClasses.filterNot { it.validate() }.toList()
     }
 
     private fun process(classDeclaration: KSClassDeclaration) {
         if (!classDeclaration.modifiers.contains(Modifier.OPEN))
-            throw Exception(                """[Logged] Please ensure the class you are annotating (${classDeclaration.simpleName.asString()}) has the open modifier!"""            )
+            throw Exception(
+                """[Logged] Please ensure the class you are annotating (${classDeclaration.simpleName.asString()}) has the open modifier!"""
+            )
 
         val packageName = classDeclaration.packageName.asString()
         val className = classDeclaration.simpleName.asString()

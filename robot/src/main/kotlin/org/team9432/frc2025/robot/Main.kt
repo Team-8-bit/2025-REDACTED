@@ -298,7 +298,7 @@ class Robot : LoggedRobot() {
             Logger.recordOutput("CANivoreStatus/OffCount", canivoreStatus.BusOffCount)
             Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount)
             Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC)
-            
+
             Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC)
         }
 
@@ -330,5 +330,5 @@ class Robot : LoggedRobot() {
  * (If you use the IDE's Rename Refactoring when renaming the object, it will get changed everywhere including here.)
  */
 fun main() {
-      RobotBase.startRobot { Robot() }
+    RobotBase.startRobot { Robot() }
 }

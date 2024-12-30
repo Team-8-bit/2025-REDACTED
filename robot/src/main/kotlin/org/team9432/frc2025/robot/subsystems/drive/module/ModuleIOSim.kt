@@ -6,7 +6,7 @@ import edu.wpi.first.units.Units.*
 import org.ironmaple.simulation.drivesims.SwerveModuleSimulation
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO.ModuleIOInputs
 
-class ModuleIOSim(private val moduleSim: SwerveModuleSimulation) : ModuleIO {
+class ModuleIOSim(private val moduleSim: SwerveModuleSimulation): ModuleIO {
     private val driveMotor = moduleSim.useGenericMotorControllerForDrive().withCurrentLimit(Amps.of(60.0))
 
     private val steerMotor = moduleSim.useGenericControllerForSteer().withCurrentLimit(Amps.of(20.0))

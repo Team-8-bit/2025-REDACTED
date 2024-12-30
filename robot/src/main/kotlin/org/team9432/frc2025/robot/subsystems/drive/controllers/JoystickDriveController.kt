@@ -7,20 +7,20 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
-import kotlin.math.hypot
-import kotlin.math.pow
-import kotlin.math.withSign
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.RobotState
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
+import kotlin.math.hypot
+import kotlin.math.pow
+import kotlin.math.withSign
 
 class JoystickDriveController(
     private val controllerX: () -> Double,
     private val controllerY: () -> Double,
     private val controllerR: () -> Double,
     private val robotState: RobotState,
-) : DriveController {
+): DriveController {
     private val ratelimitX = SlewRateLimiter(20.0)
     private val ratelimitY = SlewRateLimiter(20.0)
 

@@ -22,17 +22,17 @@ import edu.wpi.first.units.measure.Angle
 import edu.wpi.first.units.measure.AngularVelocity
 import edu.wpi.first.units.measure.Current
 import edu.wpi.first.units.measure.Voltage
-import java.util.*
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 import org.team9432.frc2025.lib.util.PhoenixUtil
 import org.team9432.frc2025.lib.util.PhoenixUtil.printOnError
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO.ModuleIOInputs
+import java.util.*
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
-class ModuleIOKraken(private val config: ModuleConfig, private val odometryThread: OdometryThread) : ModuleIO {
+class ModuleIOKraken(private val config: ModuleConfig, private val odometryThread: OdometryThread): ModuleIO {
     /* Motors & Sensors */
     private val driveMotor = TalonFX(config.driveInformation.canID, config.driveInformation.canBus)
     private val steerMotor = TalonFX(config.steerInformation.canID, config.steerInformation.canBus)

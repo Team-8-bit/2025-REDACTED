@@ -4,7 +4,7 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.units.Units.RadiansPerSecond
 import org.ironmaple.simulation.drivesims.GyroSimulation
 
-class GyroIOSim(private val gyroSim: GyroSimulation) : GyroIO {
+class GyroIOSim(private val gyroSim: GyroSimulation): GyroIO {
     override fun updateInputs(inputs: GyroIO.GyroIOInputs) {
         inputs.connected = true
         inputs.odometryYawPositions = gyroSim.cachedGyroReadings

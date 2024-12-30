@@ -5,18 +5,18 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
-import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.RobotState
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
+import kotlin.math.abs
 
 class JoystickAimAtAngleController(
     private val joystickController: JoystickDriveController,
     private val goal: () -> Rotation2d,
     private val robotState: RobotState,
     var toleranceDegrees: Double = 1.0,
-) : DriveController {
+): DriveController {
     private val controller =
         ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0)).apply {
             enableContinuousInput(-Math.PI, Math.PI)

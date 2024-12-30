@@ -8,9 +8,9 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
-import kotlin.math.max
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
+import kotlin.math.max
 
 class RobotState {
     private val poseEstimator: SwerveDrivePoseEstimator =

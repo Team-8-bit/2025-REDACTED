@@ -6,14 +6,14 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
-import org.team9432.frc2025.robot.RobotState
-import org.team9432.frc2025.robot.subsystems.drive.Drive
-import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import java.text.DecimalFormat
 import java.text.NumberFormat
 import kotlin.math.abs
+import org.team9432.frc2025.robot.RobotState
+import org.team9432.frc2025.robot.subsystems.drive.Drive
+import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-class WheelRadiusCharacterization(private val drive: Drive, private val robotState: RobotState): Command() {
+class WheelRadiusCharacterization(private val drive: Drive, private val robotState: RobotState) : Command() {
     private val maxAccelDegreesPerSecPerSec = 3.0
     private val maxVelocityDegreesPerSec = 15.0
 

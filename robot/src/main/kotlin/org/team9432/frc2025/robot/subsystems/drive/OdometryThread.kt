@@ -3,15 +3,15 @@ package org.team9432.frc2025.robot.subsystems.drive
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.StatusSignal
 import edu.wpi.first.wpilibj.RobotController
-import org.team9432.annotation.Logged
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.math.roundToLong
+import org.team9432.annotation.Logged
 
-class OdometryThread: Thread() {
+class OdometryThread : Thread() {
     /** Prevent concurrent modification of the queue lists. */
     private val signalsLock: Lock = ReentrantLock()
 

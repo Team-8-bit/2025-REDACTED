@@ -10,6 +10,9 @@ import edu.wpi.first.wpilibj.Alert.AlertType
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+import kotlin.math.min
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.RobotState
 import org.team9432.frc2025.robot.subsystems.drive.controllers.DriveController
@@ -17,9 +20,6 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIO
 import org.team9432.frc2025.robot.subsystems.drive.gyro.LoggedGyroIOInputs
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.SwerveModule
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
-import kotlin.math.min
 
 class Drive(
     private val gyroIO: GyroIO,
@@ -29,7 +29,7 @@ class Drive(
     backRight: ModuleIO,
     private val odometryThread: OdometryThread,
     private val robotState: RobotState,
-): SubsystemBase() {
+) : SubsystemBase() {
     private val gyroInputs = LoggedGyroIOInputs()
     private val odometryThreadInputs = LoggedOdometryThreadInputs()
 

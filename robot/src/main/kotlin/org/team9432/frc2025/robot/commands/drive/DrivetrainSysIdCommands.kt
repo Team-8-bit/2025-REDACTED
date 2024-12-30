@@ -22,8 +22,7 @@ class DrivetrainSysIdCommands(private val drive: Drive) {
     private val linearModuleDirections = Array(4) { Rotation2d.kZero }
     private val linearMechanism =
         SysIdRoutine.Mechanism(
-            /* drive = */
-            { voltage ->
+            /* drive = */ { voltage ->
                 drive.runDriveCharacterizationVoltage(voltage.`in`(Volts), linearModuleDirections)
             },
             /* log = */ null,
@@ -35,8 +34,7 @@ class DrivetrainSysIdCommands(private val drive: Drive) {
         DrivetrainConstants.MODULE_TRANSLATIONS.map { Rotation2d(it.x, it.y).plus(Rotation2d.kCCW_Pi_2) }.toTypedArray()
     private val angularMechanism =
         SysIdRoutine.Mechanism(
-            /* drive = */
-            { voltage ->
+            /* drive = */ { voltage ->
                 drive.runDriveCharacterizationVoltage(voltage.`in`(Volts), angularModuleDirections)
             },
             /* log = */ null,

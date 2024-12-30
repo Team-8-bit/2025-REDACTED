@@ -68,9 +68,12 @@ object DrivetrainConstants {
     private val tunableSteerkP = LoggedTunableNumber("Drive/Module/SteerkP", steerkP)
     private val tunableSteerkD = LoggedTunableNumber("Drive/Module/SteerkD", steerkD)
 
-    fun checkDriveFFChange(id: Int, action: (Double, Double) -> Unit) = LoggedTunableNumber.ifChanged(id, tunableDrivekS, tunableDrivekV) { (kS, kV) -> action.invoke(kS, kV) }
+    fun checkDriveFFChange(id: Int, action: (Double, Double) -> Unit) =
+        LoggedTunableNumber.ifChanged(id, tunableDrivekS, tunableDrivekV) { (kS, kV) -> action.invoke(kS, kV) }
 
-    fun checkDrivePidChange(id: Int, action: (Double, Double) -> Unit) = LoggedTunableNumber.ifChanged(id, tunableDrivekP, tunableDriveKd) { (kP, kD) -> action.invoke(kP, kD) }
+    fun checkDrivePidChange(id: Int, action: (Double, Double) -> Unit) =
+        LoggedTunableNumber.ifChanged(id, tunableDrivekP, tunableDriveKd) { (kP, kD) -> action.invoke(kP, kD) }
 
-    fun checkSteerPidChange(id: Int, action: (Double, Double) -> Unit) = LoggedTunableNumber.ifChanged(id, tunableSteerkP, tunableSteerkD) { (kP, kD) -> action.invoke(kP, kD) }
+    fun checkSteerPidChange(id: Int, action: (Double, Double) -> Unit) =
+        LoggedTunableNumber.ifChanged(id, tunableSteerkP, tunableSteerkD) { (kP, kD) -> action.invoke(kP, kD) }
 }

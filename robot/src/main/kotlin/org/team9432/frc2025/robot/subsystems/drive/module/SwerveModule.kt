@@ -65,7 +65,7 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
             setpoint.speedMetersPerSecond / Units.inchesToMeters(DrivetrainConstants.WHEEL_RADIUS_INCHES)
         val feedforward =
             driveFeedforward.calculate(velocityRadPerSec) +
-                    ((wheelTorqueNm / DrivetrainConstants.DRIVE_RATIO) * DrivetrainConstants.ffkT)
+                ((wheelTorqueNm / DrivetrainConstants.DRIVE_RATIO) * DrivetrainConstants.ffkT)
         io.runDriveVelocity(velocityRadPerSec, feedforward)
         io.runSteerPosition(setpoint.angle)
     }

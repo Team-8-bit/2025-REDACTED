@@ -2,14 +2,14 @@
 // https://github.com/Mechanical-Advantage/RobotCode2024/blob/a025615a52193b7709db7cf14c51c57be17826f2/src/main/java/org/littletonrobotics/frc2024/subsystems/drive/Drive.java
 package org.team9432.frc2025.lib.dashboard
 
-import org.littletonrobotics.junction.networktables.LoggedNetworkNumber
 import kotlin.reflect.KProperty
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber
 
 /**
  * Class for a tunable number. Gets value from dashboard in tuning mode, returns default if not or value not in
  * dashboard.
  */
-class LoggedTunableNumber(key: String, private val defaultValue: Double): () -> Double {
+class LoggedTunableNumber(key: String, private val defaultValue: Double) : () -> Double {
     private var dashboardNumber: LoggedNetworkNumber? = null
     private val lastHasChangedValues: MutableMap<Int, Double> = HashMap()
 

@@ -43,7 +43,7 @@ import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
 
-class Robot: LoggedRobot() {
+class Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
 
     private val drive: Drive
@@ -95,17 +95,14 @@ class Robot: LoggedRobot() {
                                         /* steerMotorModel = */ DCMotor.getKrakenX60Foc(1),
                                         /* driveGearRatio = */ DrivetrainConstants.DRIVE_RATIO,
                                         /* steerGearRatio = */ DrivetrainConstants.STEER_RATIO,
-                                        /* driveFrictionVoltage = */
-                                        Volts.of(
+                                        /* driveFrictionVoltage = */ Volts.of(
                                             0.1
                                         ), // Just the value used in the maplesim MK4i default
-                                        /* steerFrictionVoltage = */
-                                        Volts.of(
+                                        /* steerFrictionVoltage = */ Volts.of(
                                             0.2
                                         ), // Just the value used in the maplesim MK4i default
                                         /* wheelRadius = */ Inches.of(DrivetrainConstants.WHEEL_RADIUS_INCHES),
-                                        /* steerRotationalInertia = */
-                                        KilogramSquareMeters.of(
+                                        /* steerRotationalInertia = */ KilogramSquareMeters.of(
                                             0.03
                                         ), // Just the value used in the maplesim MK4i default
                                         /* tireCoefficientOfFriction = */ COTS.WHEELS.DEFAULT_NEOPRENE_TREAD.cof,
@@ -146,11 +143,11 @@ class Robot: LoggedRobot() {
             // No-op replay implementations
             drive =
                 Drive(
-                    object: GyroIO {},
-                    object: ModuleIO {},
-                    object: ModuleIO {},
-                    object: ModuleIO {},
-                    object: ModuleIO {},
+                    object : GyroIO {},
+                    object : ModuleIO {},
+                    object : ModuleIO {},
+                    object : ModuleIO {},
+                    object : ModuleIO {},
                     odometryThread,
                     robotState,
                 )
@@ -195,41 +192,41 @@ class Robot: LoggedRobot() {
 
     private val autoChooser =
         AutoSelector(autoChoosers) {
-            addQuestion("Which Auto?", { currentAuto = it }) {
-                addOption("Do Nothing", Commands::none)
+                addQuestion("Which Auto?", { currentAuto = it }) {
+                    addOption("Do Nothing", Commands::none)
 
-                var characterizationAuto = Commands.none()
-                addOption("Characterization", { characterizationAuto }) {
-                    addQuestion("Which routine?", { characterizationAuto = it }) {
-                        val driveRoutines = DrivetrainSysIdCommands(drive)
-                        addOption(
-                            "Drive Wheel Radius Characterization",
-                            { WheelRadiusCharacterization(drive, robotState) },
-                        )
-                        addOption(
-                            "Drive Linear SysId (Quasistatic Forward)",
-                            { driveRoutines.linearQuasistaticForward },
-                        )
-                        addOption(
-                            "Drive Linear SysId (Quasistatic Reverse)",
-                            { driveRoutines.linearQuasistaticReverse },
-                        )
-                        addOption("Drive Linear SysId (Dynamic Forward)", { driveRoutines.linearDynamicForward })
-                        addOption("Drive Linear SysId (Dynamic Reverse)", { driveRoutines.linearDynamicReverse })
-                        addOption(
-                            "Drive Angular SysId (Quasistatic Forward)",
-                            { driveRoutines.angularQuasistaticForward },
-                        )
-                        addOption(
-                            "Drive Angular SysId (Quasistatic Reverse)",
-                            { driveRoutines.angularQuasistaticReverse },
-                        )
-                        addOption("Drive Angular SysId (Dynamic Forward)", { driveRoutines.angularDynamicForward })
-                        addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
+                    var characterizationAuto = Commands.none()
+                    addOption("Characterization", { characterizationAuto }) {
+                        addQuestion("Which routine?", { characterizationAuto = it }) {
+                            val driveRoutines = DrivetrainSysIdCommands(drive)
+                            addOption(
+                                "Drive Wheel Radius Characterization",
+                                { WheelRadiusCharacterization(drive, robotState) },
+                            )
+                            addOption(
+                                "Drive Linear SysId (Quasistatic Forward)",
+                                { driveRoutines.linearQuasistaticForward },
+                            )
+                            addOption(
+                                "Drive Linear SysId (Quasistatic Reverse)",
+                                { driveRoutines.linearQuasistaticReverse },
+                            )
+                            addOption("Drive Linear SysId (Dynamic Forward)", { driveRoutines.linearDynamicForward })
+                            addOption("Drive Linear SysId (Dynamic Reverse)", { driveRoutines.linearDynamicReverse })
+                            addOption(
+                                "Drive Angular SysId (Quasistatic Forward)",
+                                { driveRoutines.angularQuasistaticForward },
+                            )
+                            addOption(
+                                "Drive Angular SysId (Quasistatic Reverse)",
+                                { driveRoutines.angularQuasistaticReverse },
+                            )
+                            addOption("Drive Angular SysId (Dynamic Forward)", { driveRoutines.angularDynamicForward })
+                            addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
+                        }
                     }
                 }
             }
-        }
             .also { it.update() }
 
     override fun autonomousInit() {

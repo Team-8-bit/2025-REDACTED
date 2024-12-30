@@ -5,10 +5,10 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
-import org.team9432.frc2025.lib.AllianceTracker
-import org.team9432.frc2025.lib.constants.EvergreenFieldConstants
 import kotlin.math.atan2
 import kotlin.math.hypot
+import org.team9432.frc2025.lib.AllianceTracker
+import org.team9432.frc2025.lib.constants.EvergreenFieldConstants
 
 /** Flips this [Pose2d] to the opposite side of a mirrored field. */
 fun Pose2d.flip() = Pose2d(translation.flip(), rotation.flip())

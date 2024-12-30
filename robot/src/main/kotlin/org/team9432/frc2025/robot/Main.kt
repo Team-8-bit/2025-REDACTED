@@ -87,23 +87,8 @@ class Robot : LoggedRobot() {
 
                 Constants.RobotType.SIM -> {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    
-                    val swerveSim = SwerveDriveSimulation(
+                    val swerveSim =
+                        SwerveDriveSimulation(
                             DriveTrainSimulationConfig.Default()
                                 .withSwerveModule {
                                     SwerveModuleSimulation(

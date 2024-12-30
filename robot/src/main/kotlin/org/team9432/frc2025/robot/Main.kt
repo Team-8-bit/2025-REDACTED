@@ -9,7 +9,7 @@ import edu.wpi.first.net.PortForwarder
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.PowerDistribution
-import edu.wpi.first.wpilibj.RobotBase
+  import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
@@ -89,31 +89,30 @@ class Robot : LoggedRobot() {
                     val swerveSim =
                         SwerveDriveSimulation(
                             DriveTrainSimulationConfig.Default()
-                                .withSwerveModule {
+                                 .withSwerveModule {
                                     SwerveModuleSimulation(
                                         /* driveMotorModel = */ DCMotor.getKrakenX60Foc(1),
                                         /* steerMotorModel = */ DCMotor.getKrakenX60Foc(1),
                                         /* driveGearRatio = */ DrivetrainConstants.DRIVE_RATIO,
                                         /* steerGearRatio = */ DrivetrainConstants.STEER_RATIO,
                                         /* driveFrictionVoltage = */ Volts.of(
-                                            0.1
+                                             0.1
                                         ), // Just the value used in the maplesim MK4i default
                                         /* steerFrictionVoltage = */ Volts.of(
                                             0.2
                                         ), // Just the value used in the maplesim MK4i default
                                         /* wheelRadius = */ Inches.of(DrivetrainConstants.WHEEL_RADIUS_INCHES),
-                                        /* steerRotationalInertia = */ KilogramSquareMeters.of(
+                                         /* steerRotationalInertia = */ KilogramSquareMeters.of(
                                             0.03
                                         ), // Just the value used in the maplesim MK4i default
                                         /* tireCoefficientOfFriction = */ COTS.WHEELS.DEFAULT_NEOPRENE_TREAD.cof,
                                     )
-                                }
-                                .withGyro(COTS.ofPigeon2())
+                                }                                .withGyro(COTS.ofPigeon2())
                                 .withTrackLengthTrackWidth(Inches.of(24.0), Inches.of(24.0))
                                 .withBumperSize(Inches.of(30.0), Inches.of(30.0))
                                 .withRobotMass(Pounds.of(120.0)),
                             /* initialPoseOnField = */ Pose2d(3.0, 3.0, Rotation2d()),
-                        )
+                        ) 
 
                     val gyroIO = GyroIOSim(swerveSim.gyroSimulation)
 
@@ -147,6 +146,7 @@ class Robot : LoggedRobot() {
                     object : ModuleIO {},
                     object : ModuleIO {},
                     object : ModuleIO {},
+                    
                     object : ModuleIO {},
                     odometryThread,
                     robotState,
@@ -196,23 +196,19 @@ class Robot : LoggedRobot() {
                     addOption("Do Nothing", Commands::none)
 
                     var characterizationAuto = Commands.none()
-                    addOption("Characterization", { characterizationAuto }) {
-                        addQuestion("Which routine?", { characterizationAuto = it }) {
+                    addOption("Characterization", { characterizationAuto }) {                        addQuestion("Which routine?", { characterizationAuto = it }) {
                             val driveRoutines = DrivetrainSysIdCommands(drive)
                             addOption(
-                                "Drive Wheel Radius Characterization",
-                                { WheelRadiusCharacterization(drive, robotState) },
+                                "Drive Wheel Radius Characterization",                                { WheelRadiusCharacterization(drive, robotState) },
                             )
                             addOption(
                                 "Drive Linear SysId (Quasistatic Forward)",
                                 { driveRoutines.linearQuasistaticForward },
                             )
-                            addOption(
-                                "Drive Linear SysId (Quasistatic Reverse)",
+                            addOption(                                "Drive Linear SysId (Quasistatic Reverse)",
                                 { driveRoutines.linearQuasistaticReverse },
                             )
-                            addOption("Drive Linear SysId (Dynamic Forward)", { driveRoutines.linearDynamicForward })
-                            addOption("Drive Linear SysId (Dynamic Reverse)", { driveRoutines.linearDynamicReverse })
+                            addOption("Drive Linear SysId (Dynamic Forward)", { driveRoutines.linearDynamicForward })                            addOption("Drive Linear SysId (Dynamic Reverse)", { driveRoutines.linearDynamicReverse })
                             addOption(
                                 "Drive Angular SysId (Quasistatic Forward)",
                                 { driveRoutines.angularQuasistaticForward },
@@ -275,8 +271,7 @@ class Robot : LoggedRobot() {
             val name = command.name
             val count = commandCounts.getOrDefault(name, 0) + (if (starting) 1 else -1)
             commandCounts[name] = count
-            Logger.recordOutput("CommandsUnique/" + name + "_" + Integer.toHexString(command.hashCode()), starting)
-            Logger.recordOutput("CommandsAll/$name", count > 0)
+            Logger.recordOutput("CommandsUnique/" + name + "_" + Integer.toHexString(command.hashCode()), starting)            Logger.recordOutput("CommandsAll/$name", count > 0)
         }
 
         CommandScheduler.getInstance().run {

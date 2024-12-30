@@ -1,7 +1,6 @@
 name: CI
 on:
   push:
-  pull_request:
 jobs:
   # Check formatting of the project.
   spotless-check:

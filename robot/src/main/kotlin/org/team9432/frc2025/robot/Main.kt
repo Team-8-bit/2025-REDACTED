@@ -86,6 +86,7 @@ class Robot : LoggedRobot() {
                 }
 
                 Constants.RobotType.SIM -> {
+
                     val swerveSim =
                         SwerveDriveSimulation(
                             DriveTrainSimulationConfig.Default()
@@ -298,6 +299,7 @@ class Robot : LoggedRobot() {
             Logger.recordOutput("CANivoreStatus/OffCount", canivoreStatus.BusOffCount)
             Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount)
             Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC)
+
             Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC)
         }
 

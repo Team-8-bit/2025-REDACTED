@@ -1,0 +1,32 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  # Check formatting of the project.
+  spotless-check:
+    runs-on: ubuntu-22.04
+    container: wpilib/roborio-cross-ubuntu:2024-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add repository to git safe directories
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Run spotless check
+        run: ./gradlew spotlessCheck
+
+  # Ensures robot code builds. This also runs all unit tests.
+  build:
+    runs-on: ubuntu-22.04
+    container: wpilib/roborio-cross-ubuntu:2024-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add repository to git safe directories
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Compile robot code
+        run: ./gradlew robotBuild

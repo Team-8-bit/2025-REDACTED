@@ -10,10 +10,9 @@ import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
 import kotlin.math.max
 import org.littletonrobotics.junction.Logger
-import org.team9432.frc2025.lib.RobotPeriodicManager
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-object RobotState {
+class RobotState {
     private val poseEstimator: SwerveDrivePoseEstimator =
         SwerveDrivePoseEstimator(
             DrivetrainConstants.KINEMATICS,
@@ -55,14 +54,12 @@ object RobotState {
 
     fun getRobotRelativeChassisSpeeds() = currentChassisSpeeds
 
-    init {
-        RobotPeriodicManager.startPeriodic {
-            Logger.recordOutput("RobotState/CurrentPose", currentPose)
-            Logger.recordOutput("RobotState/CurrentSpeeds", getRobotRelativeChassisSpeeds())
-            Logger.recordOutput(
-                "RobotState/CurrentFieldRelativeSpeeds",
-                ChassisSpeeds.fromRobotRelativeSpeeds(getRobotRelativeChassisSpeeds(), currentPose.rotation),
-            )
-        }
+    fun log() {
+        Logger.recordOutput("RobotState/CurrentPose", currentPose)
+        Logger.recordOutput("RobotState/CurrentSpeeds", getRobotRelativeChassisSpeeds())
+        Logger.recordOutput(
+            "RobotState/CurrentFieldRelativeSpeeds",
+            ChassisSpeeds.fromRobotRelativeSpeeds(getRobotRelativeChassisSpeeds(), currentPose.rotation),
+        )
     }
 }

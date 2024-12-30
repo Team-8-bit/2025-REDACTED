@@ -19,6 +19,7 @@ class JoystickDriveController(
     private val controllerX: () -> Double,
     private val controllerY: () -> Double,
     private val controllerR: () -> Double,
+    private val robotState: RobotState,
 ) : DriveController {
     private val ratelimitX = SlewRateLimiter(20.0)
     private val ratelimitY = SlewRateLimiter(20.0)
@@ -40,7 +41,7 @@ class JoystickDriveController(
             ratelimitX.calculate(linearSpeed.x * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             ratelimitY.calculate(linearSpeed.y * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             rotationSpeed * DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
-            RobotState.currentPose.rotation,
+            robotState.currentPose.rotation,
         )
     }
 

@@ -3,7 +3,6 @@ package org.team9432.frc2025.lib.dashboard
 import edu.wpi.first.networktables.NetworkTable
 import edu.wpi.first.networktables.NetworkTableInstance
 import org.littletonrobotics.junction.networktables.LoggedNetworkString
-import org.team9432.frc2025.lib.RobotPeriodicManager
 
 private const val PLACEHOLDER: String = "<NA>"
 
@@ -27,8 +26,6 @@ class SwitchableChooser(tablePath: String, name: String) {
         defaultPublisher.set(this.options.first())
         activePublisher.set(this.options.first())
         selectedInput.set(this.options.first())
-
-        RobotPeriodicManager.startPeriodic { periodic() }
     }
 
     /** Updates the set of available options. */
@@ -36,13 +33,13 @@ class SwitchableChooser(tablePath: String, name: String) {
         if (options.contentEquals(this.options)) return
         this.options = if (options.isNotEmpty()) options else arrayOf(PLACEHOLDER)
         optionsPublisher.set(this.options)
-        periodic()
+        update()
     }
 
     /** Returns the selected option. */
     fun get(): String? = if (active == PLACEHOLDER) null else active
 
-    private fun periodic() {
+    fun update() {
         val selected = selectedInput.get()
 
         active = options.firstOrNull { it != PLACEHOLDER && it == selected }

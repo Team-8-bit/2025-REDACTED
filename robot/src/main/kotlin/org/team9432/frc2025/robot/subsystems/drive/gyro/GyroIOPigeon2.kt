@@ -14,7 +14,7 @@ import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
 
 /** IO implementation for Pigeon2 */
-class GyroIOPigeon2 : GyroIO {
+class GyroIOPigeon2(private val odometryThread: OdometryThread) : GyroIO {
     private val pigeon = Pigeon2(RobotMap.pigeon.canID, RobotMap.pigeon.canBus)
     private val yaw: StatusSignal<Angle> = pigeon.yaw
     private var yawPositionQueue: Queue<Double>
@@ -27,7 +27,7 @@ class GyroIOPigeon2 : GyroIO {
         yawVelocity.setUpdateFrequency(100.0)
         yaw.setUpdateFrequency(DrivetrainConstants.ODOMETRY_FREQUENCY)
 
-        yawPositionQueue = OdometryThread.registerSignal(yaw)
+        yawPositionQueue = odometryThread.registerSignal(yaw)
 
         pigeon.optimizeBusUtilization()
     }

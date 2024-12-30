@@ -4,7 +4,15 @@ import edu.wpi.first.wpilibj.RobotBase
 import kotlin.system.exitProcess
 
 object Constants {
-    val robot: RobotType = RobotType.SIM
+    /** The robot this code is running on. */
+    private val ROBOT_TYPE = RobotType.SIM
+
+    /** Overrides the type of the robot, ONLY TO BE USED IN UNIT TESTS. */
+    private var overrideUnitTestRobotType: RobotType? = null
+
+    /** The robot this code is running on. */
+    val robot: RobotType
+        get() = overrideUnitTestRobotType ?: ROBOT_TYPE
 
     enum class RobotType {
         COMP,
@@ -32,15 +40,20 @@ object Constants {
             get() = this == REPLAY
     }
 
-    val mode
+    val mode: Mode
         get() =
             when (robot) {
                 RobotType.COMP ->
-                    if (RobotBase.isReal()) Mode.REAL
+                    if (RobotBase.isReal() || overrideUnitTestRobotType != null) Mode.REAL
                     else Mode.REPLAY // If the competition robot is selected but the robot isn't
                 // real, it is running replay
                 RobotType.SIM -> Mode.SIM
             }
+
+    /** Overrides the type of the robot, ONLY TO BE USED IN UNIT TESTS. */
+    fun overrideUnitTestRobotType(robot: RobotType) {
+        overrideUnitTestRobotType = robot
+    }
 }
 
 /** Checks whether the correct robot is selected when deploying. From team 6328. */

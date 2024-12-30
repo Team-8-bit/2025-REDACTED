@@ -119,6 +119,8 @@ dependencies {
     wpi.java.vendor.jniRelease(wpi.platforms.desktop).forEach { nativeRelease(it) }
 
     wpi.sim.enableRelease().forEach { simulationRelease(it) }
+
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 
 // Simulation configuration (e.g. environment variables).
@@ -133,6 +135,11 @@ jar {
     from sourceSets.main.allSource
     manifest GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+test {
+    useJUnitPlatform()
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
 }
 
 // Configure jar and deploy tasks

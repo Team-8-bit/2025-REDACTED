@@ -27,6 +27,8 @@ class Drive(
     frontRight: ModuleIO,
     backLeft: ModuleIO,
     backRight: ModuleIO,
+    private val odometryThread: OdometryThread,
+    private val robotState: RobotState,
 ) : SubsystemBase() {
     private val gyroInputs = LoggedGyroIOInputs()
     private val odometryThreadInputs = LoggedOdometryThreadInputs()
@@ -54,7 +56,7 @@ class Drive(
             gyroIO.updateInputs(gyroInputs)
             Logger.processInputs("Drive/Gyro", gyroInputs)
 
-            OdometryThread.updateInputs(odometryThreadInputs)
+            odometryThread.updateInputs(odometryThreadInputs)
             Logger.processInputs("Drive/OdometryThread", odometryThreadInputs)
 
             modules.forEach(SwerveModule::updateInputs)
@@ -94,7 +96,7 @@ class Drive(
                 rawGyroRotation += Rotation2d(twist.dtheta)
             }
 
-            RobotState.applyOdometryObservation(
+            robotState.applyOdometryObservation(
                 odometryThreadInputs.timestamps[timestampIndex],
                 rawGyroRotation,
                 modulePositions,
@@ -106,7 +108,7 @@ class Drive(
         if (gyroInputs.connected) {
             robotRelativeSpeeds.omegaRadiansPerSecond = gyroInputs.yawVelocityRadPerSec
         }
-        RobotState.addVelocityData(robotRelativeSpeeds)
+        robotState.addVelocityData(robotRelativeSpeeds)
 
         // Update gyro alert
         gyroDisconnectedAlert.set(!gyroInputs.connected)

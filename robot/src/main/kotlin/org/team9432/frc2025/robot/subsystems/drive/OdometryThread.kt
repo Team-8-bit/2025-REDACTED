@@ -11,7 +11,7 @@ import kotlin.concurrent.withLock
 import kotlin.math.roundToLong
 import org.team9432.annotation.Logged
 
-object OdometryThread : Thread() {
+class OdometryThread : Thread() {
     /** Prevent concurrent modification of the queue lists. */
     private val signalsLock: Lock = ReentrantLock()
 

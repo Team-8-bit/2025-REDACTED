@@ -2,6 +2,10 @@
 
 name: Spotless-Apply
 
+# Allow this action to start other actions
+permissions:
+  actions: write
+
 on:
   workflow_dispatch:
 

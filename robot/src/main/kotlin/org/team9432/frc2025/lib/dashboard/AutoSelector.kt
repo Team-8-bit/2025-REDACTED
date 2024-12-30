@@ -71,24 +71,6 @@ class AutoSelector(private val choosers: Set<DashboardQuestion>, buildQuestions:
 
         private var lastAnswer: String? = null
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         // Returns a boolean signifying if something changed and the selected value
         internal fun update(choosers: Queue<DashboardQuestion>): Pair<Boolean, (() -> T)?> {
             // Take a chooser from the list

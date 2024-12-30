@@ -32,7 +32,7 @@ import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO.ModuleIOInputs
 
-class ModuleIOKraken(private val config: ModuleConfig) : ModuleIO {
+class ModuleIOKraken(private val config: ModuleConfig, private val odometryThread: OdometryThread) : ModuleIO {
     /* Motors & Sensors */
     private val driveMotor = TalonFX(config.driveInformation.canID, config.driveInformation.canBus)
     private val steerMotor = TalonFX(config.steerInformation.canID, config.steerInformation.canBus)
@@ -61,8 +61,8 @@ class ModuleIOKraken(private val config: ModuleConfig) : ModuleIO {
     /* High-frequency Odometry Signals */
     private val drivePosition: StatusSignal<Angle> = driveMotor.position
     private val steerPosition: StatusSignal<Angle> = steerMotor.position
-    private val drivePositionQueue: Queue<Double> = OdometryThread.registerSignal(drivePosition)
-    private val steerPositionQueue: Queue<Double> = OdometryThread.registerSignal(steerPosition)
+    private val drivePositionQueue: Queue<Double> = odometryThread.registerSignal(drivePosition)
+    private val steerPositionQueue: Queue<Double> = odometryThread.registerSignal(steerPosition)
     private val highFrequencySignals = arrayOf(drivePosition, steerPosition)
 
     /* Control Requests */

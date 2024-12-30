@@ -13,7 +13,7 @@ import org.team9432.frc2025.robot.RobotState
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-class WheelRadiusCharacterization(private val drive: Drive) : Command() {
+class WheelRadiusCharacterization(private val drive: Drive, private val robotState: RobotState) : Command() {
     private val maxAccelDegreesPerSecPerSec = 3.0
     private val maxVelocityDegreesPerSec = 15.0
 
@@ -40,11 +40,11 @@ class WheelRadiusCharacterization(private val drive: Drive) : Command() {
         // Record initial module positions and robot angle
         if (initialPositions == null) {
             initialPositions = drive.getModuleCharacterizationPositionRads()
-            lastAngle = RobotState.currentPose.rotation
+            lastAngle = robotState.currentPose.rotation
         }
 
         // Record new information
-        val rotation = RobotState.currentPose.rotation
+        val rotation = robotState.currentPose.rotation
         accumulatedRotationRadians += abs((rotation - lastAngle).radians)
         lastAngle = rotation
     }

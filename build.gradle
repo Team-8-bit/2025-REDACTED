@@ -76,3 +76,12 @@ tasks.register("robotSimulateJava") {
     dependsOn(":spotlessApply")
     dependsOn(":robot:simulateJava")
 }
+
+tasks.register("robotTest") {
+    dependsOn(":robot:test")
+}
+
+tasks.register("cleanAll") {
+    dependsOn(":robot:clean")
+    dependsOn(":clean")
+}

@@ -26,7 +26,6 @@ import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.team9432.frc2025.lib.AllianceTracker
-import org.team9432.frc2025.lib.RobotPeriodicManager
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
@@ -44,12 +43,13 @@ import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
 
-object Robot : LoggedRobot() {
+class Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
 
     private val drive: Drive
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
+    private val robotState = RobotState()
 
     init {
         LoggedTunableNumber.setTuningModeEnabled(true)
@@ -57,6 +57,8 @@ object Robot : LoggedRobot() {
         SignalLogger.start()
 
         loggerInit()
+
+        val odometryThread = OdometryThread()
 
         // Run this a few times now so it isn't slow at the start of auto
         for (i in 0..25) {
@@ -70,11 +72,13 @@ object Robot : LoggedRobot() {
                 Constants.RobotType.COMP -> {
                     drive =
                         Drive(
-                            GyroIOPigeon2(),
-                            ModuleIOKraken(ModuleConfig.FRONT_LEFT),
-                            ModuleIOKraken(ModuleConfig.FRONT_RIGHT),
-                            ModuleIOKraken(ModuleConfig.BACK_LEFT),
-                            ModuleIOKraken(ModuleConfig.BACK_RIGHT),
+                            GyroIOPigeon2(odometryThread),
+                            ModuleIOKraken(ModuleConfig.FRONT_LEFT, odometryThread),
+                            ModuleIOKraken(ModuleConfig.FRONT_RIGHT, odometryThread),
+                            ModuleIOKraken(ModuleConfig.BACK_LEFT, odometryThread),
+                            ModuleIOKraken(ModuleConfig.BACK_RIGHT, odometryThread),
+                            odometryThread,
+                            robotState,
                         )
 
                     setSimulationPose = null
@@ -122,6 +126,8 @@ object Robot : LoggedRobot() {
                             ModuleIOSim(frontRight),
                             ModuleIOSim(backLeft),
                             ModuleIOSim(backRight),
+                            odometryThread,
+                            robotState,
                         )
 
                     driveSim = swerveSim
@@ -142,13 +148,17 @@ object Robot : LoggedRobot() {
                     object : ModuleIO {},
                     object : ModuleIO {},
                     object : ModuleIO {},
+                    odometryThread,
+                    robotState,
                 )
 
             setSimulationPose = null
             driveSim = null
         }
 
-        OdometryThread.start()
+        if (Constants.mode != Constants.Mode.REPLAY) {
+            odometryThread.start()
+        }
 
         bindButtons()
 
@@ -165,9 +175,11 @@ object Robot : LoggedRobot() {
                 controllerX = { -controller.leftY },
                 controllerY = { -controller.leftX },
                 controllerR = { controller.leftTriggerAxis - controller.rightTriggerAxis },
+                robotState,
             )
 
-        val alignStraightController = JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero })
+        val alignStraightController =
+            JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, robotState)
 
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
 
@@ -187,7 +199,10 @@ object Robot : LoggedRobot() {
                     addOption("Characterization", { characterizationAuto }) {
                         addQuestion("Which routine?", { characterizationAuto = it }) {
                             val driveRoutines = DrivetrainSysIdCommands(drive)
-                            addOption("Drive Wheel Radius Characterization", { WheelRadiusCharacterization(drive) })
+                            addOption(
+                                "Drive Wheel Radius Characterization",
+                                { WheelRadiusCharacterization(drive, robotState) },
+                            )
                             addOption(
                                 "Drive Linear SysId (Quasistatic Forward)",
                                 { driveRoutines.linearQuasistaticForward },
@@ -273,7 +288,6 @@ object Robot : LoggedRobot() {
 
     override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
-        RobotPeriodicManager.invokeAll()
         DriverStation.getAlliance().ifPresent { AllianceTracker.currentAlliance = it }
 
         // Log CANivore status if running on a real robot
@@ -291,6 +305,9 @@ object Robot : LoggedRobot() {
         if (Constants.robot.isSim) {
             Logger.recordOutput("SimulationArena/ActualRobotPosition", driveSim!!.simulatedDriveTrainPose)
         }
+
+        // Log robot state
+        robotState.log()
 
         autoChooser.update()
     }
@@ -312,5 +329,5 @@ object Robot : LoggedRobot() {
  * (If you use the IDE's Rename Refactoring when renaming the object, it will get changed everywhere including here.)
  */
 fun main() {
-    RobotBase.startRobot { Robot }
+    RobotBase.startRobot { Robot() }
 }

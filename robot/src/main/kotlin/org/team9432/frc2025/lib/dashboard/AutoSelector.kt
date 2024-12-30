@@ -9,6 +9,9 @@ class AutoSelector(private val choosers: Set<DashboardQuestion>, buildQuestions:
 
     /** Updates this selector's questions based on the current state of the dashboard chooser. */
     fun update() {
+        // Get new values for each chooser
+        choosers.forEach { it.chooser.update() }
+
         // Create a queue of all the available choosers
         val chooserQueue: Queue<DashboardQuestion> = LinkedList(choosers)
 

@@ -1,6 +1,5 @@
 package org.team9432.frc2025.robot.vision
 
-import edu.wpi.first.epilogue.Logged
 import edu.wpi.first.math.geometry.Pose3d
 import org.team9432.annotation.Logged
 

@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
-import frc.robot.subsystems.vision.Vision
 import org.ironmaple.simulation.SimulatedArena
 import org.ironmaple.simulation.drivesims.COTS
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation
@@ -43,14 +42,13 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOSim
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
+import org.team9432.frc2025.robot.vision.*
 
 class Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
 
     private val drive: Drive
     private val vision: Vision
-    private val setSimulationPose: ((Pose2d) -> Unit)?
-    private val driveSim: SwerveDriveSimulation?
     private val localizer = Localizer()
 
     init {
@@ -74,19 +72,21 @@ class Robot : LoggedRobot() {
                 Constants.RobotType.COMP -> {
                     drive =
                         Drive(
+                            localizer,
                             GyroIOPigeon2(odometryThread),
                             ModuleIOKraken(ModuleConfig.FRONT_LEFT, odometryThread),
                             ModuleIOKraken(ModuleConfig.FRONT_RIGHT, odometryThread),
                             ModuleIOKraken(ModuleConfig.BACK_LEFT, odometryThread),
                             ModuleIOKraken(ModuleConfig.BACK_RIGHT, odometryThread),
                             odometryThread,
-                            localizer,
                         )
 
-                    vision = Vision()
-
-                    setSimulationPose = null
-                    driveSim = null
+                    vision =
+                        Vision(
+                            localizer,
+                            VisionIOPhotonVision(CameraConfig.FRONT),
+                            VisionIOPhotonVision(CameraConfig.BACK),
+                        )
                 }
 
                 Constants.RobotType.SIM -> {
@@ -125,39 +125,56 @@ class Robot : LoggedRobot() {
 
                     drive =
                         Drive(
+                            localizer,
                             gyroIO,
                             ModuleIOSim(frontLeft),
                             ModuleIOSim(frontRight),
                             ModuleIOSim(backLeft),
                             ModuleIOSim(backRight),
                             odometryThread,
-                            localizer,
                         )
 
-                    driveSim = swerveSim
                     SimulatedArena.getInstance().addDriveTrainSimulation(swerveSim)
 
-                    setSimulationPose = {
-                        swerveSim.setSimulationWorldPose(it)
-                        gyroIO.setAngle(it.rotation)
-                    }
+                    localizer.setSimulationPoseSupplier { swerveSim.simulatedDriveTrainPose }
+
+                    vision =
+                        Vision(
+                            localizer,
+                            VisionIOPhotonVisionSim(
+                                CameraConfig.FRONT,
+                                actualRobotPoseSupplier = { swerveSim.simulatedDriveTrainPose },
+                            ),
+                            VisionIOPhotonVisionSim(
+                                CameraConfig.BACK,
+                                actualRobotPoseSupplier = { swerveSim.simulatedDriveTrainPose },
+                            ),
+                        )
                 }
             }
         } else {
             // No-op replay implementations
             drive =
                 Drive(
+                    localizer,
                     object : GyroIO {},
                     object : ModuleIO {},
                     object : ModuleIO {},
                     object : ModuleIO {},
                     object : ModuleIO {},
                     odometryThread,
-                    localizer,
                 )
 
-            setSimulationPose = null
-            driveSim = null
+            vision =
+                Vision(
+                    localizer,
+                    object : VisionIO {
+                        override val config = CameraConfig.FRONT
+                    },
+                    object : VisionIO {
+                        override val config = CameraConfig.BACK
+                    },
+                )
         }
 
         if (Constants.mode != Constants.Mode.REPLAY) {
@@ -303,11 +320,6 @@ class Robot : LoggedRobot() {
             Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount)
             Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC)
             Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC)
-        }
-
-        // Log actual sim robot position
-        if (Constants.robot.isSim) {
-            Logger.recordOutput("SimulationArena/ActualRobotPosition", driveSim!!.simulatedDriveTrainPose)
         }
 
         // Log robot state

@@ -1,73 +1,56 @@
-// Copyright 2021-2024 FRC 6328
-// http://github.com/Mechanical-Advantage
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 3 as published by the Free Software Foundation or
-// available in the root directory of this project.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-package frc.robot.subsystems.vision
+package org.team9432.frc2025.robot.vision
 
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.wpilibj.Alert
-import edu.wpi.first.wpilibj.Alert.AlertType
 import edu.wpi.first.wpilibj2.command.SubsystemBase
-import org.littletonrobotics.junction.Logger
-import org.team9432.frc2025.robot.Localizer
-import org.team9432.frc2025.robot.vision.LoggedVisionIOInputs
-import org.team9432.frc2025.robot.vision.VisionConstants.angularStdDevBaseline
-import org.team9432.frc2025.robot.vision.VisionConstants.aprilTagLayout
-import org.team9432.frc2025.robot.vision.VisionConstants.cameraStdDevFactors
-import org.team9432.frc2025.robot.vision.VisionConstants.linearStdDevBaseline
-import org.team9432.frc2025.robot.vision.VisionConstants.maxAmbiguity
-import org.team9432.frc2025.robot.vision.VisionConstants.maxZError
-import org.team9432.frc2025.robot.vision.VisionIO
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.pow
+import org.littletonrobotics.junction.Logger
+import org.team9432.frc2025.robot.Localizer
+import org.team9432.frc2025.robot.vision.VisionConstants.ANGULAR_STDDEV_BASELINE
+import org.team9432.frc2025.robot.vision.VisionConstants.LINEAR_STDDEV_BASELINE
+import org.team9432.frc2025.robot.vision.VisionConstants.MAX_AMBIGUITY
+import org.team9432.frc2025.robot.vision.VisionConstants.MAX_Z_ERROR
+import org.team9432.frc2025.robot.vision.VisionConstants.aprilTagLayout
 
-class Vision(private val localizer: Localizer, private vararg val io: VisionIO): SubsystemBase() {
-    private val cameras = Array(io.size) { index -> Camera(io[index], index) }
+class Vision(private val localizer: Localizer, vararg cameras: VisionIO) : SubsystemBase() {
+    data class CameraContainer(val io: VisionIO) {
+        val inputs = LoggedVisionIOInputs()
 
-    data class Camera(
-        val io: VisionIO,
-        val id: Int,
-        val inputs: LoggedVisionIOInputs = LoggedVisionIOInputs(),
-        val disconnectedAlert: Alert = Alert("Vision camera $id is disconnected.", AlertType.kWarning),
-    ) {
-        fun updateDisconnectedAlert() = disconnectedAlert.set(!inputs.connected)
+        fun updateInputs() {
+            io.updateInputs(inputs)
+            Logger.processInputs("Vision/${io.config.cameraName}", inputs)
+            alert.set(!inputs.connected)
+        }
+
+        private val alert = Alert("${io.config.cameraName} is disconnected!", Alert.AlertType.kWarning)
     }
+
+    private val cameras = cameras.map { CameraContainer(it) }
 
     override fun periodic() {
         for (camera in cameras) {
-            camera.io.updateInputs(camera.inputs)
-            Logger.processInputs("Vision/Camera${camera.id}", camera.inputs)
+            camera.updateInputs()
         }
 
         // Initialize logging values
-        val allTagPoses: MutableList<Pose3d> = LinkedList()
-        val allRobotPoses: MutableList<Pose3d> = LinkedList()
-        val allRobotPosesAccepted: MutableList<Pose3d> = LinkedList()
-        val allRobotPosesRejected: MutableList<Pose3d> = LinkedList()
+        val allTagPoses = mutableListOf<Pose3d>()
+        val allPoses = mutableListOf<Pose3d>()
+        val allAccepted = mutableListOf<Pose3d>()
+        val allRejected = mutableListOf<Pose3d>()
 
         // Loop over cameras
         for (camera in cameras) {
-            // Update disconnected alert
-            camera.updateDisconnectedAlert()
-
             // Initialize logging values
-            val tagPoses: MutableList<Pose3d> = LinkedList()
-            val robotPoses: MutableList<Pose3d> = LinkedList()
-            val robotPosesAccepted: MutableList<Pose3d> = LinkedList()
-            val robotPosesRejected: MutableList<Pose3d> = LinkedList()
+            val tagPoses = mutableListOf<Pose3d>()
+            val allRobotPoses = mutableListOf<Pose3d>()
+            val acceptedPoses = mutableListOf<Pose3d>()
+            val rejectedPoses = mutableListOf<Pose3d>()
 
             // Add tag poses
-            for (tagId in inputs[cameraIndex].tagIds) {
+            for (tagId in camera.inputs.tagIds) {
                 val tagPose = aprilTagLayout.getTagPose(tagId)
                 if (tagPose.isPresent) {
                     tagPoses.add(tagPose.get())
@@ -75,16 +58,16 @@ class Vision(private val localizer: Localizer, private vararg val io: VisionIO):
             }
 
             // Loop over pose observations
-            for (observation in inputs[cameraIndex].poseObservations) {
+            for (observation in camera.inputs.poseObservations) {
                 // Check whether to reject pose
                 val rejectPose = shouldReject(observation)
 
                 // Add pose to log
-                robotPoses.add(observation.pose)
+                allRobotPoses.add(observation.pose)
                 if (rejectPose) {
-                    robotPosesRejected.add(observation.pose)
+                    rejectedPoses.add(observation.pose)
                 } else {
-                    robotPosesAccepted.add(observation.pose)
+                    acceptedPoses.add(observation.pose)
                 }
 
                 // Skip if rejected
@@ -94,13 +77,11 @@ class Vision(private val localizer: Localizer, private vararg val io: VisionIO):
 
                 // Calculate standard deviations
                 val stdDevFactor: Double = observation.averageTagDistance.pow(2.0) / observation.tagCount
-                var linearStdDev: Double = linearStdDevBaseline * stdDevFactor
-                var angularStdDev: Double = angularStdDevBaseline * stdDevFactor
+                var linearStdDev: Double = LINEAR_STDDEV_BASELINE * stdDevFactor
+                var angularStdDev: Double = ANGULAR_STDDEV_BASELINE * stdDevFactor
 
-                if (cameraIndex < cameraStdDevFactors.size) {
-                    linearStdDev *= cameraStdDevFactors[cameraIndex]
-                    angularStdDev *= cameraStdDevFactors[cameraIndex]
-                }
+                linearStdDev *= camera.io.config.stddevFactor
+                angularStdDev *= camera.io.config.stddevFactor
 
                 // Send vision observation
                 localizer.applyVisionMeasurement(
@@ -110,28 +91,23 @@ class Vision(private val localizer: Localizer, private vararg val io: VisionIO):
                 )
             }
 
-            // Log camera datadata
-            Logger.recordOutput("Vision/Camera$cameraIndex/TagPoses", *tagPoses.toTypedArray<Pose3d>())
-            Logger.recordOutput("Vision/Camera$cameraIndex/RobotPoses", *robotPoses.toTypedArray<Pose3d>())
-            Logger.recordOutput(
-                "Vision/Camera$cameraIndex/RobotPosesAccepted",
-                *robotPosesAccepted.toTypedArray<Pose3d>(),
-            )
-            Logger.recordOutput(
-                "Vision/Camera$cameraIndex/RobotPosesRejected",
-                *robotPosesRejected.toTypedArray<Pose3d>(),
-            )
+            // Log camera data
+            Logger.recordOutput("Vision/${camera.io.config.cameraName}/TagPoses", *tagPoses.toTypedArray())
+            Logger.recordOutput("Vision/${camera.io.config.cameraName}/AllPoses", *allRobotPoses.toTypedArray())
+            Logger.recordOutput("Vision/${camera.io.config.cameraName}/AcceptedPoses", *acceptedPoses.toTypedArray())
+            Logger.recordOutput("Vision/${camera.io.config.cameraName}/RejectedPoses", *rejectedPoses.toTypedArray())
+
             allTagPoses.addAll(tagPoses)
-            allRobotPoses.addAll(robotPoses)
-            allRobotPosesAccepted.addAll(robotPosesAccepted)
-            allRobotPosesRejected.addAll(robotPosesRejected)
+            allRobotPoses.addAll(allRobotPoses)
+            allAccepted.addAll(acceptedPoses)
+            allRejected.addAll(rejectedPoses)
         }
 
         // Log summary data
-        Logger.recordOutput("Vision/Summary/TagPoses", *allTagPoses.toTypedArray<Pose3d>())
-        Logger.recordOutput("Vision/Summary/RobotPoses", *allRobotPoses.toTypedArray<Pose3d>())
-        Logger.recordOutput("Vision/Summary/RobotPosesAccepted", *allRobotPosesAccepted.toTypedArray<Pose3d>())
-        Logger.recordOutput("Vision/Summary/RobotPosesRejected", *allRobotPosesRejected.toTypedArray<Pose3d>())
+        Logger.recordOutput("Vision/Summary/TagPoses", *allTagPoses.toTypedArray())
+        Logger.recordOutput("Vision/Summary/AllPoses", *allPoses.toTypedArray())
+        Logger.recordOutput("Vision/Summary/AcceptedPoses", *allAccepted.toTypedArray())
+        Logger.recordOutput("Vision/Summary/RejectedPoses", *allRejected.toTypedArray())
     }
 
     /** Choose whether to reject this observation. */
@@ -139,15 +115,15 @@ class Vision(private val localizer: Localizer, private vararg val io: VisionIO):
         // Must have at least one tag
         val inadequateTagCount = observation.tagCount == 0
         // Cannot be a single tag with high ambiguity
-        val tooHighSingleTagAmbiguity = observation.tagCount == 1 && observation.ambiguity > maxAmbiguity
+        val tooHighSingleTagAmbiguity = observation.tagCount == 1 && observation.ambiguity > MAX_AMBIGUITY
         // Can't be flying or in the floor
-        val unrealisticZPosition = abs(observation.pose.z) > maxZError
+        val unrealisticZPosition = abs(observation.pose.z) > MAX_Z_ERROR
         // Has to be on the field
         val outOfField =
             observation.pose.x < 0.0 ||
-                    observation.pose.x > aprilTagLayout.fieldLength ||
-                    observation.pose.y < 0.0 ||
-                    observation.pose.y > aprilTagLayout.fieldWidth
+                observation.pose.x > aprilTagLayout.fieldLength ||
+                observation.pose.y < 0.0 ||
+                observation.pose.y > aprilTagLayout.fieldWidth
 
         return inadequateTagCount || tooHighSingleTagAmbiguity || unrealisticZPosition || outOfField
     }

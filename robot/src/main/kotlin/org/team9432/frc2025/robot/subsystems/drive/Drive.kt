@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.math.min
 import org.littletonrobotics.junction.Logger
-import org.team9432.frc2025.robot.RobotState
+import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.subsystems.drive.controllers.DriveController
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIO
 import org.team9432.frc2025.robot.subsystems.drive.gyro.LoggedGyroIOInputs
@@ -28,7 +28,7 @@ class Drive(
     backLeft: ModuleIO,
     backRight: ModuleIO,
     private val odometryThread: OdometryThread,
-    private val robotState: RobotState,
+    private val localizer: Localizer,
 ) : SubsystemBase() {
     private val gyroInputs = LoggedGyroIOInputs()
     private val odometryThreadInputs = LoggedOdometryThreadInputs()
@@ -96,19 +96,19 @@ class Drive(
                 rawGyroRotation += Rotation2d(twist.dtheta)
             }
 
-            robotState.applyOdometryObservation(
+            localizer.applyOdometryObservation(
                 odometryThreadInputs.timestamps[timestampIndex],
                 rawGyroRotation,
                 modulePositions,
             )
         }
 
-        // Add velocity to RobotState
+        // Add velocity data
         val robotRelativeSpeeds = DrivetrainConstants.KINEMATICS.toChassisSpeeds(*getModuleStates())
         if (gyroInputs.connected) {
             robotRelativeSpeeds.omegaRadiansPerSecond = gyroInputs.yawVelocityRadPerSec
         }
-        robotState.addVelocityData(robotRelativeSpeeds)
+        localizer.addVelocityData(robotRelativeSpeeds)
 
         // Update gyro alert
         gyroDisconnectedAlert.set(!gyroInputs.connected)

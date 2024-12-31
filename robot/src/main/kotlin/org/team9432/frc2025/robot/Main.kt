@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
+import frc.robot.subsystems.vision.Vision
 import org.ironmaple.simulation.SimulatedArena
 import org.ironmaple.simulation.drivesims.COTS
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation
@@ -47,9 +48,10 @@ class Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
 
     private val drive: Drive
+    private val vision: Vision
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
-    private val robotState = RobotState()
+    private val localizer = Localizer()
 
     init {
         LoggedTunableNumber.setTuningModeEnabled(true)
@@ -78,15 +80,16 @@ class Robot : LoggedRobot() {
                             ModuleIOKraken(ModuleConfig.BACK_LEFT, odometryThread),
                             ModuleIOKraken(ModuleConfig.BACK_RIGHT, odometryThread),
                             odometryThread,
-                            robotState,
+                            localizer,
                         )
+
+                    vision = Vision()
 
                     setSimulationPose = null
                     driveSim = null
                 }
 
                 Constants.RobotType.SIM -> {
-
                     val swerveSim =
                         SwerveDriveSimulation(
                             DriveTrainSimulationConfig.Default()
@@ -128,7 +131,7 @@ class Robot : LoggedRobot() {
                             ModuleIOSim(backLeft),
                             ModuleIOSim(backRight),
                             odometryThread,
-                            robotState,
+                            localizer,
                         )
 
                     driveSim = swerveSim
@@ -150,7 +153,7 @@ class Robot : LoggedRobot() {
                     object : ModuleIO {},
                     object : ModuleIO {},
                     odometryThread,
-                    robotState,
+                    localizer,
                 )
 
             setSimulationPose = null
@@ -176,11 +179,11 @@ class Robot : LoggedRobot() {
                 controllerX = { -controller.leftY },
                 controllerY = { -controller.leftX },
                 controllerR = { controller.leftTriggerAxis - controller.rightTriggerAxis },
-                robotState,
+                localizer,
             )
 
         val alignStraightController =
-            JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, robotState)
+            JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, localizer)
 
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
 
@@ -202,7 +205,7 @@ class Robot : LoggedRobot() {
                             val driveRoutines = DrivetrainSysIdCommands(drive)
                             addOption(
                                 "Drive Wheel Radius Characterization",
-                                { WheelRadiusCharacterization(drive, robotState) },
+                                { WheelRadiusCharacterization(drive, localizer) },
                             )
                             addOption(
                                 "Drive Linear SysId (Quasistatic Forward)",
@@ -299,7 +302,6 @@ class Robot : LoggedRobot() {
             Logger.recordOutput("CANivoreStatus/OffCount", canivoreStatus.BusOffCount)
             Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount)
             Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC)
-
             Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC)
         }
 
@@ -309,7 +311,7 @@ class Robot : LoggedRobot() {
         }
 
         // Log robot state
-        robotState.log()
+        localizer.log()
 
         autoChooser.update()
     }

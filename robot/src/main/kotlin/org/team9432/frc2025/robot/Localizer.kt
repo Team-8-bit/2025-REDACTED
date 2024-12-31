@@ -12,7 +12,7 @@ import kotlin.math.max
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-class RobotState {
+class Localizer {
     private val poseEstimator: SwerveDrivePoseEstimator =
         SwerveDrivePoseEstimator(
             DrivetrainConstants.KINEMATICS,

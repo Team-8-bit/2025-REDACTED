@@ -12,14 +12,14 @@ import kotlin.math.pow
 import kotlin.math.withSign
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
-import org.team9432.frc2025.robot.RobotState
+import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
 class JoystickDriveController(
     private val controllerX: () -> Double,
     private val controllerY: () -> Double,
     private val controllerR: () -> Double,
-    private val robotState: RobotState,
+    private val localizer: Localizer,
 ) : DriveController {
     private val ratelimitX = SlewRateLimiter(20.0)
     private val ratelimitY = SlewRateLimiter(20.0)
@@ -41,7 +41,7 @@ class JoystickDriveController(
             ratelimitX.calculate(linearSpeed.x * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             ratelimitY.calculate(linearSpeed.y * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             rotationSpeed * DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
-            robotState.currentPose.rotation,
+            localizer.currentPose.rotation,
         )
     }
 

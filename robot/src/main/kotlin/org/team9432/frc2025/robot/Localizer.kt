@@ -37,10 +37,9 @@ class Localizer {
         poseEstimator.addVisionMeasurement(visionPose, timestamp, measurementStdDevs)
         previousVisionMeasurementTimeStamp = max(timestamp, previousVisionMeasurementTimeStamp)
 
-        Logger.recordOutput("RobotPosition/LatestVisionPose", visionPose)
-        Logger.recordOutput("RobotPosition/LatestVisionStddevsXY", measurementStdDevs.get(0, 0))
-        Logger.recordOutput("RobotPosition/LatestVisionStddevsRotation", measurementStdDevs.get(2, 0))
-        simulatedPoseSupplier?.invoke()?.let { Logger.recordOutput("RobotPosition/ActualSimRobotPosition", it) }
+        Logger.recordOutput("Localizer/LatestVisionPose", visionPose)
+        Logger.recordOutput("Localizer/LatestVisionStddevsXY", measurementStdDevs.get(0, 0))
+        Logger.recordOutput("Localizer/LatestVisionStddevsRotation", measurementStdDevs.get(2, 0))
     }
 
     fun addVelocityData(velocity: ChassisSpeeds) {
@@ -57,12 +56,13 @@ class Localizer {
     fun getRobotRelativeChassisSpeeds() = currentChassisSpeeds
 
     fun log() {
-        Logger.recordOutput("RobotState/CurrentPose", currentPose)
-        Logger.recordOutput("RobotState/CurrentSpeeds", getRobotRelativeChassisSpeeds())
+        Logger.recordOutput("Localizer/CurrentPose", currentPose)
+        Logger.recordOutput("Localizer/CurrentSpeeds", getRobotRelativeChassisSpeeds())
         Logger.recordOutput(
-            "RobotState/CurrentFieldRelativeSpeeds",
+            "Localizer/CurrentFieldRelativeSpeeds",
             ChassisSpeeds.fromRobotRelativeSpeeds(getRobotRelativeChassisSpeeds(), currentPose.rotation),
         )
+        simulatedPoseSupplier?.invoke()?.let { Logger.recordOutput("Localizer/ActualSimRobotPosition", it) }
     }
 
     fun setSimulationPoseSupplier(supplier: () -> Pose2d) {

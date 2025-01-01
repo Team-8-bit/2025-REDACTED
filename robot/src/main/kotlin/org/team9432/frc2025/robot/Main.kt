@@ -25,6 +25,7 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
+import org.photonvision.simulation.VisionSystemSim
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
@@ -48,8 +49,9 @@ class Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
 
     private val drive: Drive
-    private val vision: Vision
+    private val cameras: Set<Camera>
     private val localizer = Localizer()
+    private var simUpdateCall: (() -> Unit)? = null
 
     init {
         LoggedTunableNumber.setTuningModeEnabled(true)
@@ -81,11 +83,18 @@ class Robot : LoggedRobot() {
                             odometryThread,
                         )
 
-                    vision =
-                        Vision(
-                            localizer,
-                            VisionIOPhotonVision(CameraConfig.FRONT),
-                            VisionIOPhotonVision(CameraConfig.BACK),
+                    cameras =
+                        setOf(
+                            Camera(
+                                CameraIOPhotonVision(VisionConstants.PhotonConfig.FRONT),
+                                VisionConstants.CameraConstants.FRONT,
+                                localizer,
+                            ),
+                            Camera(
+                                CameraIOPhotonVision(VisionConstants.PhotonConfig.BACK),
+                                VisionConstants.CameraConstants.BACK,
+                                localizer,
+                            ),
                         )
                 }
 
@@ -138,18 +147,23 @@ class Robot : LoggedRobot() {
 
                     localizer.setSimulationPoseSupplier { swerveSim.simulatedDriveTrainPose }
 
-                    vision =
-                        Vision(
-                            localizer,
-                            VisionIOPhotonVisionSim(
-                                CameraConfig.FRONT,
-                                actualRobotPoseSupplier = { swerveSim.simulatedDriveTrainPose },
+                    val visionSim = VisionSystemSim("main").apply { addAprilTags(VisionConstants.aprilTagLayout) }
+
+                    cameras =
+                        setOf(
+                            Camera(
+                                CameraIOPhotonVisionSim(VisionConstants.PhotonConfig.FRONT, visionSim),
+                                VisionConstants.CameraConstants.FRONT,
+                                localizer,
                             ),
-                            VisionIOPhotonVisionSim(
-                                CameraConfig.BACK,
-                                actualRobotPoseSupplier = { swerveSim.simulatedDriveTrainPose },
+                            Camera(
+                                CameraIOPhotonVisionSim(VisionConstants.PhotonConfig.BACK, visionSim),
+                                VisionConstants.CameraConstants.BACK,
+                                localizer,
                             ),
                         )
+
+                    simUpdateCall = { visionSim.update(swerveSim.simulatedDriveTrainPose) }
                 }
             }
         } else {
@@ -165,15 +179,10 @@ class Robot : LoggedRobot() {
                     odometryThread,
                 )
 
-            vision =
-                Vision(
-                    localizer,
-                    object : VisionIO {
-                        override val config = CameraConfig.FRONT
-                    },
-                    object : VisionIO {
-                        override val config = CameraConfig.BACK
-                    },
+            cameras =
+                setOf(
+                    Camera(object : CameraIO {}, VisionConstants.CameraConstants.FRONT, localizer),
+                    Camera(object : CameraIO {}, VisionConstants.CameraConstants.BACK, localizer),
                 )
         }
 
@@ -330,6 +339,7 @@ class Robot : LoggedRobot() {
 
     override fun simulationPeriodic() {
         SimulatedArena.getInstance().simulationPeriodic()
+        simUpdateCall?.invoke()
     }
 }
 

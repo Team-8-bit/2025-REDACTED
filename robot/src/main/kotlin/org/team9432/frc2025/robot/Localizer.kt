@@ -12,7 +12,7 @@ import kotlin.math.max
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-class RobotState {
+class Localizer {
     private val poseEstimator: SwerveDrivePoseEstimator =
         SwerveDrivePoseEstimator(
             DrivetrainConstants.KINEMATICS,
@@ -21,6 +21,7 @@ class RobotState {
             Pose2d(),
         )
 
+    private var simulatedPoseSupplier: (() -> Pose2d)? = null
     private var currentChassisSpeeds = ChassisSpeeds()
     private var previousVisionMeasurementTimeStamp: Double = -1.0
 
@@ -36,9 +37,9 @@ class RobotState {
         poseEstimator.addVisionMeasurement(visionPose, timestamp, measurementStdDevs)
         previousVisionMeasurementTimeStamp = max(timestamp, previousVisionMeasurementTimeStamp)
 
-        Logger.recordOutput("RobotPosition/LatestVisionPose", visionPose)
-        Logger.recordOutput("RobotPosition/LatestVisionStddevsXY", measurementStdDevs.get(0, 0))
-        Logger.recordOutput("RobotPosition/LatestVisionStddevsRotation", measurementStdDevs.get(2, 0))
+        Logger.recordOutput("Localizer/LatestVisionPose", visionPose)
+        Logger.recordOutput("Localizer/LatestVisionStddevsXY", measurementStdDevs.get(0, 0))
+        Logger.recordOutput("Localizer/LatestVisionStddevsRotation", measurementStdDevs.get(2, 0))
     }
 
     fun addVelocityData(velocity: ChassisSpeeds) {
@@ -55,11 +56,16 @@ class RobotState {
     fun getRobotRelativeChassisSpeeds() = currentChassisSpeeds
 
     fun log() {
-        Logger.recordOutput("RobotState/CurrentPose", currentPose)
-        Logger.recordOutput("RobotState/CurrentSpeeds", getRobotRelativeChassisSpeeds())
+        Logger.recordOutput("Localizer/CurrentPose", currentPose)
+        Logger.recordOutput("Localizer/CurrentSpeeds", getRobotRelativeChassisSpeeds())
         Logger.recordOutput(
-            "RobotState/CurrentFieldRelativeSpeeds",
+            "Localizer/CurrentFieldRelativeSpeeds",
             ChassisSpeeds.fromRobotRelativeSpeeds(getRobotRelativeChassisSpeeds(), currentPose.rotation),
         )
+        simulatedPoseSupplier?.invoke()?.let { Logger.recordOutput("Localizer/ActualSimRobotPosition", it) }
+    }
+
+    fun setSimulationPoseSupplier(supplier: () -> Pose2d) {
+        simulatedPoseSupplier = supplier
     }
 }

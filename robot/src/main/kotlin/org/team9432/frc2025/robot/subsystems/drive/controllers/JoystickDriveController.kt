@@ -12,14 +12,14 @@ import kotlin.math.pow
 import kotlin.math.withSign
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
-import org.team9432.frc2025.robot.RobotState
+import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
 class JoystickDriveController(
     private val controllerX: () -> Double,
     private val controllerY: () -> Double,
     private val controllerR: () -> Double,
-    private val robotState: RobotState,
+    private val localizer: Localizer,
 ) : DriveController {
     private val ratelimitX = SlewRateLimiter(20.0)
     private val ratelimitY = SlewRateLimiter(20.0)
@@ -38,10 +38,10 @@ class JoystickDriveController(
         val invert = AllianceTracker.switch(blue = 1, red = -1)
 
         return ChassisSpeeds.fromFieldRelativeSpeeds(
-            ratelimitX.calculate(linearSpeed.x * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
-            ratelimitY.calculate(linearSpeed.y * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
+            ratelimitX.calculate(linearSpeed.x) * invert,
+            ratelimitY.calculate(linearSpeed.y) * invert,
             rotationSpeed * DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
-            robotState.currentPose.rotation,
+            localizer.currentPose.rotation,
         )
     }
 
@@ -60,7 +60,10 @@ class JoystickDriveController(
 
         // Calculate new linear velocity
         val linearVelocity =
-            Pose2d(0.0, 0.0, linearDirection).transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d())).translation
+            Pose2d(0.0, 0.0, linearDirection)
+                .transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d.kZero))
+                .translation
+                .times(DrivetrainConstants.MAX_LINEAR_SPEED_MPS)
 
         return linearVelocity
     }

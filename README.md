@@ -11,4 +11,14 @@ _9432's robot code for the 2025 FRC season, REEFSCAPE._
 - [`annotation/`](annotation/src/main/kotlin/org/team9432/annotation) Kotlin version of AdvntageKit's @Autolog
   annotation
 ---
+
+### How to run the code simulation locally
+
+- **Download & Install IntelliJ IDEA**  
+  - Download IntelliJ IDEA Community Edition from [the official download page](https://www.jetbrains.com/idea/download).
+  - Install open the downloaded exe and go through the installation process.
+- **Clone the repository**  
+  - Once IDEA is installed, Select `Get from VCS` on the main page and type/copy in `https://github.com/Team-8-bit/2025-REDACTED` for Repository and select a directory to save the code.
+
+---
 ![Team Logo](https://github.com/Team-8-bit/2024-Sonic/assets/87742096/9f2b265a-bd20-4c62-a7e0-9c9973b29a20)

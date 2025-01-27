@@ -14,10 +14,10 @@ _9432's robot code for the 2025 FRC season, REEFSCAPE._
 
 ### How to run the code simulation locally
 
-- **Download & Install IntelliJ IDEA**  
+- **Download & Install IntelliJ IDEA**
   - Download IntelliJ IDEA Community Edition from [the official download page](https://www.jetbrains.com/idea/download).
   - Install open the downloaded exe and go through the installation process.
-- **Clone the repository**  
+- **Clone the repository**
   - Once IDEA is installed, Select `Get from VCS` on the main page and type/copy in `https://github.com/Team-8-bit/2025-REDACTED` for Repository and select a directory to save the code.
   - Click `Clone` and wait for the repository to be opened.
 - **Run Simulation**

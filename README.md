@@ -19,6 +19,10 @@ _9432's robot code for the 2025 FRC season, REEFSCAPE._
   - Install open the downloaded exe and go through the installation process.
 - **Clone the repository**  
   - Once IDEA is installed, Select `Get from VCS` on the main page and type/copy in `https://github.com/Team-8-bit/2025-REDACTED` for Repository and select a directory to save the code.
+  - Click `Clone` and wait for the repository to be opened.
+- **Run Simulation**
+  - Once the repository is open, in the top right select `Simulate Robot` and press the run button.
+  > It Will take longer the first time you run the simulation as it will download all the necessary files.
 
 ---
 ![Team Logo](https://github.com/Team-8-bit/2024-Sonic/assets/87742096/9f2b265a-bd20-4c62-a7e0-9c9973b29a20)

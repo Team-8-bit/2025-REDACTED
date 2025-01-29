@@ -216,5 +216,10 @@
       <option name="name" value="WPIc39481e8-4a63-4a4c-9df6-48d91e4da37b_0Release" />
       <option name="url" value="https://shenzhen-robotics-alliance.github.io/maple-sim/vendordep/repos/releases" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="WPId820cc26-74e3-11ec-90d6-0242ac120003_0Release" />
+      <option name="name" value="WPId820cc26-74e3-11ec-90d6-0242ac120003_0Release" />
+      <option name="url" value="https://frcmaven.wpi.edu/artifactory/littletonrobotics-mvn-release/" />
+    </remote-repository>
   </component>
 </project>

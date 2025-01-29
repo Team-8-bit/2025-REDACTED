@@ -19,6 +19,7 @@ import org.ironmaple.simulation.drivesims.COTS
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation
 import org.ironmaple.simulation.drivesims.SwerveModuleSimulation
 import org.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig
+import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
@@ -104,21 +105,23 @@ class Robot : LoggedRobot() {
                             DriveTrainSimulationConfig.Default()
                                 .withSwerveModule {
                                     SwerveModuleSimulation(
-                                        /* driveMotorModel = */ DCMotor.getKrakenX60Foc(1),
-                                        /* steerMotorModel = */ DCMotor.getKrakenX60Foc(1),
-                                        /* driveGearRatio = */ DrivetrainConstants.DRIVE_RATIO,
-                                        /* steerGearRatio = */ DrivetrainConstants.STEER_RATIO,
-                                        /* driveFrictionVoltage = */ Volts.of(
-                                            0.1
-                                        ), // Just the value used in the maplesim MK4i default
-                                        /* steerFrictionVoltage = */ Volts.of(
-                                            0.2
-                                        ), // Just the value used in the maplesim MK4i default
-                                        /* wheelRadius = */ Inches.of(DrivetrainConstants.WHEEL_RADIUS_INCHES),
-                                        /* steerRotationalInertia = */ KilogramSquareMeters.of(
-                                            0.03
-                                        ), // Just the value used in the maplesim MK4i default
-                                        /* tireCoefficientOfFriction = */ COTS.WHEELS.DEFAULT_NEOPRENE_TREAD.cof,
+                                        SwerveModuleSimulationConfig(
+                                            /* driveMotorModel = */ DCMotor.getKrakenX60Foc(1),
+                                            /* steerMotorModel = */ DCMotor.getKrakenX60Foc(1),
+                                            /* driveGearRatio = */ DrivetrainConstants.DRIVE_RATIO,
+                                            /* steerGearRatio = */ DrivetrainConstants.STEER_RATIO,
+                                            /* driveFrictionVoltage = */ Volts.of(
+                                                0.1
+                                            ), // Just the value used in the maplesim MK4i default
+                                            /* steerFrictionVoltage = */ Volts.of(
+                                                0.2
+                                            ), // Just the value used in the maplesim MK4i default
+                                            /* wheelRadius = */ Inches.of(DrivetrainConstants.WHEEL_RADIUS_INCHES),
+                                            /* steerRotationalInertia = */ KilogramSquareMeters.of(
+                                                0.03
+                                            ), // Just the value used in the maplesim MK4i default
+                                            /* wheelsCoefficientOfFriction = */ COTS.WHEELS.DEFAULT_NEOPRENE_TREAD.cof,
+                                        )
                                     )
                                 }
                                 .withGyro(COTS.ofPigeon2())

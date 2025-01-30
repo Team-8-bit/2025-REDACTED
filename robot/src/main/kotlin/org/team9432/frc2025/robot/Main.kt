@@ -43,11 +43,16 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOSim
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
+import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOKraken
 
 class Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
 
     private val drive: Drive
+    private val superstructure: Superstructure
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
     private val robotState = RobotState()
@@ -82,12 +87,13 @@ class Robot : LoggedRobot() {
                             robotState,
                         )
 
+                    superstructure = Superstructure(Elevator(ElevatorIOKraken()))
+
                     setSimulationPose = null
                     driveSim = null
                 }
 
                 Constants.RobotType.SIM -> {
-
                     val swerveSim =
                         SwerveDriveSimulation(
                             DriveTrainSimulationConfig.Default()
@@ -141,6 +147,8 @@ class Robot : LoggedRobot() {
                         swerveSim.setSimulationWorldPose(it)
                         gyroIO.setAngle(it.rotation)
                     }
+
+                    superstructure = Superstructure(Elevator(object : ElevatorIO {}))
                 }
             }
         } else {
@@ -155,6 +163,8 @@ class Robot : LoggedRobot() {
                     odometryThread,
                     robotState,
                 )
+
+            superstructure = Superstructure(Elevator(object : ElevatorIO {}))
 
             setSimulationPose = null
             driveSim = null
@@ -188,6 +198,8 @@ class Robot : LoggedRobot() {
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
 
         controller.a().whileTrue(drive.controllerCommand(alignStraightController))
+
+        controller.x().whileTrue(superstructure.runGoal(Superstructure.Goal.TEST_ELEVATOR))
     }
 
     private var currentAuto = Commands.none()

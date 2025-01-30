@@ -10,7 +10,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue
 import edu.wpi.first.units.measure.*
 import org.team9432.frc2025.robot.RobotMap
 
-class ElevatorIOKraken: ElevatorIO {
+class ElevatorIOKraken : ElevatorIO {
     private val leader = TalonFX(RobotMap.leftElevator.canID, RobotMap.leftElevator.canBus)
     private val follower = TalonFX(RobotMap.rightElevator.canID, RobotMap.rightElevator.canBus)
 

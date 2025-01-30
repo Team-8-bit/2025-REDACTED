@@ -8,10 +8,11 @@ import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
 import edu.wpi.first.units.measure.*
+import org.team9432.frc2025.robot.RobotMap
 
-class ElevatorIOKraken : ElevatorIO {
-    private val leader = TalonFX(ElevatorConstants.LEADER_ID, "*")
-    private val follower = TalonFX(ElevatorConstants.FOLLOWER_ID, "*")
+class ElevatorIOKraken: ElevatorIO {
+    private val leader = TalonFX(RobotMap.leftElevator.canID, RobotMap.leftElevator.canBus)
+    private val follower = TalonFX(RobotMap.rightElevator.canID, RobotMap.rightElevator.canBus)
 
     private val leaderPosition: StatusSignal<Angle> = leader.position
     private val leaderVelocity: StatusSignal<AngularVelocity> = leader.velocity
@@ -50,7 +51,7 @@ class ElevatorIOKraken : ElevatorIO {
         }
 
     init {
-        follower.setControl(Follower(ElevatorConstants.LEADER_ID, /* OpposeMasterDirection= */ true))
+        follower.setControl(Follower(RobotMap.leftElevator.canID, /* OpposeMasterDirection= */ true))
 
         leader.configurator.apply(leaderConfig, 1.0)
 

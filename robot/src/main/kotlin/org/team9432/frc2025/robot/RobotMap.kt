@@ -5,6 +5,7 @@ import org.team9432.frc2025.lib.util.CANSensorInformation
 import org.team9432.frc2025.lib.util.MotorInformation
 
 object RobotMap {
+    /* ******* Drivetrain ******* */
     const val DRIVETRAIN_CANBUS_NAME = "Drivetrain"
     val drivetrainCanbus = CANBus(DRIVETRAIN_CANBUS_NAME)
 
@@ -23,4 +24,9 @@ object RobotMap {
     val backRightEncoder = CANSensorInformation(canID = 4, DRIVETRAIN_CANBUS_NAME)
 
     val pigeon = CANSensorInformation(canID = 1, DRIVETRAIN_CANBUS_NAME)
+
+
+    /* ******* Elevator ******* */
+    val leftElevator = MotorInformation(canID = 10, pdhChannel = 9, DRIVETRAIN_CANBUS_NAME)
+    val rightElevator = MotorInformation(canID = 11, pdhChannel = 10, DRIVETRAIN_CANBUS_NAME)
 }

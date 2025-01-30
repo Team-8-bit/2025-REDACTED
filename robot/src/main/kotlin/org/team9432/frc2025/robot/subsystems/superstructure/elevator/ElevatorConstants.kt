@@ -13,9 +13,6 @@ object ElevatorConstants {
     val MIN_POSITION = Units.inchesToMeters(0.0)
     val MAX_POSITION = Units.inchesToMeters(53.0)
 
-    const val LEADER_ID = 0 // Left
-    const val FOLLOWER_ID = 0 // Right
-
     const val PEAK_TORQUE_AMPS = 60.0
 
     val gains =

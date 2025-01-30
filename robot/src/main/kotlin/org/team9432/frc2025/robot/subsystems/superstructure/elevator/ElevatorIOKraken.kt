@@ -3,10 +3,7 @@ package org.team9432.frc2025.robot.subsystems.superstructure.elevator
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.StatusSignal
 import com.ctre.phoenix6.configs.TalonFXConfiguration
-import com.ctre.phoenix6.controls.Follower
-import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
-import com.ctre.phoenix6.controls.TorqueCurrentFOC
-import com.ctre.phoenix6.controls.VoltageOut
+import com.ctre.phoenix6.controls.*
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
@@ -33,6 +30,7 @@ class ElevatorIOKraken : ElevatorIO {
     private val voltageControl = VoltageOut(0.0).withEnableFOC(true).withUpdateFreqHz(0.0)
     private val currentControl = TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
     private val motionMagicPositionControl = MotionMagicTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
+    private val neutralOut = NeutralOut()
 
     private val leaderConfig =
         TalonFXConfiguration().apply {
@@ -141,8 +139,17 @@ class ElevatorIOKraken : ElevatorIO {
         leader.configurator.apply(leaderConfig, 0.01)
     }
 
+    /** Sets the feedforward constants of the motors. */
+    override fun setFF(s: Double, g: Double, v: Double, a: Double) {
+        leaderConfig.Slot0.kS = s
+        leaderConfig.Slot0.kG = v
+        leaderConfig.Slot0.kV = g
+        leaderConfig.Slot0.kA = a
+        leader.configurator.apply(leaderConfig, 0.01)
+    }
+
     /** Sets the motion magic constants of the motors. */
-    override fun setMotionMagic(jerk: Double, accel: Double, cruise: Double) {
+    override fun setMotionMagic(cruise: Double, accel: Double, jerk: Double) {
         leaderConfig.MotionMagic.MotionMagicCruiseVelocity = cruise
         leaderConfig.MotionMagic.MotionMagicAcceleration = accel
         leaderConfig.MotionMagic.MotionMagicJerk = jerk
@@ -153,5 +160,10 @@ class ElevatorIOKraken : ElevatorIO {
     override fun setBrake(enable: Boolean) {
         leader.setNeutralMode(if (enable) NeutralModeValue.Brake else NeutralModeValue.Coast)
         follower.setNeutralMode(if (enable) NeutralModeValue.Brake else NeutralModeValue.Coast)
+    }
+
+    /** Runs the motors at neutral output. */
+    override fun stop() {
+        leader.setControl(neutralOut)
     }
 }

@@ -6,11 +6,9 @@ import org.team9432.frc2025.robot.Constants.RobotType.COMP
 import org.team9432.frc2025.robot.Constants.RobotType.SIM
 
 object ElevatorConstants {
-    /** Motor rotations per meter */
-    val REDUCTION =
-        ((42.0 / 14.0) * (46.0 / 20.0)) / Units.inchesToMeters(1.879783) // Last number is pulley pitch diameter
+    /** Motor rotations per meter of extension. */
+    val REDUCTION = ((42.0 / 14.0) * (46.0 / 20.0)) / Units.inchesToMeters(1.879783)
 
-    // All in inches
     val POSITION_TOLERANCE = Units.inchesToMeters(0.5)
     val MIN_POSITION = Units.inchesToMeters(0.0)
     val MAX_POSITION = Units.inchesToMeters(53.0)
@@ -22,8 +20,33 @@ object ElevatorConstants {
 
     val gains =
         when (Constants.robot) {
-            COMP -> Gains(kP = 0.0, kI = 0.0, kD = 0.0, ffkS = 0.0, ffkV = 0.0, ffkA = 0.0, ffkG = 0.0)
-            SIM -> Gains(kP = 0.0, kI = 0.0, kD = 0.0, ffkS = 0.0, ffkV = 0.0, ffkA = 0.0, ffkG = 0.0)
+            COMP ->
+                Gains(
+                    kP = 0.0,
+                    kI = 0.0,
+                    kD = 0.0,
+                    ffkS = 0.0,
+                    ffkV = 0.0,
+                    ffkA = 0.0,
+                    ffkG = 0.0,
+                    mmCruise = 0.0,
+                    mmAccel = 0.0,
+                    mmJerk = 0.0,
+                )
+
+            SIM ->
+                Gains(
+                    kP = 0.0,
+                    kI = 0.0,
+                    kD = 0.0,
+                    ffkS = 0.0,
+                    ffkV = 0.0,
+                    ffkA = 0.0,
+                    ffkG = 0.0,
+                    mmCruise = 0.0,
+                    mmAccel = 0.0,
+                    mmJerk = 0.0,
+                )
         }
 
     data class Gains(
@@ -34,5 +57,8 @@ object ElevatorConstants {
         val ffkV: Double,
         val ffkA: Double,
         val ffkG: Double,
+        val mmCruise: Double,
+        val mmAccel: Double,
+        val mmJerk: Double,
     )
 }

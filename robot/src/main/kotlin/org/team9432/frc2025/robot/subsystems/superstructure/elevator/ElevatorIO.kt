@@ -37,9 +37,15 @@ interface ElevatorIO {
     /** Sets the pid constants of the motors. */
     fun setPID(p: Double, i: Double, d: Double) {}
 
+    /** Sets the feedforward constants of the motors. */
+    fun setFF(s: Double, g: Double, v: Double, a: Double) {}
+
     /** Sets the motion magic constants of the motors. */
-    fun setMotionMagic(jerk: Double, accel: Double, cruise: Double) {}
+    fun setMotionMagic(cruise: Double, accel: Double, jerk: Double) {}
 
     /** Enables or disables brake mode on the motors. */
     fun setBrake(enable: Boolean) {}
+
+    /** Runs the motors at neutral output. */
+    fun stop() {}
 }

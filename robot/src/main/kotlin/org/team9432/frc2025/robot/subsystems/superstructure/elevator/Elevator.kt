@@ -98,4 +98,8 @@ class Elevator(private val io: ElevatorIO) {
     fun endCharacterization() {
         characterizing = false
     }
+
+    fun getSpeedMps(): Double {
+        return inputs.leaderVelocityMetersPerSec
+    }
 }

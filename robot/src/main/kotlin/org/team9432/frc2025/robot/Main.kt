@@ -31,6 +31,7 @@ import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
+import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
@@ -239,6 +240,16 @@ class Robot : LoggedRobot() {
                             )
                             addOption("Drive Angular SysId (Dynamic Forward)", { driveRoutines.angularDynamicForward })
                             addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
+                            addOption(
+                                "Static",
+                                {
+                                    StaticCharacterization(
+                                        superstructure,
+                                        { amps -> superstructure.runElevatorCharacterizationAmps(amps) },
+                                        { superstructure.getElevatorCharacterizationVelocity() },
+                                    )
+                                },
+                            )
                         }
                     }
                 }

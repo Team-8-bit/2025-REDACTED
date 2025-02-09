@@ -5,8 +5,10 @@ import com.ctre.phoenix6.StatusSignal
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.*
 import com.ctre.phoenix6.hardware.TalonFX
+import com.ctre.phoenix6.signals.GravityTypeValue
 import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
+import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.units.measure.*
 import org.team9432.frc2025.robot.RobotMap
 
@@ -30,7 +32,7 @@ class ElevatorIOKraken : ElevatorIO {
 
     private val voltageControl = VoltageOut(0.0).withEnableFOC(true).withUpdateFreqHz(0.0)
     private val currentControl = TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
-    private val motionMagicPositionControl = MotionMagicTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
+    private val motionMagicPositionControl = PositionTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
     private val neutralOut = NeutralOut()
 
     private val leaderConfig =
@@ -39,7 +41,15 @@ class ElevatorIOKraken : ElevatorIO {
             Slot0.kI = ElevatorConstants.gains.kI
             Slot0.kD = ElevatorConstants.gains.kD
 
-            MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
+            Slot0.kS = ElevatorConstants.gains.ffkS
+            Slot0.kV = ElevatorConstants.gains.ffkV
+            Slot0.kA = ElevatorConstants.gains.ffkA
+            Slot0.kG = ElevatorConstants.gains.ffkG
+
+            Slot0.GravityType = GravityTypeValue.Elevator_Static
+            Slot0.StaticFeedforwardSign = StaticFeedforwardSignValue.UseVelocitySign
+
+            MotorOutput.Inverted = InvertedValue.Clockwise_Positive
             MotorOutput.NeutralMode = NeutralModeValue.Brake
 
             TorqueCurrent.PeakForwardTorqueCurrent = ElevatorConstants.PEAK_TORQUE_AMPS
@@ -129,7 +139,7 @@ class ElevatorIOKraken : ElevatorIO {
 
     /** Runs the elevator to the specified position with the given feedforward. */
     override fun runPosition(positionMeters: Double, feedforward: Double) {
-        leader.setControl(motionMagicPositionControl.withPosition(positionMeters).withFeedForward(feedforward))
+        leader.setControl(motionMagicPositionControl.withPosition(positionMeters)) // .withFeedForward(feedforward))
     }
 
     /** Sets the pid constants of the motors. */
@@ -137,7 +147,7 @@ class ElevatorIOKraken : ElevatorIO {
         leaderConfig.Slot0.kP = p
         leaderConfig.Slot0.kI = i
         leaderConfig.Slot0.kD = d
-        leader.configurator.apply(leaderConfig, 0.01)
+        leader.configurator.apply(leaderConfig, 0.1)
     }
 
     /** Sets the feedforward constants of the motors. */
@@ -146,7 +156,7 @@ class ElevatorIOKraken : ElevatorIO {
         leaderConfig.Slot0.kG = v
         leaderConfig.Slot0.kV = g
         leaderConfig.Slot0.kA = a
-        leader.configurator.apply(leaderConfig, 0.01)
+        leader.configurator.apply(leaderConfig, 0.1)
     }
 
     /** Sets the motion magic constants of the motors. */

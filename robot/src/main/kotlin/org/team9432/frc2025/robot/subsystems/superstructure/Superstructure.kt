@@ -38,4 +38,16 @@ class Superstructure(private val elevator: Elevator) : SubsystemBase() {
     }
 
     fun runGoal(newGoal: Goal): Command = startEnd({ goal = newGoal }, { goal = Goal.STOW })
+
+    fun runElevatorCharacterizationAmps(amps: Double) {
+        elevator.runCharacterizationAmps(amps)
+    }
+
+    fun getElevatorCharacterizationVelocity(): Double {
+        return elevator.getSpeedMps()
+    }
+
+    fun endElevatorCharacterization() {
+        elevator.endCharacterization()
+    }
 }

@@ -7,7 +7,7 @@ import org.team9432.frc2025.robot.Constants.RobotType.SIM
 
 object ElevatorConstants {
     /** Motor rotations per meter of extension. */
-    val REDUCTION = ((42.0 / 14.0) * (46.0 / 20.0)) / Units.inchesToMeters(1.879783)
+    val REDUCTION = ((42.0 / 14.0) * (46.0 / 20.0)) / (Units.inchesToMeters(1.879783) * Math.PI)
 
     val POSITION_TOLERANCE = Units.inchesToMeters(0.5)
     val MIN_POSITION = Units.inchesToMeters(0.0)
@@ -22,7 +22,7 @@ object ElevatorConstants {
                     kP = 0.0,
                     kI = 0.0,
                     kD = 0.0,
-                    ffkS = 0.0,
+                    ffkS = 11.3,
                     ffkV = 0.0,
                     ffkA = 0.0,
                     ffkG = 0.0,

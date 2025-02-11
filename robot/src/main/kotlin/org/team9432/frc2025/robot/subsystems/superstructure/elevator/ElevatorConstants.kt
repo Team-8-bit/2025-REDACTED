@@ -22,7 +22,7 @@ object ElevatorConstants {
                     kP = 0.0,
                     kI = 0.0,
                     kD = 0.0,
-                    ffkS = 11.3,
+                    ffkS = 8.0,
                     ffkV = 0.0,
                     ffkA = 0.0,
                     ffkG = 0.0,

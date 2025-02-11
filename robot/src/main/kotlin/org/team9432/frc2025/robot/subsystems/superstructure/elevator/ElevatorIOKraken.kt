@@ -30,6 +30,8 @@ class ElevatorIOKraken : ElevatorIO {
     private val followerTorqueCurrent: StatusSignal<Current> = follower.torqueCurrent
     private val followerTemperature: StatusSignal<Temperature> = follower.deviceTemp
 
+    private val closedLoopReference = leader.closedLoopReference
+
     private val voltageControl = VoltageOut(0.0).withEnableFOC(true).withUpdateFreqHz(0.0)
     private val currentControl = TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
     private val motionMagicPositionControl = PositionTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
@@ -83,6 +85,7 @@ class ElevatorIOKraken : ElevatorIO {
             leaderSupplyCurrent,
             leaderTorqueCurrent,
             leaderTemperature,
+            closedLoopReference,
         )
 
         leader.optimizeBusUtilization(0.0, 1.0)
@@ -118,6 +121,7 @@ class ElevatorIOKraken : ElevatorIO {
         inputs.leaderSupplyCurrentAmps = leaderSupplyCurrent.valueAsDouble
         inputs.leaderTorqueCurrentAmps = leaderTorqueCurrent.valueAsDouble
         inputs.leaderTempFahrenheit = (leaderTemperature.valueAsDouble * (9 / 5)) + 32
+        inputs.closedLoopReference = closedLoopReference.valueAsDouble
 
         inputs.followerPositionMeters = followerPosition.valueAsDouble
         inputs.followerVelocityMetersPerSec = followerVelocity.valueAsDouble
@@ -153,8 +157,8 @@ class ElevatorIOKraken : ElevatorIO {
     /** Sets the feedforward constants of the motors. */
     override fun setFF(s: Double, g: Double, v: Double, a: Double) {
         leaderConfig.Slot0.kS = s
-        leaderConfig.Slot0.kG = v
-        leaderConfig.Slot0.kV = g
+        leaderConfig.Slot0.kG = g
+        leaderConfig.Slot0.kV = v
         leaderConfig.Slot0.kA = a
         leader.configurator.apply(leaderConfig, 0.1)
     }

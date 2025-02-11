@@ -12,6 +12,7 @@ interface ElevatorIO {
         var leaderSupplyCurrentAmps: Double = 0.0
         var leaderTorqueCurrentAmps: Double = 0.0
         var leaderTempFahrenheit: Double = 0.0
+        var closedLoopReference: Double = 0.0
 
         var followerConnected: Boolean = true
         var followerPositionMeters: Double = 0.0

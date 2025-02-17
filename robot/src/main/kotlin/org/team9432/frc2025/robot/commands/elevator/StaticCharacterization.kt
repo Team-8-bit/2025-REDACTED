@@ -11,6 +11,7 @@ class StaticCharacterization(
     subsystem: Subsystem,
     private val inputConsumer: DoubleConsumer,
     private val velocitySupplier: DoubleSupplier,
+    private val onEnd: () -> Unit,
 ) : Command() {
     private val timer = Timer()
     private var currentInput = 0.0
@@ -35,6 +36,7 @@ class StaticCharacterization(
     override fun end(interrupted: Boolean) {
         println("Static Characterization output: $currentInput amps")
         inputConsumer.accept(0.0)
+        onEnd()
     }
 
     companion object {

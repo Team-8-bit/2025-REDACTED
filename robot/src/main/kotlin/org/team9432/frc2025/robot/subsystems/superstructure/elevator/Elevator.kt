@@ -1,6 +1,16 @@
 package org.team9432.frc2025.robot.subsystems.superstructure.elevator
 
+import com.ctre.phoenix6.configs.TalonFXConfiguration
+import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
+import com.ctre.phoenix6.controls.NeutralOut
+import com.ctre.phoenix6.controls.TorqueCurrentFOC
+import com.ctre.phoenix6.signals.GravityTypeValue
+import com.ctre.phoenix6.signals.InvertedValue
+import com.ctre.phoenix6.signals.NeutralModeValue
+import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.MathUtil
+import edu.wpi.first.math.geometry.Pose3d
+import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj.DriverStation
@@ -8,7 +18,7 @@ import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 
-class Elevator(private val io: ElevatorIO) {
+class Elevator(private val io: KrakenElevatorIO) {
     private val inputs: LoggedElevatorIOInputs = LoggedElevatorIOInputs()
 
     private val leaderDisconnectedAlert = Alert("Leader (left) elevator motor disconnected!", Alert.AlertType.kError)
@@ -29,12 +39,41 @@ class Elevator(private val io: ElevatorIO) {
         LoggedTunableNumber("Elevator/Control/MotionMagicAcceleration", ElevatorConstants.gains.mmAccel)
     private val mmJerk = LoggedTunableNumber("Elevator/Control/MotionMagicJerk", ElevatorConstants.gains.mmJerk)
 
-    enum class Goal(private val setpointInchesSupplier: () -> Double) {
+    private val currentControl = TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
+    private val motionMagicPositionControl = MotionMagicTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
+    private val neutralOut = NeutralOut()
+
+    private val config =
+        TalonFXConfiguration().apply {
+            Slot0.kP = ElevatorConstants.gains.kP
+            Slot0.kI = ElevatorConstants.gains.kI
+            Slot0.kD = ElevatorConstants.gains.kD
+
+            Slot0.kS = ElevatorConstants.gains.ffkS
+            Slot0.kV = ElevatorConstants.gains.ffkV
+            Slot0.kA = ElevatorConstants.gains.ffkA
+            Slot0.kG = ElevatorConstants.gains.ffkG
+
+            Slot0.GravityType = GravityTypeValue.Elevator_Static
+            Slot0.StaticFeedforwardSign = StaticFeedforwardSignValue.UseVelocitySign
+
+            MotorOutput.Inverted = InvertedValue.Clockwise_Positive
+            MotorOutput.NeutralMode = NeutralModeValue.Brake
+
+            TorqueCurrent.PeakForwardTorqueCurrent = ElevatorConstants.PEAK_TORQUE_AMPS
+            TorqueCurrent.PeakReverseTorqueCurrent = -ElevatorConstants.PEAK_TORQUE_AMPS
+            CurrentLimits.StatorCurrentLimit = ElevatorConstants.PEAK_TORQUE_AMPS
+            CurrentLimits.StatorCurrentLimitEnable = true
+
+            Feedback.SensorToMechanismRatio = ElevatorConstants.MOTOR_ROTATIONS_PER_METER
+        }
+
+    enum class Goal(private val setpointSupplier: () -> Double) {
         STOW({ 0.0 }),
         TEST(LoggedTunableNumber("Elevator/Setpoints/Test", 0.0));
 
         val meters
-            get() = Units.inchesToMeters(setpointInchesSupplier.invoke())
+            get() = setpointSupplier.invoke()
     }
 
     var goal = Goal.STOW
@@ -43,6 +82,7 @@ class Elevator(private val io: ElevatorIO) {
     var isDisabled = { DriverStation.isDisabled() }
 
     init {
+        io.setConfig(config, tries = 5, timeout = 0.5)
         io.setBrake(true)
     }
 
@@ -56,12 +96,24 @@ class Elevator(private val io: ElevatorIO) {
         followerDisconnectedAlert.set(!inputs.followerConnected)
 
         // Update motor constants from networktables
-        LoggedTunableNumber.ifChanged(hashCode(), kP, kI, kD) { (kP, kI, kD) -> io.setPID(kP, kI, kD) }
+        LoggedTunableNumber.ifChanged(hashCode(), kP, kI, kD) { (kP, kI, kD) ->
+            config.Slot0.kP = kP
+            config.Slot0.kI = kI
+            config.Slot0.kD = kD
+            io.setConfig(config)
+        }
         LoggedTunableNumber.ifChanged(hashCode(), ffkS, ffkG, ffkV, ffkA) { (kS, kG, kV, kA) ->
-            io.setFF(kS, kG, kV, kA)
+            config.Slot0.kS = kS
+            config.Slot0.kG = kG
+            config.Slot0.kV = kV
+            config.Slot0.kA = kA
+            io.setConfig(config)
         }
         LoggedTunableNumber.ifChanged(hashCode(), mmCruise, mmAccel, mmJerk) { (cruise, accel, jerk) ->
-            io.setMotionMagic(cruise, accel, jerk)
+            config.MotionMagic.MotionMagicCruiseVelocity = cruise
+            config.MotionMagic.MotionMagicAcceleration = accel
+            config.MotionMagic.MotionMagicJerk = jerk
+            io.setConfig(config)
         }
 
         // Run elevator
@@ -72,10 +124,10 @@ class Elevator(private val io: ElevatorIO) {
 
             // If the elevator is stowed successfully, stop both motors
             if (goal == Goal.STOW && atGoal(Units.inchesToMeters(0.25))) {
-                io.stop()
+                io.setControl(neutralOut)
             } else {
                 // Otherwise run to the target position
-                io.runPosition(goalPosition, feedforward = 0.0)
+                io.setControl(motionMagicPositionControl.withPosition(goalPosition))
             }
         }
 
@@ -85,6 +137,7 @@ class Elevator(private val io: ElevatorIO) {
             Units.metersToInches(abs(inputs.leaderPositionMeters - goal.meters)),
         )
         Logger.recordOutput("Elevator/AtGoal", atGoal())
+        Logger.recordOutput("Elevator/Poses/Stage2", Pose3d(0.0, 0.0, inputs.leaderPositionMeters, Rotation3d.kZero))
     }
 
     fun atGoal(toleranceMeters: Double = ElevatorConstants.POSITION_TOLERANCE) =
@@ -92,7 +145,7 @@ class Elevator(private val io: ElevatorIO) {
 
     fun runCharacterizationAmps(amps: Double) {
         characterizing = true
-        io.runAmps(amps)
+        io.setControl(currentControl.withOutput(amps))
     }
 
     fun endCharacterization() {

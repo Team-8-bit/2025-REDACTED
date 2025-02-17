@@ -31,6 +31,7 @@ import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
+import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
@@ -43,11 +44,17 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOSim
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
+import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIO
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIOReal
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIOSim
 
 class Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
 
     private val drive: Drive
+    private val superstructure: Superstructure
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
     private val robotState = RobotState()
@@ -82,12 +89,13 @@ class Robot : LoggedRobot() {
                             robotState,
                         )
 
+                    superstructure = Superstructure(Elevator(KrakenElevatorIOReal()))
+
                     setSimulationPose = null
                     driveSim = null
                 }
 
                 Constants.RobotType.SIM -> {
-
                     val swerveSim =
                         SwerveDriveSimulation(
                             DriveTrainSimulationConfig.Default()
@@ -141,6 +149,8 @@ class Robot : LoggedRobot() {
                         swerveSim.setSimulationWorldPose(it)
                         gyroIO.setAngle(it.rotation)
                     }
+
+                    superstructure = Superstructure(Elevator(KrakenElevatorIOSim()))
                 }
             }
         } else {
@@ -155,6 +165,8 @@ class Robot : LoggedRobot() {
                     odometryThread,
                     robotState,
                 )
+
+            superstructure = Superstructure(Elevator(object : KrakenElevatorIO {}))
 
             setSimulationPose = null
             driveSim = null
@@ -188,6 +200,8 @@ class Robot : LoggedRobot() {
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
 
         controller.a().whileTrue(drive.controllerCommand(alignStraightController))
+
+        controller.x().whileTrue(superstructure.runGoal(Superstructure.Goal.TEST_ELEVATOR))
     }
 
     private var currentAuto = Commands.none()
@@ -227,6 +241,17 @@ class Robot : LoggedRobot() {
                             )
                             addOption("Drive Angular SysId (Dynamic Forward)", { driveRoutines.angularDynamicForward })
                             addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
+                            addOption(
+                                "Elevator Static Characterization",
+                                {
+                                    StaticCharacterization(
+                                        superstructure,
+                                        { amps -> superstructure.runElevatorCharacterizationAmps(amps) },
+                                        { superstructure.getElevatorCharacterizationVelocity() },
+                                        { superstructure.endElevatorCharacterization() },
+                                    )
+                                },
+                            )
                         }
                     }
                 }

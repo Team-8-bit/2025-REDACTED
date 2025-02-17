@@ -32,4 +32,7 @@ object RobotMap {
     /* ******* Coral Arm ******* */
     val coralArmPivot = MotorInformation(canID = 21, pdhChannel = 9, "rio")
     val coralArmDispenser = MotorInformation(canID = 22, pdhChannel = 10, "rio")
+
+    /* ******* Funnel ******* */
+    val funnel = MotorInformation(canID = 31, pdhChannel = 9, DRIVETRAIN_CANBUS_NAME)
 }

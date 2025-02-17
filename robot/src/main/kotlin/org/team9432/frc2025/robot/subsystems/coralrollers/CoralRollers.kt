@@ -11,7 +11,8 @@ class CoralRollers(private val funnel: Funnel, private val dispenser: Dispenser)
     private var goal = Goal.IDLE
 
     enum class Goal {
-        IDLE
+        IDLE,
+        INTAKE
     }
 
     init {
@@ -22,6 +23,20 @@ class CoralRollers(private val funnel: Funnel, private val dispenser: Dispenser)
         if (DriverStation.isDisabled()) {
             goal = Goal.IDLE
         }
+
+        when (goal) {
+            Goal.IDLE -> {
+                funnel.goal = Funnel.Goal.IDLE
+                dispenser.goal = Dispenser.Goal.IDLE
+            }
+            Goal.INTAKE -> {
+                funnel.goal = Funnel.Goal.IDLE
+                dispenser.goal = Dispenser.Goal.IDLE
+            }
+        }
+
+        funnel.periodic()
+        dispenser.periodic()
 
         Logger.recordOutput("CoralRollers/Goal", goal)
     }

@@ -4,9 +4,17 @@ import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import org.littletonrobotics.junction.Logger
+import org.team9432.frc2025.robot.subsystems.superstructure.algaearm.AlgaeArm
+import org.team9432.frc2025.robot.subsystems.superstructure.climber.Climber
+import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 
-class Superstructure(private val elevator: Elevator) : SubsystemBase() {
+class Superstructure(
+    private val elevator: Elevator,
+    private val coralArm: CoralArm,
+    private val algaeArm: AlgaeArm,
+    private val climber: Climber,
+) : SubsystemBase() {
     private var goal = Goal.STOW
 
     enum class Goal {
@@ -34,7 +42,7 @@ class Superstructure(private val elevator: Elevator) : SubsystemBase() {
 
         elevator.periodic()
 
-        Logger.recordOutput("Rollers/Goal", goal)
+        Logger.recordOutput("Superstructure/Goal", goal)
     }
 
     fun runGoal(newGoal: Goal): Command = startEnd({ goal = newGoal }, { goal = Goal.STOW })

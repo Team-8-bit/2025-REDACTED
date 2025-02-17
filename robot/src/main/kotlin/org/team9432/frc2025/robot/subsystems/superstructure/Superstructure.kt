@@ -1,5 +1,8 @@
 package org.team9432.frc2025.robot.subsystems.superstructure
 
+import edu.wpi.first.math.geometry.Pose3d
+import edu.wpi.first.math.geometry.Rotation3d
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
@@ -20,6 +23,7 @@ class Superstructure(
     enum class Goal {
         STOW,
         TEST_ELEVATOR,
+        TEST_CORAL_ARM,
     }
 
     init {
@@ -31,16 +35,41 @@ class Superstructure(
             goal = Goal.STOW
         }
 
+        elevator.goal = Elevator.Goal.STOW
+
         when (goal) {
             Goal.STOW -> {
                 elevator.goal = Elevator.Goal.STOW
+                coralArm.goal = CoralArm.Goal.STOW
             }
+
             Goal.TEST_ELEVATOR -> {
                 elevator.goal = Elevator.Goal.TEST
+                coralArm.goal = CoralArm.Goal.STOW
+            }
+
+            Goal.TEST_CORAL_ARM -> {
+                elevator.goal = Elevator.Goal.STOW
+                coralArm.goal = CoralArm.Goal.TEST
             }
         }
 
         elevator.periodic()
+        coralArm.periodic()
+
+        Logger.recordOutput(
+            "Superstructure/Poses/A_Stage2",
+            Pose3d(0.0, 0.0, elevator.positionMeters, Rotation3d.kZero),
+        )
+        Logger.recordOutput(
+            "Superstructure/Poses/B_CoralArm",
+            Pose3d(
+                Units.inchesToMeters(-8.25),
+                Units.inchesToMeters(0.0),
+                Units.inchesToMeters(19.157754 + elevator.positionMeters),
+                Rotation3d(0.0, Units.rotationsToRadians(coralArm.positionRotations), 0.0),
+            ),
+        )
 
         Logger.recordOutput("Superstructure/Goal", goal)
     }

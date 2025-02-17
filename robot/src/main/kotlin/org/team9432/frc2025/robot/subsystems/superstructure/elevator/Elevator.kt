@@ -9,8 +9,6 @@ import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.MathUtil
-import edu.wpi.first.math.geometry.Pose3d
-import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj.DriverStation
@@ -137,8 +135,10 @@ class Elevator(private val io: KrakenElevatorIO) {
             Units.metersToInches(abs(inputs.leaderPositionMeters - goal.meters)),
         )
         Logger.recordOutput("Elevator/AtGoal", atGoal())
-        Logger.recordOutput("Elevator/Poses/Stage2", Pose3d(0.0, 0.0, inputs.leaderPositionMeters, Rotation3d.kZero))
     }
+
+    val positionMeters
+        get() = inputs.leaderPositionMeters
 
     fun atGoal(toleranceMeters: Double = ElevatorConstants.POSITION_TOLERANCE) =
         abs(inputs.leaderPositionMeters - goal.meters) < toleranceMeters

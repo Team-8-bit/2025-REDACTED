@@ -28,4 +28,8 @@ object RobotMap {
     /* ******* Elevator ******* */
     val leftElevator = MotorInformation(canID = 11, pdhChannel = 9, DRIVETRAIN_CANBUS_NAME)
     val rightElevator = MotorInformation(canID = 12, pdhChannel = 10, DRIVETRAIN_CANBUS_NAME)
+
+    /* ******* Coral Arm ******* */
+    val coralArmPivot = MotorInformation(canID = 21, pdhChannel = 9, "rio")
+    val coralArmDispenser = MotorInformation(canID = 22, pdhChannel = 10, "rio")
 }

@@ -8,7 +8,7 @@ import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.simulation.ElevatorSim
 import org.littletonrobotics.junction.LoggedRobot
 
-class KrakenElevatorIOSim : KrakenElevatorIOReal() {
+class ElevatorIOSim : ElevatorIOReal() {
     private val elevatorSim =
         ElevatorSim(
             DCMotor.getKrakenX60Foc(2),
@@ -21,7 +21,7 @@ class KrakenElevatorIOSim : KrakenElevatorIOReal() {
             /* startingHeightMeters = */ 0.0,
         )
 
-    private val leaderSim: TalonFXSimState = super.motor.simState
+    private val leaderSim: TalonFXSimState = super.talon.simState
     private val followerSim: TalonFXSimState = super.follower.simState
 
     init {
@@ -29,7 +29,7 @@ class KrakenElevatorIOSim : KrakenElevatorIOReal() {
         followerSim.Orientation = ChassisReference.Clockwise_Positive
     }
 
-    override fun updateInputs(inputs: KrakenElevatorIO.ElevatorIOInputs) {
+    override fun updateInputs(inputs: ElevatorIO.ElevatorIOInputs) {
         leaderSim.setSupplyVoltage(RobotController.getBatteryVoltage())
         followerSim.setSupplyVoltage(RobotController.getBatteryVoltage())
 

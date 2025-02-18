@@ -81,7 +81,7 @@ class Superstructure(
     }
 
     fun getElevatorCharacterizationVelocity(): Double {
-        return elevator.getSpeedMps()
+        return elevator.velocityMps
     }
 
     fun endElevatorCharacterization() {

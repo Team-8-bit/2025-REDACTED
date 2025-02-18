@@ -28,7 +28,6 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
-import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
@@ -56,9 +55,9 @@ import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIO
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIONeo
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIOSim
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIO
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIOReal
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIOSim
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOReal
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOSim
 
 class Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
@@ -72,8 +71,6 @@ class Robot : LoggedRobot() {
     private val robotState = RobotState()
 
     init {
-        LoggedTunableNumber.setTuningModeEnabled(true)
-
         SignalLogger.start()
 
         loggerInit()
@@ -102,12 +99,7 @@ class Robot : LoggedRobot() {
                         )
 
                     superstructure =
-                        Superstructure(
-                            Elevator(KrakenElevatorIOReal()),
-                            CoralArm(CoralArmIONeo()),
-                            AlgaeArm(),
-                            Climber(),
-                        )
+                        Superstructure(Elevator(ElevatorIOReal()), CoralArm(CoralArmIONeo()), AlgaeArm(), Climber())
                     coralRollers = CoralRollers(Funnel(), Dispenser())
                     algaeRollers = AlgaeRollers()
 
@@ -171,12 +163,7 @@ class Robot : LoggedRobot() {
                     }
 
                     superstructure =
-                        Superstructure(
-                            Elevator(KrakenElevatorIOSim()),
-                            CoralArm(CoralArmIOSim()),
-                            AlgaeArm(),
-                            Climber(),
-                        )
+                        Superstructure(Elevator(ElevatorIOSim()), CoralArm(CoralArmIOSim()), AlgaeArm(), Climber())
                     coralRollers = CoralRollers(Funnel(), Dispenser())
                     algaeRollers = AlgaeRollers()
                 }
@@ -196,7 +183,7 @@ class Robot : LoggedRobot() {
 
             superstructure =
                 Superstructure(
-                    Elevator(object : KrakenElevatorIO {}),
+                    Elevator(object : ElevatorIO {}),
                     CoralArm(object : CoralArmIO {}),
                     AlgaeArm(),
                     Climber(),
@@ -302,7 +289,7 @@ class Robot : LoggedRobot() {
 
     private fun loggerInit() {
         Logger.recordMetadata("Robot", Constants.robot.toString())
-        Logger.recordMetadata("TuningMode", LoggedTunableNumber.isTuningModeEnabled().toString())
+        Logger.recordMetadata("TuningMode", Constants.TUNING_MODE.toString())
         Logger.recordMetadata("RuntimeType", getRuntimeType().toString())
         Logger.recordMetadata("ProjectName", MAVEN_NAME)
         Logger.recordMetadata("GitSha", GIT_SHA)

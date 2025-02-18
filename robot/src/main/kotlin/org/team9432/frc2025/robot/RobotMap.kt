@@ -6,7 +6,7 @@ import org.team9432.frc2025.lib.util.MotorInformation
 
 object RobotMap {
     /* ******* Drivetrain ******* */
-    const val DRIVETRAIN_CANBUS_NAME = "Drivetrain"
+    const val DRIVETRAIN_CANBUS_NAME = "*"
     val drivetrainCanbus = CANBus(DRIVETRAIN_CANBUS_NAME)
 
     val frontLeftDrive = MotorInformation(canID = 1, pdhChannel = 1, DRIVETRAIN_CANBUS_NAME)

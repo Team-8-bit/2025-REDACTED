@@ -12,7 +12,8 @@ class CoralRollers(private val funnel: Funnel, private val dispenser: Dispenser)
 
     enum class Goal {
         IDLE,
-        INTAKE
+        INTAKE,
+        SHOOT,
     }
 
     init {
@@ -30,8 +31,12 @@ class CoralRollers(private val funnel: Funnel, private val dispenser: Dispenser)
                 dispenser.goal = Dispenser.Goal.IDLE
             }
             Goal.INTAKE -> {
+                funnel.goal = Funnel.Goal.INTAKE
+                dispenser.goal = Dispenser.Goal.INTAKE
+            }
+            Goal.SHOOT -> {
                 funnel.goal = Funnel.Goal.IDLE
-                dispenser.goal = Dispenser.Goal.IDLE
+                dispenser.goal = Dispenser.Goal.SCORE
             }
         }
 

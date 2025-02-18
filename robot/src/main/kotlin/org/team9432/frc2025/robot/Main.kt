@@ -235,7 +235,8 @@ class Robot : LoggedRobot() {
 
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
 
-//        controller.a().whileTrue(drive.controllerCommand(alignStraightController))
+        //        controller.a().whileTrue(drive.controllerCommand(alignStraightController))
+        controller.a().whileTrue(coralRollers.runGoal(CoralRollers.Goal.SHOOT))
         controller.b().whileTrue(coralRollers.runGoal(CoralRollers.Goal.INTAKE))
         controller.x().whileTrue(superstructure.runGoal(Superstructure.Goal.TEST_ELEVATOR))
         controller.y().whileTrue(superstructure.runGoal(Superstructure.Goal.TEST_CORAL_ARM))

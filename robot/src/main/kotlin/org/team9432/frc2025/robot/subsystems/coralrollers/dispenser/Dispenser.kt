@@ -6,9 +6,11 @@ import org.team9432.frc2025.robot.RobotMap
 class Dispenser() {
     enum class Goal(private val setpointSupplier: () -> Double) {
         IDLE({ 0.0 }),
-        INTAKE({ 5.0 });
+        INTAKE({ 5.0 }),
+        SCORE({ -5.0 });
 
-        val volts get() = setpointSupplier.invoke()
+        val volts
+            get() = setpointSupplier.invoke()
     }
 
     var goal = Goal.IDLE

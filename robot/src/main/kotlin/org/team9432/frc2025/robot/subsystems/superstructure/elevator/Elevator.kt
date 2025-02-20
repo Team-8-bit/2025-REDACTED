@@ -27,7 +27,8 @@ class Elevator(private val io: ElevatorIO) {
 
     enum class Goal(private val setpointSupplier: () -> Double) {
         STOW({ 0.0 }),
-        TEST(LoggedTunableNumber("Elevator/Setpoints/Test", 0.0));
+        TEST(LoggedTunableNumber("Elevator/Setpoints/Test", 0.0)),
+        AMP_INPUT(LoggedTunableNumber("Elevator/Control/AmpInput", 0.0));
 
         val meters
             get() = setpointSupplier.invoke()
@@ -44,7 +45,18 @@ class Elevator(private val io: ElevatorIO) {
         gains =
             when (Constants.robot) {
                 Constants.RobotType.COMP -> {
-                    TunableElevatorGains("Elevator/Tuning", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+                    TunableElevatorGains(
+                        "Elevator/Tuning",
+                        kP = 1200.0,
+                        kD = 50.0,
+                        kSStage1 = 10.8,
+                        kGStage1 = 0.0,
+                        kSStage2 = 11.2 - 4.5,
+                        kGStage2 = 4.5, // 11.2 to go up, 4.5 to go down
+                        velocity = 2.0,
+                        acceleration = 6.0,
+                        jerk = 0.0,
+                    )
                 }
 
                 Constants.RobotType.SIM -> {
@@ -78,16 +90,20 @@ class Elevator(private val io: ElevatorIO) {
 
         // Run elevator
         if (!characterizing && !isDisabled()) {
-            // Make sure we don't go outside the limits
-            val goalPosition =
-                MathUtil.clamp(goal.meters, ElevatorConstants.MIN_POSITION, ElevatorConstants.MAX_POSITION)
-
-            // If the elevator is stowed successfully, stop both motors
-            if (goal == Goal.STOW && atGoal(Units.inchesToMeters(0.25))) {
-                io.setControl(neutralOut)
+            if (goal == Goal.AMP_INPUT) {
+                io.setControl(currentControl.withOutput(goal.meters))
             } else {
-                // Otherwise run to the target position
-                io.setControl(motionMagicPositionControl.withPosition(goalPosition))
+                // Make sure we don't go outside the limits
+                val goalPosition =
+                    MathUtil.clamp(goal.meters, ElevatorConstants.MIN_POSITION, ElevatorConstants.MAX_POSITION)
+
+                // If the elevator is stowed successfully, stop both motors
+                if (goal == Goal.STOW && atGoal(Units.inchesToMeters(0.25))) {
+                    io.setControl(neutralOut)
+                } else {
+                    // Otherwise run to the target position
+                    io.setControl(motionMagicPositionControl.withPosition(goalPosition))
+                }
             }
         }
 

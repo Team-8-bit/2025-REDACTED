@@ -23,6 +23,7 @@ class Superstructure(
     enum class Goal {
         STOW,
         TEST_ELEVATOR,
+        ELEVATOR_AMP_INPUT,
         TEST_CORAL_ARM,
     }
 
@@ -51,6 +52,11 @@ class Superstructure(
             Goal.TEST_CORAL_ARM -> {
                 elevator.goal = Elevator.Goal.STOW
                 coralArm.goal = CoralArm.Goal.TEST
+            }
+
+            Goal.ELEVATOR_AMP_INPUT -> {
+                elevator.goal = Elevator.Goal.AMP_INPUT
+                coralArm.goal = CoralArm.Goal.STOW
             }
         }
 

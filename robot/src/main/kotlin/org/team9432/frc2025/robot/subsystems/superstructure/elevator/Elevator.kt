@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.DriverStation
 import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
+import org.team9432.frc2025.robot.subsystems.superstructure.SuperstructureConstants
 
 class Elevator(private val io: KrakenElevatorIO) {
     private val inputs: LoggedElevatorIOInputs = LoggedElevatorIOInputs()
@@ -70,6 +71,15 @@ class Elevator(private val io: KrakenElevatorIO) {
 
     enum class Goal(private val setpointSupplier: () -> Double) {
         STOW({ 0.0 }),
+        MIN_ARM_OUT(
+            LoggedTunableNumber(
+                "Elevator/Setpoints/MinFreeArm",
+                SuperstructureConstants.MIN_ARM_EXTENSION_ELEVATOR_HEIGHT + Units.inchesToMeters(0.5),
+            )
+        ),
+        L2({ 0.0 }),
+        L3({ 0.0 }),
+        L4({ 0.0 }),
         TEST(LoggedTunableNumber("Elevator/Setpoints/Test", 0.0));
 
         val meters
@@ -139,6 +149,9 @@ class Elevator(private val io: KrakenElevatorIO) {
         Logger.recordOutput("Elevator/AtGoal", atGoal())
         Logger.recordOutput("Elevator/Poses/Stage2", Pose3d(0.0, 0.0, inputs.leaderPositionMeters, Rotation3d.kZero))
     }
+
+    val positionMeters
+        get() = inputs.leaderPositionMeters
 
     fun atGoal(toleranceMeters: Double = ElevatorConstants.POSITION_TOLERANCE) =
         abs(inputs.leaderPositionMeters - goal.meters) < toleranceMeters

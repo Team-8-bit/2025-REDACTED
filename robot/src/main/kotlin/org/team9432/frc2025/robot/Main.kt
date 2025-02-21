@@ -33,9 +33,7 @@ import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
 import org.team9432.frc2025.robot.subsystems.algaerollers.AlgaeRollers
-import org.team9432.frc2025.robot.subsystems.coralrollers.CoralRollers
-import org.team9432.frc2025.robot.subsystems.coralrollers.dispenser.Dispenser
-import org.team9432.frc2025.robot.subsystems.coralrollers.funnel.Funnel
+import org.team9432.frc2025.robot.subsystems.climber.Climber
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
@@ -48,10 +46,10 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOSim
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
+import org.team9432.frc2025.robot.subsystems.funnel.Funnel
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
-import org.team9432.frc2025.robot.subsystems.superstructure.algaearm.AlgaeArm
-import org.team9432.frc2025.robot.subsystems.superstructure.climber.Climber
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
+import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIO
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIOReal
@@ -62,8 +60,9 @@ class Robot : LoggedRobot() {
 
     private val drive: Drive
     private val superstructure: Superstructure
-    private val coralRollers: CoralRollers
+    private val funnel: Funnel
     private val algaeRollers: AlgaeRollers
+    private val climber: Climber
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
     private val robotState = RobotState()
@@ -98,9 +97,10 @@ class Robot : LoggedRobot() {
                             robotState,
                         )
 
-                    superstructure = Superstructure(Elevator(KrakenElevatorIOReal()), CoralArm(), AlgaeArm(), Climber())
-                    coralRollers = CoralRollers(Funnel(), Dispenser())
+                    superstructure = Superstructure(Elevator(KrakenElevatorIOReal()), CoralArm(), Dispenser())
+                    funnel = Funnel()
                     algaeRollers = AlgaeRollers()
+                    climber = Climber()
 
                     setSimulationPose = null
                     driveSim = null
@@ -161,9 +161,10 @@ class Robot : LoggedRobot() {
                         gyroIO.setAngle(it.rotation)
                     }
 
-                    superstructure = Superstructure(Elevator(KrakenElevatorIOSim()), CoralArm(), AlgaeArm(), Climber())
-                    coralRollers = CoralRollers(Funnel(), Dispenser())
+                    superstructure = Superstructure(Elevator(KrakenElevatorIOSim()), CoralArm(), Dispenser())
+                    funnel = Funnel()
                     algaeRollers = AlgaeRollers()
+                    climber = Climber()
                 }
             }
         } else {
@@ -179,9 +180,10 @@ class Robot : LoggedRobot() {
                     robotState,
                 )
 
-            superstructure = Superstructure(Elevator(object : KrakenElevatorIO {}), CoralArm(), AlgaeArm(), Climber())
-            coralRollers = CoralRollers(Funnel(), Dispenser())
+            superstructure = Superstructure(Elevator(object : KrakenElevatorIO {}), CoralArm(), Dispenser())
+            funnel = Funnel()
             algaeRollers = AlgaeRollers()
+            climber = Climber()
 
             setSimulationPose = null
             driveSim = null
@@ -216,7 +218,8 @@ class Robot : LoggedRobot() {
 
         controller.a().whileTrue(drive.controllerCommand(alignStraightController))
 
-        controller.x().whileTrue(superstructure.runGoal(Superstructure.Goal.TEST_ELEVATOR))
+        //
+        // controller.x().whileTrue(superstructure.runGoal(Superstructure.Goal.TEST_ELEVATOR))
     }
 
     private var currentAuto = Commands.none()

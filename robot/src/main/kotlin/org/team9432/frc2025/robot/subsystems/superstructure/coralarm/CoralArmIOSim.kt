@@ -1,37 +1,43 @@
 package org.team9432.frc2025.robot.subsystems.superstructure.coralarm
 
-import com.revrobotics.sim.SparkMaxSim
+import com.ctre.phoenix6.sim.ChassisReference
+import com.ctre.phoenix6.sim.TalonFXSimState
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.wpilibj.simulation.RoboRioSim
+import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim
 import kotlin.math.hypot
 import org.littletonrobotics.junction.LoggedRobot
 
-class CoralArmIOSim : CoralArmIONeo() {
+class CoralArmIOSim : CoralArmIOReal() {
     private val armSim =
         SingleJointedArmSim(
-            /* gearbox = */ DCMotor.getNEO(1),
+            /* gearbox = */ DCMotor.getKrakenX60Foc(1),
             /* gearing = */ CoralArmConstants.REDUCTION,
-            /* jKgMetersSquared = */ 0.04,
-            /* armLengthMeters = */ Units.inchesToMeters(hypot(4.48, 3.98)),
-            /* minAngleRads = */ Units.rotationsToRadians(0.0),
-            /* maxAngleRads = */ Units.rotationsToRadians(0.5),
+            /* jKgMetersSquared = */ Units.inchesToMeters(
+                163.67174 * 0.00029263965
+            ), // onshape ft-lbs (xx measurement) to m-kg
+            /* armLengthMeters = */ Units.inchesToMeters(hypot(4.911385, 2.136103)),
+            /* minAngleRads = */ Units.rotationsToRadians(CoralArmConstants.MIN_POSITION),
+            /* maxAngleRads = */ Units.rotationsToRadians(CoralArmConstants.MAX_POSITION),
             /* simulateGravity = */ true,
-            /* startingAngleRads = */ Units.rotationsToRadians(0.0),
+            /* startingAngleRads = */ Units.rotationsToRadians(CoralArmConstants.MIN_POSITION),
         )
 
-    private val motorSim = SparkMaxSim(motor, DCMotor.getNEO(1))
+    private val talonSim: TalonFXSimState = super.talon.simState
+
+    init {
+        talonSim.Orientation = ChassisReference.Clockwise_Positive
+    }
 
     override fun updateInputs(inputs: CoralArmIO.CoralArmIOInputs) {
-        armSim.setInputVoltage(motorSim.appliedOutput * RoboRioSim.getVInVoltage())
+        talonSim.setSupplyVoltage(RobotController.getBatteryVoltage())
+
+        armSim.setInputVoltage(talonSim.motorVoltage)
         armSim.update(LoggedRobot.defaultPeriodSecs)
 
-        motorSim.iterate(
-            Units.radiansPerSecondToRotationsPerMinute(armSim.velocityRadPerSec),
-            RoboRioSim.getVInVoltage(),
-            LoggedRobot.defaultPeriodSecs,
-        )
+        talonSim.setRawRotorPosition(Units.radiansToRotations(armSim.angleRads) * CoralArmConstants.REDUCTION)
+        talonSim.setRotorVelocity(Units.radiansToRotations(armSim.velocityRadPerSec) * CoralArmConstants.REDUCTION)
 
         super.updateInputs(inputs)
     }

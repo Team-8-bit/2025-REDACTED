@@ -1,58 +1,21 @@
 package org.team9432.frc2025.robot.subsystems.superstructure.coralarm
 
-import org.team9432.frc2025.robot.Constants
-import org.team9432.frc2025.robot.Constants.RobotType.COMP
-import org.team9432.frc2025.robot.Constants.RobotType.SIM
+import edu.wpi.first.math.util.Units
+import kotlin.math.acos
+import kotlin.math.hypot
 
 object CoralArmConstants {
     const val REDUCTION = (5.0 / 1.0) * (3.0 / 1.0) * (42.0 / 12.0)
 
     // Rotations
-    val POSITION_TOLERANCE = 0.05
-    val MIN_POSITION = 0.0
-    val MAX_POSITION = 0.5
+    val POSITION_TOLERANCE = Units.degreesToRotations(2.0)
 
-    val gains =
-        when (Constants.robot) {
-            COMP ->
-                Gains(
-                    kP = 0.0,
-                    kI = 0.0,
-                    kD = 0.0,
-                    ffkS = 0.0,
-                    ffkV = 0.0,
-                    ffkA = 0.0,
-                    ffkG = 0.0,
-                    mmCruise = 0.0,
-                    mmAccel = 0.0,
-                    mmJerk = 0.0,
-                )
+    val MIN_POSITION = -calculateAngle(2.136103, 4.911385) // -66.49438810123185 degrees
+    val MAX_POSITION = calculateAngle(2.56658, 12.79353) // 78.656164156599 degrees
 
-            SIM ->
-                Gains(
-                    kP = 0.0,
-                    kI = 0.0,
-                    kD = 0.0,
-                    ffkS = 0.0,
-                    ffkV = 0.0,
-                    ffkA = 0.0,
-                    ffkG = 0.0,
-                    mmCruise = 0.0,
-                    mmAccel = 0.0,
-                    mmJerk = 0.0,
-                )
-        }
+    private fun calculateAngle(x: Double, y: Double): Double {
+        return Units.radiansToRotations(acos(x / hypot(x, y)))
+    }
 
-    data class Gains(
-        val kP: Double,
-        val kI: Double,
-        val kD: Double,
-        val ffkS: Double,
-        val ffkV: Double,
-        val ffkA: Double,
-        val ffkG: Double,
-        val mmCruise: Double,
-        val mmAccel: Double,
-        val mmJerk: Double,
-    )
+    const val PEAK_TORQUE_AMPS = 60.0
 }

@@ -52,7 +52,7 @@ import org.team9432.frc2025.robot.subsystems.superstructure.algaearm.AlgaeArm
 import org.team9432.frc2025.robot.subsystems.superstructure.climber.Climber
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIO
-import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIONeo
+import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIOSim
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
@@ -99,7 +99,7 @@ class Robot : LoggedRobot() {
                         )
 
                     superstructure =
-                        Superstructure(Elevator(ElevatorIOReal()), CoralArm(CoralArmIONeo()), AlgaeArm(), Climber())
+                        Superstructure(Elevator(ElevatorIOReal()), CoralArm(CoralArmIOReal()), AlgaeArm(), Climber())
                     coralRollers = CoralRollers(Funnel(), Dispenser())
                     algaeRollers = AlgaeRollers()
 

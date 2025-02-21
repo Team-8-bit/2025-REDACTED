@@ -4,13 +4,12 @@ import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.NeutralOut
 import com.ctre.phoenix6.controls.TorqueCurrentFOC
 import edu.wpi.first.math.MathUtil
-import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj.DriverStation
-import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
+import kotlin.math.abs
 
 class Elevator(private val io: ElevatorIO) {
     private val inputs: LoggedElevatorIOInputs = LoggedElevatorIOInputs()
@@ -19,8 +18,8 @@ class Elevator(private val io: ElevatorIO) {
     private val followerDisconnectedAlert =
         Alert("Follower (right) elevator motor disconnected!", Alert.AlertType.kError)
 
-    private val currentControl = TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
-    private val motionMagicPositionControl = MotionMagicTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
+    private val currentControl = TorqueCurrentFOC(0.0)
+    private val motionMagicPositionControl = MotionMagicTorqueCurrentFOC(0.0)
     private val neutralOut = NeutralOut()
 
     private val gains: TunableElevatorGains
@@ -34,7 +33,9 @@ class Elevator(private val io: ElevatorIO) {
     }
 
     var goal = Goal.STOW
-    private var characterizing = false
+
+    /** Characterization input in amps sent to the elevator. If set to null will run position control. */
+    private var characterizationInput: Double? = null
 
     var isDisabled = { DriverStation.isDisabled() }
 
@@ -64,6 +65,8 @@ class Elevator(private val io: ElevatorIO) {
             }
     }
 
+    private var wasDisabled = true
+
     fun periodic() {
         // Process log inputs
         io.updateInputs(inputs)
@@ -77,25 +80,27 @@ class Elevator(private val io: ElevatorIO) {
         gains.ifChanged(hashCode()) { io.updateConfig { config -> gains.applyToTalonFXConfig(config) } }
 
         // Run elevator
-        if (!characterizing && !isDisabled()) {
-            // Make sure we don't go outside the limits
-            val goalPosition =
-                MathUtil.clamp(goal.meters, ElevatorConstants.MIN_POSITION, ElevatorConstants.MAX_POSITION)
+        val disabled = isDisabled()
 
-            // If the elevator is stowed successfully, stop both motors
-            if (goal == Goal.STOW && atGoal(Units.inchesToMeters(0.25))) {
-                io.setControl(neutralOut)
+        if (!disabled) {
+            if (characterizationInput == null) {
+                // Make sure we don't go outside the limits
+                val goalPosition =
+                    MathUtil.clamp(goal.meters, ElevatorConstants.MIN_POSITION, ElevatorConstants.MAX_POSITION)
+
+                // If the elevator is stowed successfully, stop both motors
+                if (goal == Goal.STOW && atGoal()) {
+                    io.setControl(neutralOut)
+                } else {
+                    // Otherwise run to the target position
+                    io.setControl(motionMagicPositionControl.withPosition(goalPosition))
+                }
             } else {
-                // Otherwise run to the target position
-                io.setControl(motionMagicPositionControl.withPosition(goalPosition))
+                io.setControl(currentControl.withOutput(characterizationInput!!))
             }
         }
 
         // Diagnostic information
-        Logger.recordOutput(
-            "Elevator/PositionErrorInches",
-            Units.metersToInches(abs(inputs.positionMeters - goal.meters)),
-        )
         Logger.recordOutput("Elevator/AtGoal", atGoal())
     }
 
@@ -107,13 +112,4 @@ class Elevator(private val io: ElevatorIO) {
 
     fun atGoal(toleranceMeters: Double = ElevatorConstants.POSITION_TOLERANCE) =
         abs(inputs.positionMeters - goal.meters) < toleranceMeters
-
-    fun runCharacterizationAmps(amps: Double) {
-        characterizing = true
-        io.setControl(currentControl.withOutput(amps))
-    }
-
-    fun endCharacterization() {
-        characterizing = false
-    }
 }

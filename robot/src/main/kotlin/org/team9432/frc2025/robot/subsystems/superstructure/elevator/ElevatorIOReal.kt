@@ -31,8 +31,6 @@ open class ElevatorIOReal : ElevatorIO {
     private val leaderTorqueCurrent: StatusSignal<Current> = talon.torqueCurrent
     private val leaderTemperature: StatusSignal<Temperature> = talon.deviceTemp
 
-    private val followerPosition: StatusSignal<Angle> = follower.position
-    private val followerVelocity: StatusSignal<AngularVelocity> = follower.velocity
     private val followerAppliedVolts: StatusSignal<Voltage> = follower.motorVoltage
     private val followerSupplyCurrent: StatusSignal<Current> = follower.supplyCurrent
     private val followerTorqueCurrent: StatusSignal<Current> = follower.torqueCurrent
@@ -101,8 +99,6 @@ open class ElevatorIOReal : ElevatorIO {
             )
         val followerStatus =
             BaseStatusSignal.refreshAll(
-                followerPosition,
-                followerVelocity,
                 followerAppliedVolts,
                 followerSupplyCurrent,
                 followerTorqueCurrent,

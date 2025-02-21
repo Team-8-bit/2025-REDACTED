@@ -6,20 +6,18 @@ import com.ctre.phoenix6.controls.TorqueCurrentFOC
 import edu.wpi.first.math.MathUtil
 import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj.DriverStation
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.Commands.startEnd
-import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
+import kotlin.math.abs
 
 class CoralArm(private val io: CoralArmIO) {
     private val inputs = LoggedCoralArmIOInputs()
 
     private val motorDisconnectedAlert = Alert("CoralArm motor disconnected!", Alert.AlertType.kError)
 
-    private val currentControl = TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
-    private val motionMagicPositionControl = MotionMagicTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
+    private val currentControl = TorqueCurrentFOC(0.0)
+    private val motionMagicPositionControl = MotionMagicTorqueCurrentFOC(0.0)
     private val neutralOut = NeutralOut()
 
     private val gains: TunableCoralArmGains
@@ -34,6 +32,7 @@ class CoralArm(private val io: CoralArmIO) {
     }
 
     var goal = Goal.STOW
+
     /** Characterization input in amps sent to the arm. If set to null will run position control. */
     var characterizationInput: Double? = null
 
@@ -55,6 +54,7 @@ class CoralArm(private val io: CoralArmIO) {
                         acceleration = 0.0,
                         jerk = 0.0,
                     )
+
                 Constants.RobotType.SIM ->
                     TunableCoralArmGains(
                         "CoralArm/Tuning",
@@ -79,7 +79,7 @@ class CoralArm(private val io: CoralArmIO) {
 
         gains.ifChanged(hashCode()) { io.updateConfig { config -> gains.applyToTalonFXConfig(config) } }
 
-        val disabled = DriverStation.isDisabled()
+        val disabled = isDisabled()
 
         if (disabled != wasDisabled) {
             wasDisabled = disabled
@@ -104,9 +104,6 @@ class CoralArm(private val io: CoralArmIO) {
 
         Logger.recordOutput("CoralArm/Goal", goal)
     }
-
-    fun runGoal(newGoal: Goal): Command =
-        startEnd({ this.goal = newGoal }, { goal = Goal.STOW }).withName("Coral Arm $goal")
 
     val positionRotations
         get() = inputs.positionRotations

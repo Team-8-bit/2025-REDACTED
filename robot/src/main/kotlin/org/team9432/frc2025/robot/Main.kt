@@ -46,6 +46,8 @@ import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
 import org.team9432.frc2025.robot.subsystems.funnel.Funnel
+import org.team9432.frc2025.robot.subsystems.funnel.FunnelIO
+import org.team9432.frc2025.robot.subsystems.funnel.FunnelIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIO
@@ -101,7 +103,7 @@ class Robot : LoggedRobot() {
 
                     superstructure =
                         Superstructure(Elevator(ElevatorIOReal()), Arm(ArmIOReal()), Dispenser(DispenserIOReal()))
-                    funnel = Funnel()
+                    funnel = Funnel(FunnelIOReal())
                     algaeRollers = AlgaeRollers()
                     climber = Climber()
 
@@ -166,7 +168,7 @@ class Robot : LoggedRobot() {
 
                     superstructure =
                         Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()), Dispenser(object : DispenserIO {}))
-                    funnel = Funnel()
+                    funnel = Funnel(object : FunnelIO {})
                     algaeRollers = AlgaeRollers()
                     climber = Climber()
                 }
@@ -190,7 +192,7 @@ class Robot : LoggedRobot() {
                     Arm(object : ArmIO {}),
                     Dispenser(object : DispenserIO {}),
                 )
-            funnel = Funnel()
+            funnel = Funnel(object : FunnelIO {})
             algaeRollers = AlgaeRollers()
             climber = Climber()
 
@@ -222,6 +224,8 @@ class Robot : LoggedRobot() {
 
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, robotState)
+
+        controller.leftBumper().whileTrue(superstructure.runGoal(Superstructure.State.INTAKE_CORAL).alongWith(funnel.runGoal(Funnel.Goal.INTAKE_CORAL)))
 
         controller.y().whileTrue(superstructure.runGoal(Superstructure.State.TEST_ARM))
         controller.x().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_TALL_SCORE))

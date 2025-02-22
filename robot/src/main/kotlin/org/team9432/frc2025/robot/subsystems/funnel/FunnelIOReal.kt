@@ -1,4 +1,4 @@
-package org.team9432.frc2025.robot.subsystems.superstructure.dispenser
+package org.team9432.frc2025.robot.subsystems.funnel
 
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.StatusSignal
@@ -11,7 +11,7 @@ import edu.wpi.first.units.measure.*
 import org.team9432.frc2025.lib.util.PhoenixUtil
 import org.team9432.frc2025.robot.RobotMap
 
-open class DispenserIOReal : DispenserIO {
+open class FunnelIOReal : FunnelIO {
     private val talon = TalonFX(RobotMap.coralArmDispenser.canID, RobotMap.coralArmDispenser.canBus)
 
     private val appliedVolts: StatusSignal<Voltage> = talon.motorVoltage
@@ -23,13 +23,11 @@ open class DispenserIOReal : DispenserIO {
 
     private val config =
         TalonFXConfiguration().apply {
-            MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
-            MotorOutput.NeutralMode = NeutralModeValue.Brake
+            MotorOutput.Inverted = InvertedValue.Clockwise_Positive
+            MotorOutput.NeutralMode = NeutralModeValue.Coast
 
-            TorqueCurrent.PeakForwardTorqueCurrent = 60.0
-            TorqueCurrent.PeakReverseTorqueCurrent = -60.0
-            CurrentLimits.StatorCurrentLimit = 60.0
-            CurrentLimits.StatorCurrentLimitEnable = true
+            CurrentLimits.SupplyCurrentLimit = 20.0
+            CurrentLimits.SupplyCurrentLimitEnable = true
         }
 
     init {
@@ -48,7 +46,7 @@ open class DispenserIOReal : DispenserIO {
         talon.optimizeBusUtilization()
     }
 
-    override fun updateInputs(inputs: DispenserIO.DispenserIOInputs) {
+    override fun updateInputs(inputs: FunnelIO.FunnelIOInputs) {
         val status =
             BaseStatusSignal.refreshAll(appliedVolts, supplyCurrent, torqueCurrent, temperature, position, velocity)
 
@@ -69,9 +67,5 @@ open class DispenserIOReal : DispenserIO {
     override fun updateConfig(block: TalonFXConfiguration.() -> Unit) {
         block.invoke(config)
         PhoenixUtil.tryUntilOk(5) { talon.configurator.apply(config) }
-    }
-
-    override fun setBrake(enable: Boolean) {
-        Thread { talon.setNeutralMode(if (enable) NeutralModeValue.Brake else NeutralModeValue.Coast) }.start()
     }
 }

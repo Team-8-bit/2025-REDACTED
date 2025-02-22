@@ -1,12 +1,12 @@
-package org.team9432.frc2025.robot.subsystems.superstructure.coralarm
+package org.team9432.frc2025.robot.subsystems.superstructure.arm
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.ControlRequest
 import org.team9432.annotation.Logged
 
-interface CoralArmIO {
+interface ArmIO {
     @Logged
-    open class CoralArmIOInputs {
+    open class ArmIOInputs {
         var positionRotations: Double = 0.0
         var velocityRotationsPerSec: Double = 0.0
         var closedLoopPositionReference: Double = 0.0
@@ -21,7 +21,7 @@ interface CoralArmIO {
     }
 
     /** Updates the inputs with the latest sensor information. */
-    fun updateInputs(inputs: CoralArmIOInputs) {}
+    fun updateInputs(inputs: ArmIOInputs) {}
 
     /** Sends the specified control request to the motor. */
     fun setControl(control: ControlRequest) {}

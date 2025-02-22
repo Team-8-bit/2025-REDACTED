@@ -47,10 +47,10 @@ import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
 import org.team9432.frc2025.robot.subsystems.funnel.Funnel
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
-import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
-import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIO
-import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIOReal
-import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIOSim
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIO
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIOReal
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIOSim
 import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.DispenserIO
 import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.DispenserIOReal
@@ -100,11 +100,7 @@ class Robot : LoggedRobot() {
                         )
 
                     superstructure =
-                        Superstructure(
-                            Elevator(ElevatorIOReal()),
-                            CoralArm(CoralArmIOReal()),
-                            Dispenser(DispenserIOReal()),
-                        )
+                        Superstructure(Elevator(ElevatorIOReal()), Arm(ArmIOReal()), Dispenser(DispenserIOReal()))
                     funnel = Funnel()
                     algaeRollers = AlgaeRollers()
                     climber = Climber()
@@ -169,11 +165,7 @@ class Robot : LoggedRobot() {
                     }
 
                     superstructure =
-                        Superstructure(
-                            Elevator(ElevatorIOSim()),
-                            CoralArm(CoralArmIOSim()),
-                            Dispenser(object : DispenserIO {}),
-                        )
+                        Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()), Dispenser(object : DispenserIO {}))
                     funnel = Funnel()
                     algaeRollers = AlgaeRollers()
                     climber = Climber()
@@ -195,7 +187,7 @@ class Robot : LoggedRobot() {
             superstructure =
                 Superstructure(
                     Elevator(object : ElevatorIO {}),
-                    CoralArm(object : CoralArmIO {}),
+                    Arm(object : ArmIO {}),
                     Dispenser(object : DispenserIO {}),
                 )
             funnel = Funnel()

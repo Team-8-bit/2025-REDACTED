@@ -1,9 +1,9 @@
-package org.team9432.frc2025.robot.subsystems.superstructure.coralarm
+package org.team9432.frc2025.robot.subsystems.superstructure.arm
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 
-class TunableCoralArmGains(
+class TunableArmGains(
     ntPath: String,
     kP: Double,
     kD: Double,

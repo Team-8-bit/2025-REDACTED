@@ -10,14 +10,14 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase
 import kotlin.collections.set
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State.*
-import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
-import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmConstants
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmConstants
 import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 
 // Inspired by 6328 <3
 // https://www.chiefdelphi.com/t/frc-6328-mechanical-advantage-2025-build-thread/477314/244#p-3503708-implementation-part-one-structure-4
-class Superstructure(private val elevator: Elevator, private val coralArm: CoralArm, private val dispenser: Dispenser) :
+class Superstructure(private val elevator: Elevator, private val arm: Arm, private val dispenser: Dispenser) :
     SubsystemBase() {
     private val transitionCommands: Map<Pair<State, State>, Command>
 
@@ -56,7 +56,7 @@ class Superstructure(private val elevator: Elevator, private val coralArm: Coral
         }
 
         elevator.periodic()
-        coralArm.periodic()
+        arm.periodic()
         dispenser.periodic()
 
         Logger.recordOutput(
@@ -69,11 +69,7 @@ class Superstructure(private val elevator: Elevator, private val coralArm: Coral
                 Units.inchesToMeters(-8.25),
                 Units.inchesToMeters(0.0),
                 Units.inchesToMeters(19.157754 + elevator.positionMeters),
-                Rotation3d(
-                    0.0,
-                    Units.rotationsToRadians(coralArm.positionRotations - CoralArmConstants.MIN_POSITION),
-                    0.0,
-                ),
+                Rotation3d(0.0, Units.rotationsToRadians(arm.positionRotations - ArmConstants.MIN_POSITION), 0.0),
             ),
         )
 
@@ -115,8 +111,8 @@ class Superstructure(private val elevator: Elevator, private val coralArm: Coral
     private fun runElevatorToGoal(goal: Elevator.Goal) =
         Commands.sequence(Commands.runOnce({ elevator.goal = goal }), Commands.waitUntil(elevator::atGoal))
 
-    private fun runArmToGoal(goal: CoralArm.Goal) =
-        Commands.sequence(Commands.runOnce({ coralArm.goal = goal }), Commands.waitUntil(coralArm::atGoal))
+    private fun runArmToGoal(goal: Arm.Goal) =
+        Commands.sequence(Commands.runOnce({ arm.goal = goal }), Commands.waitUntil(arm::atGoal))
 
     private fun runDispenser(goal: Dispenser.Goal) = Commands.runOnce({ dispenser.goal = goal })
 
@@ -125,24 +121,24 @@ class Superstructure(private val elevator: Elevator, private val coralArm: Coral
         val transitions = mutableMapOf<Pair<State, State>, Command>()
 
         transitions[STOW to PREPARE_TALL_SCORE] =
-            Commands.sequence(runElevatorToGoal(Elevator.Goal.MIN_ARM_OUT), runArmToGoal(CoralArm.Goal.PREPARE_SCORE))
+            Commands.sequence(runElevatorToGoal(Elevator.Goal.MIN_ARM_OUT), runArmToGoal(Arm.Goal.PREPARE_SCORE))
 
         transitions[PREPARE_TALL_SCORE to STOW] =
-            Commands.sequence(runArmToGoal(CoralArm.Goal.STOW), runElevatorToGoal(Elevator.Goal.STOW))
+            Commands.sequence(runArmToGoal(Arm.Goal.STOW), runElevatorToGoal(Elevator.Goal.STOW))
 
         transitions[STOW to INTAKE_CORAL] = runDispenser(Dispenser.Goal.INTAKE_CORAL)
         transitions[INTAKE_CORAL to STOW] = runDispenser(Dispenser.Goal.IDLE)
 
         transitions[PREPARE_TALL_SCORE to PREPARE_L2] =
-            runElevatorToGoal(Elevator.Goal.L2).andThen(runArmToGoal(CoralArm.Goal.L2))
+            runElevatorToGoal(Elevator.Goal.L2).andThen(runArmToGoal(Arm.Goal.L2))
         transitions[PREPARE_TALL_SCORE to PREPARE_L3] =
-            runElevatorToGoal(Elevator.Goal.L3).andThen(runArmToGoal(CoralArm.Goal.L3))
+            runElevatorToGoal(Elevator.Goal.L3).andThen(runArmToGoal(Arm.Goal.L3))
         transitions[PREPARE_TALL_SCORE to PREPARE_L4] =
-            runElevatorToGoal(Elevator.Goal.L4).andThen(runArmToGoal(CoralArm.Goal.L4))
+            runElevatorToGoal(Elevator.Goal.L4).andThen(runArmToGoal(Arm.Goal.L4))
 
         for (scoringGoal in setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4)) {
             transitions[scoringGoal to PREPARE_TALL_SCORE] =
-                runArmToGoal(CoralArm.Goal.PREPARE_SCORE).andThen(runElevatorToGoal(Elevator.Goal.MIN_ARM_OUT))
+                runArmToGoal(Arm.Goal.PREPARE_SCORE).andThen(runElevatorToGoal(Elevator.Goal.MIN_ARM_OUT))
         }
 
         transitions[PREPARE_L2 to SCORE_L2] = runDispenser(Dispenser.Goal.OUTTAKE_CORAL)
@@ -152,8 +148,8 @@ class Superstructure(private val elevator: Elevator, private val coralArm: Coral
         transitions[PREPARE_L4 to SCORE_L4] = runDispenser(Dispenser.Goal.OUTTAKE_CORAL)
         transitions[SCORE_L4 to PREPARE_L4] = runDispenser(Dispenser.Goal.IDLE)
 
-        transitions[STOW to TEST_ARM] = runArmToGoal(CoralArm.Goal.TEST)
-        transitions[TEST_ARM to STOW] = runArmToGoal(CoralArm.Goal.STOW)
+        transitions[STOW to TEST_ARM] = runArmToGoal(Arm.Goal.TEST)
+        transitions[TEST_ARM to STOW] = runArmToGoal(Arm.Goal.STOW)
 
         transitionCommands = transitions
     }
@@ -214,16 +210,16 @@ class Superstructure(private val elevator: Elevator, private val coralArm: Coral
     }
 
     fun runCoralArmCharacterizationAmps(amps: Double) {
-        coralArm.characterizationInput = amps
+        arm.characterizationInput = amps
         isCharacterizing = true
     }
 
     fun getCoralArmCharacterizationVelocity(): Double {
-        return coralArm.velocityRotationsPerSecond
+        return arm.velocityRotationsPerSecond
     }
 
     fun endCoralArmCharacterization() {
-        coralArm.characterizationInput = null
+        arm.characterizationInput = null
         isCharacterizing = false
     }
 }

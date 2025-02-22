@@ -1,4 +1,4 @@
-package org.team9432.frc2025.robot.subsystems.superstructure.coralarm
+package org.team9432.frc2025.robot.subsystems.superstructure.arm
 
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.NeutralOut
@@ -11,25 +11,25 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 
-class CoralArm(private val io: CoralArmIO) {
-    private val inputs = LoggedCoralArmIOInputs()
+class Arm(private val io: ArmIO) {
+    private val inputs = LoggedArmIOInputs()
 
-    private val motorDisconnectedAlert = Alert("CoralArm motor disconnected!", Alert.AlertType.kError)
+    private val motorDisconnectedAlert = Alert("Arm motor disconnected!", Alert.AlertType.kError)
 
     private val currentControl = TorqueCurrentFOC(0.0)
     private val motionMagicPositionControl = MotionMagicTorqueCurrentFOC(0.0)
     private val neutralOut = NeutralOut()
 
-    private val gains: TunableCoralArmGains
+    private val gains: TunableArmGains
 
     // All angles are in rotations
     enum class Goal(private val angleSupplier: () -> Double) {
-        STOW({ CoralArmConstants.MIN_POSITION }),
+        STOW({ ArmConstants.MIN_POSITION }),
         PREPARE_SCORE({ 0.2 }),
         L2({ 0.15 }),
         L3({ 0.15 }),
         L4({ 0.15 }),
-        TEST(LoggedTunableNumber("CoralArm/Setpoints/Test", 0.0));
+        TEST(LoggedTunableNumber("Arm/Setpoints/Test", 0.0));
 
         val rotations
             get() = angleSupplier.invoke()
@@ -48,8 +48,8 @@ class CoralArm(private val io: CoralArmIO) {
         gains =
             when (Constants.robot) {
                 Constants.RobotType.COMP ->
-                    TunableCoralArmGains(
-                        "CoralArm/Tuning",
+                    TunableArmGains(
+                        "Arm/Tuning",
                         kP = 0.0,
                         kD = 0.0,
                         kS = 4.440481,
@@ -60,8 +60,8 @@ class CoralArm(private val io: CoralArmIO) {
                     )
 
                 Constants.RobotType.SIM ->
-                    TunableCoralArmGains(
-                        "CoralArm/Tuning",
+                    TunableArmGains(
+                        "Arm/Tuning",
                         kP = 3000.0,
                         kD = 300.0,
                         kS = 0.0,
@@ -77,7 +77,7 @@ class CoralArm(private val io: CoralArmIO) {
 
     fun periodic() {
         io.updateInputs(inputs)
-        Logger.processInputs("CoralArm", inputs)
+        Logger.processInputs("Arm", inputs)
 
         motorDisconnectedAlert.set(!inputs.motorConnected)
 
@@ -93,8 +93,7 @@ class CoralArm(private val io: CoralArmIO) {
 
         if (!disabled) {
             if (characterizationInput == null) {
-                val goalPosition =
-                    MathUtil.clamp(goal.rotations, CoralArmConstants.MIN_POSITION, CoralArmConstants.MAX_POSITION)
+                val goalPosition = MathUtil.clamp(goal.rotations, ArmConstants.MIN_POSITION, ArmConstants.MAX_POSITION)
 
                 if (goal == Goal.STOW && atGoal()) {
                     io.setControl(neutralOut)
@@ -106,8 +105,8 @@ class CoralArm(private val io: CoralArmIO) {
             }
         }
 
-        Logger.recordOutput("CoralArm/Goal", goal)
-        Logger.recordOutput("CoralArm/CharacterizationInput", characterizationInput ?: 0.0)
+        Logger.recordOutput("Arm/Goal", goal)
+        Logger.recordOutput("Arm/CharacterizationInput", characterizationInput ?: 0.0)
     }
 
     val positionRotations
@@ -116,6 +115,6 @@ class CoralArm(private val io: CoralArmIO) {
     val velocityRotationsPerSecond
         get() = inputs.velocityRotationsPerSec
 
-    fun atGoal(toleranceRotations: Double = CoralArmConstants.POSITION_TOLERANCE) =
+    fun atGoal(toleranceRotations: Double = ArmConstants.POSITION_TOLERANCE) =
         abs(inputs.positionRotations - goal.rotations) < toleranceRotations
 }

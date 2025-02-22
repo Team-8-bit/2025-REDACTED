@@ -1,10 +1,10 @@
-package org.team9432.frc2025.robot.subsystems.superstructure.coralarm
+package org.team9432.frc2025.robot.subsystems.superstructure.arm
 
 import edu.wpi.first.math.util.Units
 import kotlin.math.acos
 import kotlin.math.hypot
 
-object CoralArmConstants {
+object ArmConstants {
     const val REDUCTION = (5.0 / 1.0) * (5.0 / 1.0) * (42.0 / 12.0)
 
     // Rotations

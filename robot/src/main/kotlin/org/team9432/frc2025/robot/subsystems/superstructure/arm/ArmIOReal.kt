@@ -1,4 +1,4 @@
-package org.team9432.frc2025.robot.subsystems.superstructure.coralarm
+package org.team9432.frc2025.robot.subsystems.superstructure.arm
 
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.StatusSignal
@@ -16,7 +16,7 @@ import org.team9432.frc2025.lib.util.PhoenixUtil
 import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.RobotMap
 
-open class CoralArmIOReal : CoralArmIO {
+open class ArmIOReal : ArmIO {
     protected val talon = TalonFX(RobotMap.coralArmPivot.canID, RobotMap.coralArmPivot.canBus)
 
     private val position: StatusSignal<Angle> = talon.position
@@ -41,12 +41,12 @@ open class CoralArmIOReal : CoralArmIO {
             MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
             MotorOutput.NeutralMode = NeutralModeValue.Brake
 
-            TorqueCurrent.PeakForwardTorqueCurrent = CoralArmConstants.PEAK_TORQUE_AMPS
-            TorqueCurrent.PeakReverseTorqueCurrent = -CoralArmConstants.PEAK_TORQUE_AMPS
-            CurrentLimits.StatorCurrentLimit = CoralArmConstants.PEAK_TORQUE_AMPS
+            TorqueCurrent.PeakForwardTorqueCurrent = ArmConstants.PEAK_TORQUE_AMPS
+            TorqueCurrent.PeakReverseTorqueCurrent = -ArmConstants.PEAK_TORQUE_AMPS
+            CurrentLimits.StatorCurrentLimit = ArmConstants.PEAK_TORQUE_AMPS
             CurrentLimits.StatorCurrentLimitEnable = true
 
-            Feedback.SensorToMechanismRatio = CoralArmConstants.REDUCTION
+            Feedback.SensorToMechanismRatio = ArmConstants.REDUCTION
         }
 
     init {
@@ -68,11 +68,11 @@ open class CoralArmIOReal : CoralArmIO {
         talon.optimizeBusUtilization()
 
         if (!Constants.robot.isSim) {
-            talon.setPosition(CoralArmConstants.MIN_POSITION)
+            talon.setPosition(ArmConstants.MIN_POSITION)
         }
     }
 
-    override fun updateInputs(inputs: CoralArmIO.CoralArmIOInputs) {
+    override fun updateInputs(inputs: ArmIO.ArmIOInputs) {
         val status =
             BaseStatusSignal.refreshAll(
                 position,

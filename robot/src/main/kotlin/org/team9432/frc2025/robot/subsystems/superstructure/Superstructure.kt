@@ -10,6 +10,7 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.subsystems.superstructure.algaearm.AlgaeArm
 import org.team9432.frc2025.robot.subsystems.superstructure.climber.Climber
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
+import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmConstants
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 
 class Superstructure(
@@ -73,9 +74,15 @@ class Superstructure(
                 Units.inchesToMeters(-8.25),
                 Units.inchesToMeters(0.0),
                 Units.inchesToMeters(19.157754 + elevator.positionMeters),
-                Rotation3d(0.0, Units.rotationsToRadians(coralArm.positionRotations), 0.0),
+                Rotation3d(
+                    0.0,
+                    Units.rotationsToRadians(coralArm.positionRotations - CoralArmConstants.MIN_POSITION),
+                    0.0,
+                ),
             ),
         )
+
+        println(CoralArmConstants.MAX_POSITION)
 
         Logger.recordOutput("Superstructure/Goal", goal)
     }

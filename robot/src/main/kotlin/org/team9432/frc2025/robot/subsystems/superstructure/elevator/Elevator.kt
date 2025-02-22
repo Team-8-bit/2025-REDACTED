@@ -103,6 +103,11 @@ class Elevator(private val io: ElevatorIO) {
         // Run elevator
         val disabled = isDisabled()
 
+        if (disabled != wasDisabled) {
+            wasDisabled = disabled
+            io.setBrake(!disabled)
+        }
+
         if (!disabled) {
             if (characterizationInput == null) {
                 // Make sure we don't go outside the limits

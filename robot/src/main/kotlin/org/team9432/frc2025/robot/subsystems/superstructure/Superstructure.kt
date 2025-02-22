@@ -90,7 +90,7 @@ class Superstructure(
     fun runGoal(newGoal: Goal): Command = startEnd({ goal = newGoal }, { goal = Goal.STOW })
 
     fun runElevatorCharacterizationAmps(amps: Double) {
-        elevator.runCharacterizationAmps(amps)
+        elevator.characterizationInput = amps
     }
 
     fun getElevatorCharacterizationVelocity(): Double {
@@ -98,6 +98,6 @@ class Superstructure(
     }
 
     fun endElevatorCharacterization() {
-        elevator.endCharacterization()
+        elevator.characterizationInput = null
     }
 }

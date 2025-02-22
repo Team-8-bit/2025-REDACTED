@@ -6,10 +6,10 @@ import com.ctre.phoenix6.controls.TorqueCurrentFOC
 import edu.wpi.first.math.MathUtil
 import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj.DriverStation
+import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
-import kotlin.math.abs
 
 class Elevator(private val io: ElevatorIO) {
     private val inputs: LoggedElevatorIOInputs = LoggedElevatorIOInputs()
@@ -36,7 +36,7 @@ class Elevator(private val io: ElevatorIO) {
     var goal = Goal.STOW
 
     /** Characterization input in amps sent to the elevator. If set to null will run position control. */
-    private var characterizationInput: Double? = null
+    var characterizationInput: Double? = null
 
     var isDisabled = { DriverStation.isDisabled() }
 

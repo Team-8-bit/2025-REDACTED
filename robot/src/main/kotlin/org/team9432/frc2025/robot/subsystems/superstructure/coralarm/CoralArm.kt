@@ -6,10 +6,10 @@ import com.ctre.phoenix6.controls.TorqueCurrentFOC
 import edu.wpi.first.math.MathUtil
 import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj.DriverStation
+import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
-import kotlin.math.abs
 
 class CoralArm(private val io: CoralArmIO) {
     private val inputs = LoggedCoralArmIOInputs()

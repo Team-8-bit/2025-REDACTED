@@ -25,6 +25,7 @@ class CoralArm(private val io: CoralArmIO) {
     // All angles are in rotations
     enum class Goal(private val angleSupplier: () -> Double) {
         STOW({ CoralArmConstants.MIN_POSITION }),
+        PREPARE_SCORE({ 0.0 }),
         TEST(LoggedTunableNumber("CoralArm/Setpoints/Test", 0.0));
 
         val rotations

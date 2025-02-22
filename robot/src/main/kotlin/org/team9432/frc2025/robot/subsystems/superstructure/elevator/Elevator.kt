@@ -26,8 +26,16 @@ class Elevator(private val io: ElevatorIO) {
 
     enum class Goal(private val setpointSupplier: () -> Double) {
         STOW({ 0.0 }),
-        TEST(LoggedTunableNumber("Elevator/Setpoints/Test", 0.0)),
-        AMP_INPUT(LoggedTunableNumber("Elevator/Control/AmpInput", 0.0));
+        MIN_ARM_OUT(
+            LoggedTunableNumber(
+                "Elevator/Setpoints/MinFreeArm",
+                SuperstructureConstants.MIN_ARM_EXTENSION_ELEVATOR_HEIGHT + Units.inchesToMeters(0.5),
+            )
+        ),
+        L2({ 0.0 }),
+        L3({ 0.0 }),
+        L4({ 0.0 }),
+        TEST(LoggedTunableNumber("Elevator/Setpoints/Test", 0.0));
 
         val meters
             get() = setpointSupplier.invoke()

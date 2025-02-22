@@ -11,8 +11,8 @@ import kotlin.collections.set
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State.*
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
-import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmConstants
+import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 
 // Inspired by 6328 <3:

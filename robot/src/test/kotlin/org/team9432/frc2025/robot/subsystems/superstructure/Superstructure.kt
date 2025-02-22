@@ -4,14 +4,16 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
+import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIO
 import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIO
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
 
 internal class SuperstructureSequencerTest {
     @Test
     fun allStatesReachable() {
-        val superstructure = Superstructure(Elevator(object : KrakenElevatorIO {}), CoralArm(), Dispenser())
+        val superstructure =
+            Superstructure(Elevator(object : ElevatorIO {}), CoralArm(object : CoralArmIO {}), Dispenser())
 
         // Build a list of all possible movements
         val allPossibleMovements = mutableListOf<Pair<State, State>>()

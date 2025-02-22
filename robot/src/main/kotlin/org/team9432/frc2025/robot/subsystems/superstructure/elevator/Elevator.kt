@@ -10,6 +10,7 @@ import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
+import org.team9432.frc2025.robot.subsystems.superstructure.SuperstructureConstants
 
 class Elevator(private val io: ElevatorIO) {
     private val inputs: LoggedElevatorIOInputs = LoggedElevatorIOInputs()
@@ -29,7 +30,7 @@ class Elevator(private val io: ElevatorIO) {
         MIN_ARM_OUT(
             LoggedTunableNumber(
                 "Elevator/Setpoints/MinFreeArm",
-                SuperstructureConstants.MIN_ARM_EXTENSION_ELEVATOR_HEIGHT + Units.inchesToMeters(0.5),
+                SuperstructureConstants.MIN_ARM_EXTENSION_ELEVATOR_HEIGHT,
             )
         ),
         L2({ 0.0 }),

@@ -48,10 +48,10 @@ import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
 import org.team9432.frc2025.robot.subsystems.funnel.Funnel
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
-import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIO
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIOSim
+import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOReal
@@ -97,7 +97,7 @@ class Robot : LoggedRobot() {
                             robotState,
                         )
 
-                    superstructure = Superstructure(Elevator(ElevatorIOReal()), CoralArmIOReal(), Dispenser())
+                    superstructure = Superstructure(Elevator(ElevatorIOReal()), CoralArm(CoralArmIOReal()), Dispenser())
                     funnel = Funnel()
                     algaeRollers = AlgaeRollers()
                     climber = Climber()
@@ -161,9 +161,8 @@ class Robot : LoggedRobot() {
                         gyroIO.setAngle(it.rotation)
                     }
 
-                    superstructure = Superstructure(Elevator(KrakenElevatorIOSim()), CoralArm(), Dispenser())
+                    superstructure = Superstructure(Elevator(ElevatorIOSim()), CoralArm(CoralArmIOSim()), Dispenser())
                     funnel = Funnel()
-                    coralRollers = CoralRollers(Funnel(), Dispenser())
                     algaeRollers = AlgaeRollers()
                     climber = Climber()
                 }
@@ -182,14 +181,7 @@ class Robot : LoggedRobot() {
                 )
 
             superstructure =
-                Superstructure(
-                    Elevator(object : ElevatorIO {}),
-                    CoralArm(object : CoralArmIO {}),
-                    AlgaeArm(),
-                    Climber(),
-                )
-            coralRollers = CoralRollers(Funnel(), Dispenser())
-            superstructure = Superstructure(Elevator(object : KrakenElevatorIO {}), CoralArm(), Dispenser())
+                Superstructure(Elevator(object : ElevatorIO {}), CoralArm(object : CoralArmIO {}), Dispenser())
             funnel = Funnel()
             algaeRollers = AlgaeRollers()
             climber = Climber()
@@ -224,11 +216,6 @@ class Robot : LoggedRobot() {
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, robotState)
 
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
-
-        controller.a().whileTrue(coralRollers.runGoal(CoralRollers.Goal.SHOOT))
-        controller.b().whileTrue(coralRollers.runGoal(CoralRollers.Goal.INTAKE))
-        controller.x().whileTrue(superstructure.runGoal(Superstructure.Goal.TEST_ELEVATOR))
-        controller.y().whileTrue(superstructure.runGoal(Superstructure.Goal.ELEVATOR_AMP_INPUT))
     }
 
     private var currentAuto = Commands.none()

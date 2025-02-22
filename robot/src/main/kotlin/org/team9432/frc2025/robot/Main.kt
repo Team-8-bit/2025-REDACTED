@@ -52,6 +52,8 @@ import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIO
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArmIOSim
 import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
+import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.DispenserIO
+import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.DispenserIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOReal
@@ -97,7 +99,12 @@ class Robot : LoggedRobot() {
                             robotState,
                         )
 
-                    superstructure = Superstructure(Elevator(ElevatorIOReal()), CoralArm(CoralArmIOReal()), Dispenser())
+                    superstructure =
+                        Superstructure(
+                            Elevator(ElevatorIOReal()),
+                            CoralArm(CoralArmIOReal()),
+                            Dispenser(DispenserIOReal()),
+                        )
                     funnel = Funnel()
                     algaeRollers = AlgaeRollers()
                     climber = Climber()
@@ -161,7 +168,12 @@ class Robot : LoggedRobot() {
                         gyroIO.setAngle(it.rotation)
                     }
 
-                    superstructure = Superstructure(Elevator(ElevatorIOSim()), CoralArm(CoralArmIOSim()), Dispenser())
+                    superstructure =
+                        Superstructure(
+                            Elevator(ElevatorIOSim()),
+                            CoralArm(CoralArmIOSim()),
+                            Dispenser(object : DispenserIO {}),
+                        )
                     funnel = Funnel()
                     algaeRollers = AlgaeRollers()
                     climber = Climber()
@@ -181,7 +193,11 @@ class Robot : LoggedRobot() {
                 )
 
             superstructure =
-                Superstructure(Elevator(object : ElevatorIO {}), CoralArm(object : CoralArmIO {}), Dispenser())
+                Superstructure(
+                    Elevator(object : ElevatorIO {}),
+                    CoralArm(object : CoralArmIO {}),
+                    Dispenser(object : DispenserIO {}),
+                )
             funnel = Funnel()
             algaeRollers = AlgaeRollers()
             climber = Climber()
@@ -214,6 +230,12 @@ class Robot : LoggedRobot() {
 
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, robotState)
+
+        controller.y().whileTrue(superstructure.runGoal(Superstructure.State.TEST_ARM))
+        controller.x().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_TALL_SCORE))
+
+        controller.a().whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L2))
+        controller.b().whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L3))
 
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
     }
@@ -263,6 +285,17 @@ class Robot : LoggedRobot() {
                                         { amps -> superstructure.runElevatorCharacterizationAmps(amps) },
                                         { superstructure.getElevatorCharacterizationVelocity() },
                                         { superstructure.endElevatorCharacterization() },
+                                    )
+                                },
+                            )
+                            addOption(
+                                "CoralArm Static Characterization",
+                                {
+                                    StaticCharacterization(
+                                        superstructure,
+                                        { amps -> superstructure.runCoralArmCharacterizationAmps(amps) },
+                                        { superstructure.getCoralArmCharacterizationVelocity() },
+                                        { superstructure.endCoralArmCharacterization() },
                                     )
                                 },
                             )

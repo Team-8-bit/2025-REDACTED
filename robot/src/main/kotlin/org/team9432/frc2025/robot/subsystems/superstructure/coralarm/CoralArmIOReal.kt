@@ -38,7 +38,7 @@ open class CoralArmIOReal : CoralArmIO {
             Slot0.GravityType = GravityTypeValue.Arm_Cosine
             Slot0.StaticFeedforwardSign = StaticFeedforwardSignValue.UseVelocitySign
 
-            MotorOutput.Inverted = InvertedValue.Clockwise_Positive
+            MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
             MotorOutput.NeutralMode = NeutralModeValue.Brake
 
             TorqueCurrent.PeakForwardTorqueCurrent = CoralArmConstants.PEAK_TORQUE_AMPS
@@ -97,7 +97,7 @@ open class CoralArmIOReal : CoralArmIO {
         inputs.appliedVolts = appliedVolts.valueAsDouble
         inputs.supplyCurrentAmps = supplyCurrent.valueAsDouble
         inputs.torqueCurrentAmps = torqueCurrent.valueAsDouble
-        inputs.tempFahrenheit = temperature.valueAsDouble
+        inputs.tempFahrenheit = (temperature.valueAsDouble * (9 / 5)) + 32
     }
 
     override fun setControl(control: ControlRequest) {

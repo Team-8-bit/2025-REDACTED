@@ -25,7 +25,10 @@ class CoralArm(private val io: CoralArmIO) {
     // All angles are in rotations
     enum class Goal(private val angleSupplier: () -> Double) {
         STOW({ CoralArmConstants.MIN_POSITION }),
-        PREPARE_SCORE({ 0.0 }),
+        PREPARE_SCORE({ 0.2 }),
+        L2({ 0.15 }),
+        L3({ 0.15 }),
+        L4({ 0.15 }),
         TEST(LoggedTunableNumber("CoralArm/Setpoints/Test", 0.0));
 
         val rotations
@@ -49,8 +52,8 @@ class CoralArm(private val io: CoralArmIO) {
                         "CoralArm/Tuning",
                         kP = 0.0,
                         kD = 0.0,
-                        kS = 0.0,
-                        kG = 0.0,
+                        kS = 4.440481,
+                        kG = 7.537810 - 4.440481,
                         velocity = 0.0,
                         acceleration = 0.0,
                         jerk = 0.0,
@@ -104,6 +107,7 @@ class CoralArm(private val io: CoralArmIO) {
         }
 
         Logger.recordOutput("CoralArm/Goal", goal)
+        Logger.recordOutput("CoralArm/CharacterizationInput", characterizationInput ?: 0.0)
     }
 
     val positionRotations

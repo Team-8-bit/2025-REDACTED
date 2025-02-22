@@ -33,9 +33,9 @@ class Elevator(private val io: ElevatorIO) {
                 SuperstructureConstants.MIN_ARM_EXTENSION_ELEVATOR_HEIGHT,
             )
         ),
-        L2({ 0.0 }),
-        L3({ 0.0 }),
-        L4({ 0.0 }),
+        L2({ 0.3 }),
+        L3({ 0.5 }),
+        L4({ 0.7 }),
         TEST(LoggedTunableNumber("Elevator/Setpoints/Test", 0.0));
 
         val meters

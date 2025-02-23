@@ -25,10 +25,10 @@ class Arm(private val io: ArmIO) {
     // All angles are in rotations
     enum class Goal(private val angleSupplier: () -> Double) {
         STOW({ ArmConstants.MIN_POSITION }),
-        PREPARE_SCORE({ 0.2 }),
-        L2({ 0.15 }),
-        L3({ 0.15 }),
-        L4({ 0.15 }),
+        PREPARE_SCORE({ 0.16 }),
+        L2(LoggedTunableNumber("Arm/Setpoints/L2", 0.17)),
+        L3(LoggedTunableNumber("Arm/Setpoints/L3", 0.17)),
+        L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.17)),
         TEST(LoggedTunableNumber("Arm/Setpoints/Test", 0.0));
 
         val rotations
@@ -50,12 +50,12 @@ class Arm(private val io: ArmIO) {
                 Constants.RobotType.COMP ->
                     TunableArmGains(
                         "Arm/Tuning",
-                        kP = 0.0,
-                        kD = 0.0,
+                        kP = 2000.0,
+                        kD = 20.0,
                         kS = 4.440481,
                         kG = 7.537810 - 4.440481,
-                        velocity = 0.0,
-                        acceleration = 0.0,
+                        velocity = 1.5,
+                        acceleration = 3.0,
                         jerk = 0.0,
                     )
 
@@ -73,7 +73,7 @@ class Arm(private val io: ArmIO) {
             }
     }
 
-    private var wasDisabled = true
+    private var wasDisabled = false
 
     fun periodic() {
         io.updateInputs(inputs)

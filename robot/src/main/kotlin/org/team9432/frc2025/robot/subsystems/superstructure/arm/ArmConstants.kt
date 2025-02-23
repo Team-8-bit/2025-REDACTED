@@ -8,10 +8,10 @@ object ArmConstants {
     const val REDUCTION = (5.0 / 1.0) * (5.0 / 1.0) * (42.0 / 12.0)
 
     // Rotations
-    val POSITION_TOLERANCE = Units.degreesToRotations(2.0)
+    val POSITION_TOLERANCE = .01
 
     val MIN_POSITION = -0.25 // calculateAngle(2.136103, 7.911385) // -66.49438810123185 degrees
-    val MAX_POSITION = 0.2 // calculateAngle(2.56658, 12.79353) // 78.656164156599 degrees
+    val MAX_POSITION = 0.17 // calculateAngle(2.56658, 12.79353) // 78.656164156599 degrees
 
     private fun calculateAngle(x: Double, y: Double): Double {
         return Units.radiansToRotations(acos(x / hypot(x, y)))

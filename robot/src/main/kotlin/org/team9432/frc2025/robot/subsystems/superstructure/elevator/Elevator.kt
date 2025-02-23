@@ -33,9 +33,9 @@ class Elevator(private val io: ElevatorIO) {
                 SuperstructureConstants.MIN_ARM_EXTENSION_ELEVATOR_HEIGHT,
             )
         ),
-        L2({ 0.3 }),
-        L3({ 0.5 }),
-        L4({ 0.7 }),
+        L2(LoggedTunableNumber("Elevator/Setpoints/L2", 0.35)),
+        L3(LoggedTunableNumber("Elevator/Setpoints/L3", 0.75)),
+        L4(LoggedTunableNumber("Elevator/Setpoints/L4", 1.35)),
         TEST(LoggedTunableNumber("Elevator/Setpoints/Test", 0.0));
 
         val meters
@@ -86,7 +86,7 @@ class Elevator(private val io: ElevatorIO) {
             }
     }
 
-    private var wasDisabled = true
+    private var wasDisabled = false
 
     fun periodic() {
         // Process log inputs

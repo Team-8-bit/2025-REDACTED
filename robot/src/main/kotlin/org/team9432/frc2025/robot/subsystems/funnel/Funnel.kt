@@ -2,16 +2,18 @@ package org.team9432.frc2025.robot.subsystems.funnel
 
 import com.ctre.phoenix6.controls.NeutralOut
 import com.ctre.phoenix6.controls.VoltageOut
-import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.SubsystemBase
+import org.littletonrobotics.junction.Logger
 
-class Funnel(private val io: FunnelIO): SubsystemBase() {
+class Funnel(private val io: FunnelIO) : SubsystemBase() {
+    private val inputs = LoggedFunnelIOInputs()
+
     private val neutralOut = NeutralOut()
     private val voltageControl = VoltageOut(0.0)
 
     enum class Goal(private val voltageSupplier: () -> Double) {
         IDLE({ 0.0 }),
-        INTAKE_CORAL({ 6.0 }),
+        INTAKE_CORAL({ 4.0 }),
         EJECT_ALGAE({ -12.0 });
 
         val voltage
@@ -25,6 +27,9 @@ class Funnel(private val io: FunnelIO): SubsystemBase() {
     }
 
     override fun periodic() {
+        io.updateInputs(inputs)
+        Logger.processInputs("Funnel", inputs)
+
         if (goal == Goal.IDLE) {
             io.setControl(neutralOut)
         } else {
@@ -32,5 +37,5 @@ class Funnel(private val io: FunnelIO): SubsystemBase() {
         }
     }
 
-    fun runGoal(goal: Goal) = runOnce { this.goal = goal }.andThen(Commands.idle())
+    fun runGoal(goal: Goal) = run { this.goal = goal }
 }

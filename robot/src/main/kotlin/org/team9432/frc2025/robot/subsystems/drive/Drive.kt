@@ -114,6 +114,10 @@ class Drive(
         gyroDisconnectedAlert.set(!gyroInputs.connected)
     }
 
+    fun resetGyro() {
+        gyroIO.setAngle(Rotation2d())
+    }
+
     fun controllerCommand(controller: DriveController): Command = run { runVelocity(controller.calculate()) }
 
     private val zeroSwerveModuleState = SwerveModuleState()

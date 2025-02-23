@@ -12,7 +12,7 @@ import org.team9432.frc2025.lib.util.PhoenixUtil
 import org.team9432.frc2025.robot.RobotMap
 
 open class FunnelIOReal : FunnelIO {
-    private val talon = TalonFX(RobotMap.coralArmDispenser.canID, RobotMap.coralArmDispenser.canBus)
+    private val talon = TalonFX(RobotMap.funnel.canID, RobotMap.funnel.canBus)
 
     private val appliedVolts: StatusSignal<Voltage> = talon.motorVoltage
     private val supplyCurrent: StatusSignal<Current> = talon.supplyCurrent

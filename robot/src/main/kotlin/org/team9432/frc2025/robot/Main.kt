@@ -225,13 +225,27 @@ class Robot : LoggedRobot() {
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, robotState)
 
-        controller.leftBumper().whileTrue(superstructure.runGoal(Superstructure.State.INTAKE_CORAL).alongWith(funnel.runGoal(Funnel.Goal.INTAKE_CORAL)))
+        controller
+            .leftBumper()
+            .whileTrue(
+                superstructure
+                    .runGoal(Superstructure.State.INTAKE_CORAL)
+                    .alongWith(funnel.runGoal(Funnel.Goal.INTAKE_CORAL))
+            )
 
-        controller.y().whileTrue(superstructure.runGoal(Superstructure.State.TEST_ARM))
-        controller.x().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_TALL_SCORE))
+        //        controller.y().whileTrue(superstructure.runGoal(Superstructure.State.TEST_ARM))
+        //
+        // controller.x().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_TALL_SCORE))
 
-        controller.a().whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L2))
-        controller.b().whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L3))
+        controller.a().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_L2))
+        controller.b().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_L3))
+        controller.y().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_L4))
+
+        controller.a().and(controller.rightBumper()).whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L2))
+        controller.b().and(controller.rightBumper()).whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L3))
+        controller.y().and(controller.rightBumper()).whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L4))
+
+        controller.back().onTrue(Commands.runOnce({ drive.resetGyro() }))
 
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
     }

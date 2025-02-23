@@ -31,8 +31,6 @@ import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
-import org.team9432.frc2025.robot.subsystems.algaerollers.AlgaeRollers
-import org.team9432.frc2025.robot.subsystems.climber.Climber
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
@@ -67,8 +65,6 @@ class Robot : LoggedRobot() {
     private val drive: Drive
     private val superstructure: Superstructure
     private val funnel: Funnel
-    private val algaeRollers: AlgaeRollers
-    private val climber: Climber
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
     private val robotState = RobotState()
@@ -104,8 +100,6 @@ class Robot : LoggedRobot() {
                     superstructure =
                         Superstructure(Elevator(ElevatorIOReal()), Arm(ArmIOReal()), Dispenser(DispenserIOReal()))
                     funnel = Funnel(FunnelIOReal())
-                    algaeRollers = AlgaeRollers()
-                    climber = Climber()
 
                     setSimulationPose = null
                     driveSim = null
@@ -169,8 +163,6 @@ class Robot : LoggedRobot() {
                     superstructure =
                         Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()), Dispenser(object : DispenserIO {}))
                     funnel = Funnel(object : FunnelIO {})
-                    algaeRollers = AlgaeRollers()
-                    climber = Climber()
                 }
             }
         } else {
@@ -193,8 +185,6 @@ class Robot : LoggedRobot() {
                     Dispenser(object : DispenserIO {}),
                 )
             funnel = Funnel(object : FunnelIO {})
-            algaeRollers = AlgaeRollers()
-            climber = Climber()
 
             setSimulationPose = null
             driveSim = null

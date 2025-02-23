@@ -6,7 +6,7 @@ import org.team9432.frc2025.lib.util.MotorInformation
 
 object RobotMap {
     /* ******* Drivetrain ******* */
-    const val DRIVETRAIN_CANBUS_NAME = "Drivetrain"
+    const val DRIVETRAIN_CANBUS_NAME = "*"
     val drivetrainCanbus = CANBus(DRIVETRAIN_CANBUS_NAME)
 
     val frontLeftDrive = MotorInformation(canID = 1, pdhChannel = 1, DRIVETRAIN_CANBUS_NAME)
@@ -28,4 +28,11 @@ object RobotMap {
     /* ******* Elevator ******* */
     val leftElevator = MotorInformation(canID = 11, pdhChannel = 9, DRIVETRAIN_CANBUS_NAME)
     val rightElevator = MotorInformation(canID = 12, pdhChannel = 10, DRIVETRAIN_CANBUS_NAME)
+
+    /* ******* Coral Arm ******* */
+    val coralArmPivot = MotorInformation(canID = 21, pdhChannel = 9, "rio")
+    val coralArmDispenser = MotorInformation(canID = 22, pdhChannel = 10, "rio")
+
+    /* ******* Funnel ******* */
+    val funnel = MotorInformation(canID = 31, pdhChannel = 9, DRIVETRAIN_CANBUS_NAME)
 }

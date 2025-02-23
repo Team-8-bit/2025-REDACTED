@@ -2,20 +2,37 @@
 // https://github.com/Mechanical-Advantage/RobotCode2024/blob/a025615a52193b7709db7cf14c51c57be17826f2/src/main/java/org/littletonrobotics/frc2024/subsystems/drive/Drive.java
 package org.team9432.frc2025.lib.dashboard
 
+import edu.wpi.first.wpilibj.DriverStation
 import kotlin.reflect.KProperty
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber
+import org.team9432.frc2025.robot.Constants.TUNING_MODE
 
 /**
  * Class for a tunable number. Gets value from dashboard in tuning mode, returns default if not or value not in
- * dashboard.
+ * dashboard. Default value must be passed in the constructor or via [initDefault] for the class to work.
  */
-class LoggedTunableNumber(key: String, private val defaultValue: Double) : () -> Double {
+class LoggedTunableNumber(private val key: String) : () -> Double {
     private var dashboardNumber: LoggedNetworkNumber? = null
     private val lastHasChangedValues: MutableMap<Int, Double> = HashMap()
 
-    init {
-        if (isTuningMode) {
-            dashboardNumber = LoggedNetworkNumber("$TABLE_KEY/$key", defaultValue)
+    constructor(key: String, defaultValue: Double) : this(key) {
+        initDefault(defaultValue)
+    }
+
+    private var default: Double? = null
+    private var reportedNoDefault = false
+
+    /**
+     * Set the default value of the number. The default value can only be set once.
+     *
+     * @param defaultValue The default value
+     */
+    fun initDefault(defaultValue: Double) {
+        if (default == null) {
+            default = defaultValue
+            if (TUNING_MODE) {
+                dashboardNumber = LoggedNetworkNumber("$TABLE_KEY/$key", defaultValue)
+            }
         }
     }
 
@@ -24,7 +41,18 @@ class LoggedTunableNumber(key: String, private val defaultValue: Double) : () ->
      *
      * @return The current value
      */
-    fun get() = if (isTuningMode) dashboardNumber?.get() ?: defaultValue else defaultValue
+    fun get(): Double {
+        val currentDefault = default
+        return if (currentDefault == null) {
+            if (!reportedNoDefault) {
+                DriverStation.reportError("No default set for TunableNumber $key!", false)
+                reportedNoDefault = true
+            }
+            0.0
+        } else {
+            if (TUNING_MODE) dashboardNumber?.get() ?: currentDefault else currentDefault
+        }
+    }
 
     /**
      * Checks whether the number has changed since our last check
@@ -48,21 +76,6 @@ class LoggedTunableNumber(key: String, private val defaultValue: Double) : () ->
     operator fun getValue(thisRef: Any?, property: KProperty<*>) = get()
 
     companion object {
-        private var isTuningMode = false
-
-        /**
-         * Sets if tuning mode should be enabled. In tuning mode all [LoggedTunableNumber]s will be displayed on the
-         * dashboard and robot code will listen to changes. If tuning mode is disabled the code will use the default
-         * values provided (recommended for competitions).
-         */
-        fun setTuningModeEnabled(enabled: Boolean) {
-            isTuningMode = enabled
-        }
-
-        fun isTuningModeEnabled(): Boolean {
-            return isTuningMode
-        }
-
         private const val TABLE_KEY = "TunableNumbers"
 
         /**
@@ -75,10 +88,22 @@ class LoggedTunableNumber(key: String, private val defaultValue: Double) : () ->
          * @param tunableNumbers All tunable numbers to check
          */
         fun ifChanged(id: Int, vararg tunableNumbers: LoggedTunableNumber, action: (List<Double>) -> Unit) {
-            if (!isTuningMode) return
+            if (!TUNING_MODE) return
             if (tunableNumbers.any { it.hasChanged(id) }) {
                 action.invoke(tunableNumbers.map { it.get() })
             }
+        }
+
+        /**
+         * Check if any of the given tunableNumbers have changed
+         *
+         * @param id Unique identifier for the caller to avoid conflicts when shared between multiple * objects.
+         *   Recommended approach is to pass the result of "hashCode()"
+         * @param tunableNumbers All tunable numbers to check
+         */
+        fun hasChanged(id: Int, vararg tunableNumbers: LoggedTunableNumber): Boolean {
+            if (!TUNING_MODE) return false
+            return tunableNumbers.any { it.hasChanged(id) }
         }
     }
 }

@@ -28,14 +28,11 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
-import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
 import org.team9432.frc2025.robot.subsystems.algaerollers.AlgaeRollers
-import org.team9432.frc2025.robot.subsystems.coralrollers.CoralRollers
-import org.team9432.frc2025.robot.subsystems.coralrollers.dispenser.Dispenser
-import org.team9432.frc2025.robot.subsystems.coralrollers.funnel.Funnel
+import org.team9432.frc2025.robot.subsystems.climber.Climber
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
@@ -48,29 +45,35 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOSim
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
+import org.team9432.frc2025.robot.subsystems.funnel.Funnel
+import org.team9432.frc2025.robot.subsystems.funnel.FunnelIO
+import org.team9432.frc2025.robot.subsystems.funnel.FunnelIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
-import org.team9432.frc2025.robot.subsystems.superstructure.algaearm.AlgaeArm
-import org.team9432.frc2025.robot.subsystems.superstructure.climber.Climber
-import org.team9432.frc2025.robot.subsystems.superstructure.coralarm.CoralArm
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIO
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIOReal
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIOSim
+import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
+import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.DispenserIO
+import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.DispenserIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIO
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIOReal
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.KrakenElevatorIOSim
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOReal
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOSim
 
 class Robot : LoggedRobot() {
     private val controller = CommandXboxController(0)
 
     private val drive: Drive
     private val superstructure: Superstructure
-    private val coralRollers: CoralRollers
+    private val funnel: Funnel
     private val algaeRollers: AlgaeRollers
+    private val climber: Climber
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
     private val robotState = RobotState()
 
     init {
-        LoggedTunableNumber.setTuningModeEnabled(true)
-
         SignalLogger.start()
 
         loggerInit()
@@ -98,9 +101,11 @@ class Robot : LoggedRobot() {
                             robotState,
                         )
 
-                    superstructure = Superstructure(Elevator(KrakenElevatorIOReal()), CoralArm(), AlgaeArm(), Climber())
-                    coralRollers = CoralRollers(Funnel(), Dispenser())
+                    superstructure =
+                        Superstructure(Elevator(ElevatorIOReal()), Arm(ArmIOReal()), Dispenser(DispenserIOReal()))
+                    funnel = Funnel(FunnelIOReal())
                     algaeRollers = AlgaeRollers()
+                    climber = Climber()
 
                     setSimulationPose = null
                     driveSim = null
@@ -161,9 +166,11 @@ class Robot : LoggedRobot() {
                         gyroIO.setAngle(it.rotation)
                     }
 
-                    superstructure = Superstructure(Elevator(KrakenElevatorIOSim()), CoralArm(), AlgaeArm(), Climber())
-                    coralRollers = CoralRollers(Funnel(), Dispenser())
+                    superstructure =
+                        Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()), Dispenser(object : DispenserIO {}))
+                    funnel = Funnel(object : FunnelIO {})
                     algaeRollers = AlgaeRollers()
+                    climber = Climber()
                 }
             }
         } else {
@@ -179,9 +186,15 @@ class Robot : LoggedRobot() {
                     robotState,
                 )
 
-            superstructure = Superstructure(Elevator(object : KrakenElevatorIO {}), CoralArm(), AlgaeArm(), Climber())
-            coralRollers = CoralRollers(Funnel(), Dispenser())
+            superstructure =
+                Superstructure(
+                    Elevator(object : ElevatorIO {}),
+                    Arm(object : ArmIO {}),
+                    Dispenser(object : DispenserIO {}),
+                )
+            funnel = Funnel(object : FunnelIO {})
             algaeRollers = AlgaeRollers()
+            climber = Climber()
 
             setSimulationPose = null
             driveSim = null
@@ -212,11 +225,29 @@ class Robot : LoggedRobot() {
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, robotState)
 
+        controller
+            .leftBumper()
+            .whileTrue(
+                superstructure
+                    .runGoal(Superstructure.State.INTAKE_CORAL)
+                    .alongWith(funnel.runGoal(Funnel.Goal.INTAKE_CORAL))
+            )
+
+        //        controller.y().whileTrue(superstructure.runGoal(Superstructure.State.TEST_ARM))
+        //
+        // controller.x().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_TALL_SCORE))
+
+        controller.a().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_L2))
+        controller.b().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_L3))
+        controller.y().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_L4))
+
+        controller.a().and(controller.rightBumper()).whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L2))
+        controller.b().and(controller.rightBumper()).whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L3))
+        controller.y().and(controller.rightBumper()).whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L4))
+
+        controller.back().onTrue(Commands.runOnce({ drive.resetGyro() }))
+
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
-
-        controller.a().whileTrue(drive.controllerCommand(alignStraightController))
-
-        controller.x().whileTrue(superstructure.runGoal(Superstructure.Goal.TEST_ELEVATOR))
     }
 
     private var currentAuto = Commands.none()
@@ -267,6 +298,17 @@ class Robot : LoggedRobot() {
                                     )
                                 },
                             )
+                            addOption(
+                                "CoralArm Static Characterization",
+                                {
+                                    StaticCharacterization(
+                                        superstructure,
+                                        { amps -> superstructure.runCoralArmCharacterizationAmps(amps) },
+                                        { superstructure.getCoralArmCharacterizationVelocity() },
+                                        { superstructure.endCoralArmCharacterization() },
+                                    )
+                                },
+                            )
                         }
                     }
                 }
@@ -279,7 +321,7 @@ class Robot : LoggedRobot() {
 
     private fun loggerInit() {
         Logger.recordMetadata("Robot", Constants.robot.toString())
-        Logger.recordMetadata("TuningMode", LoggedTunableNumber.isTuningModeEnabled().toString())
+        Logger.recordMetadata("TuningMode", Constants.TUNING_MODE.toString())
         Logger.recordMetadata("RuntimeType", getRuntimeType().toString())
         Logger.recordMetadata("ProjectName", MAVEN_NAME)
         Logger.recordMetadata("GitSha", GIT_SHA)

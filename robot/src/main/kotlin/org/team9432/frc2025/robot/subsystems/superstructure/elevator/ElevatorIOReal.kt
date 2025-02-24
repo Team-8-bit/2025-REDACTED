@@ -134,6 +134,10 @@ open class ElevatorIOReal : ElevatorIO {
         PhoenixUtil.tryUntilOk(5) { talon.configurator.apply(config) }
     }
 
+    override fun setSensorPosition(meters: Double) {
+        talon.setPosition(meters)
+    }
+
     override fun setBrake(enable: Boolean) {
         Thread {
                 talon.setNeutralMode(if (enable) NeutralModeValue.Brake else NeutralModeValue.Coast)

@@ -35,6 +35,9 @@ interface ElevatorIO {
     /** Updates the configuration of the leader motor. */
     fun updateConfig(block: (TalonFXConfiguration) -> Unit) {}
 
+    /** Sets the sensor position of the leader motor. */
+    fun setSensorPosition(meters: Double) {}
+
     /** Enables or disables brake mode on the motors. */
     fun setBrake(enable: Boolean) {}
 }

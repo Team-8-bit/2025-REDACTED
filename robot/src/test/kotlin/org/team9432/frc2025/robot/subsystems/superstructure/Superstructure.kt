@@ -35,11 +35,13 @@ internal class SuperstructureSequencerTest {
             val targetState = movement.second
             var currentState = initialState
 
+            // Commented out stuff is just to print the list of steps from each state to each other
+            // state which I thought was cool
             //            val path = mutableListOf<State>()
             //            path.add(initialState)
 
             while (currentState != targetState) {
-                val nextState = superstructure.getCommandBetween(currentState, targetState)
+                val nextState = superstructure.getStepBetween(currentState, targetState)
 
                 assertNotNull(nextState, "Failed to find a path between $initialState and ${targetState}!")
 

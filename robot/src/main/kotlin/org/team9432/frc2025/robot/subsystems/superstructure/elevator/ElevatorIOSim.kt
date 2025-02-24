@@ -44,4 +44,8 @@ class ElevatorIOSim : ElevatorIOReal() {
 
         super.updateInputs(inputs)
     }
+
+    override fun setSensorPosition(meters: Double) {
+        elevatorSim.setState(meters, 0.0)
+    }
 }

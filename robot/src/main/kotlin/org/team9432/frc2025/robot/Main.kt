@@ -28,6 +28,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
+import org.team9432.frc2025.robot.commands.ScoreGamePiece
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.subsystems.drive.Drive
@@ -59,7 +60,8 @@ import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOR
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOSim
 
 class Robot : LoggedRobot() {
-    private val controller = CommandXboxController(0)
+    private val driver = CommandXboxController(0)
+    private val operator = CommandXboxController(1)
 
     private val drive: Drive
     private val superstructure: Superstructure
@@ -67,6 +69,7 @@ class Robot : LoggedRobot() {
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
     private val localizer = Localizer()
+    private val scoringState = ScoringState()
 
     init {
         SignalLogger.start()
@@ -205,23 +208,26 @@ class Robot : LoggedRobot() {
     private fun bindButtons() {
         val joystickDriveController =
             JoystickDriveController(
-                controllerX = { -controller.leftY },
-                controllerY = { -controller.leftX },
-                controllerR = { controller.leftTriggerAxis - controller.rightTriggerAxis },
-                robotState,
+                controllerX = { -driver.leftY },
+                controllerY = { -driver.leftX },
+                controllerR = { driver.leftTriggerAxis - driver.rightTriggerAxis },
                 localizer,
             )
 
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, localizer)
 
-        controller
+        driver
             .leftBumper()
+            .and(driver.leftBumper().negate())
             .whileTrue(
                 superstructure
                     .runToGoal(Superstructure.State.INTAKE_CORAL)
                     .alongWith(funnel.runGoal(Funnel.Goal.INTAKE_CORAL))
             )
+
+        val scoreCommand = ScoreGamePiece(superstructure, scoringState, isReadyToScore = driver.leftBumper(), localizer)
+        driver.rightBumper().onTrue(scoreCommand.scoreCommand()).onFalse(scoreCommand.retractCommand())
 
         //        controller
         //            .a()
@@ -252,37 +258,37 @@ class Robot : LoggedRobot() {
         //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L4))
         //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
 
-        controller
-            .x()
-            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_PROCESSOR))
-            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
-        controller
-            .a()
-            .onTrue(superstructure.runToGoal(Superstructure.State.INTAKE_ALGAE_LOW))
-            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
-        controller
-            .b()
-            .onTrue(superstructure.runToGoal(Superstructure.State.INTAKE_ALGAE_HIGH))
-            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
-        controller
-            .y()
-            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_NET))
-            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
+        //        driver
+        //            .x()
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_PROCESSOR))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
+        //        driver
+        //            .a()
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.INTAKE_ALGAE_LOW))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
+        //        driver
+        //            .b()
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.INTAKE_ALGAE_HIGH))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
+        //        driver
+        //            .y()
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_NET))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
+        //
+        //        driver
+        //            .x()
+        //            .and(driver.rightBumper())
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_PROCESSOR))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        //
+        //        driver
+        //            .y()
+        //            .and(driver.rightBumper())
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_NET))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
 
-        controller
-            .x()
-            .and(controller.rightBumper())
-            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_PROCESSOR))
-            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-
-        controller
-            .y()
-            .and(controller.rightBumper())
-            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_NET))
-            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-
-        controller.back().onTrue(Commands.runOnce({ drive.resetGyro() }))
-        controller.start().onTrue(superstructure.homeSystem())
+        driver.back().onTrue(Commands.runOnce({ drive.resetGyro() }))
+        driver.start().onTrue(superstructure.homeSystem())
 
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
     }

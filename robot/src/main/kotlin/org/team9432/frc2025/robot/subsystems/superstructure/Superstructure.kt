@@ -40,7 +40,8 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
     private val visualizer = SuperstructureVisualizer("Superstructure/Poses")
 
     /** The latest complete state of the system. */
-    private var currentState: State = STOW
+    var currentState: State = STOW
+        private set
 
     /** The current state being moved towards on a path to [goal]. */
     private var step: State? = null
@@ -69,7 +70,9 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
         Logger.recordOutput("Superstructure/GoalState", goal)
     }
 
-    fun runToGoal(goal: State) = runOnce { updateGoal(goal) }.withName("Superstructure Goal $goal")
+    fun runToGoal(goal: State) = run { updateGoal(goal) }.until(::atGoal)
+
+    fun atGoal() = currentState == goal
 
     private fun trackToNextState() {
         // If there isn't a command running, but we still have a step state set, the move to that

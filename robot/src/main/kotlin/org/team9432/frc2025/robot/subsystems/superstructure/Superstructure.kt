@@ -1,17 +1,14 @@
 package org.team9432.frc2025.robot.subsystems.superstructure
 
-import edu.wpi.first.math.geometry.Pose3d
-import edu.wpi.first.math.geometry.Rotation3d
-import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import kotlin.collections.set
 import org.littletonrobotics.junction.Logger
-import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State.*
+import org.team9432.frc2025.lib.util.chainAddRequirements
+import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State.STOW
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
-import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmConstants
 import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 
@@ -19,82 +16,6 @@ import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 // https://www.chiefdelphi.com/t/frc-6328-mechanical-advantage-2025-build-thread/477314/244#p-3503708-implementation-part-one-structure-4
 class Superstructure(private val elevator: Elevator, private val arm: Arm, private val dispenser: Dispenser) :
     SubsystemBase() {
-    private val transitionCommands: Map<Pair<State, State>, Command>
-
-    private var currentState: State = STOW
-    private var stepState: State? = null
-    private var goalState: State = STOW
-
-    private var currentMovementCommand: Command = Commands.none()
-
-    private var isCharacterizing = false
-
-    init {
-        defaultCommand = runGoal(STOW)
-    }
-
-    override fun periodic() {
-        if (!currentMovementCommand.isScheduled) {
-            // If there isn't a command running, but we still have a step state set, the move to
-            // that step was just completed
-            if (stepState != null) {
-                // Update our current state
-                currentState = stepState!!
-                stepState = null
-            }
-        }
-
-        // If we aren't yet at the goal
-        if (currentState != goalState) {
-            // Find the next state and the command to move to it
-            val nextState = getCommandBetween(start = currentState, goal = goalState)
-            stepState = nextState
-            currentMovementCommand =
-                transitionCommands[currentState to nextState]
-                    ?: Commands.print("Failed to fetch command between $currentState and $goalState.")
-            currentMovementCommand.schedule()
-        }
-
-        elevator.periodic()
-        arm.periodic()
-        dispenser.periodic()
-
-        Logger.recordOutput(
-            "Superstructure/Poses/A_Stage2",
-            Pose3d(0.0, 0.0, elevator.positionMeters, Rotation3d.kZero),
-        )
-        Logger.recordOutput(
-            "Superstructure/Poses/B_CoralArm",
-            Pose3d(
-                Units.inchesToMeters(-8.25),
-                Units.inchesToMeters(0.0),
-                Units.inchesToMeters(19.157754 + elevator.positionMeters),
-                Rotation3d(0.0, Units.rotationsToRadians(arm.positionRotations - ArmConstants.MIN_POSITION), 0.0),
-            ),
-        )
-
-        Logger.recordOutput("Superstructure/CurrentState", currentState)
-        Logger.recordOutput("Superstructure/StepState", stepState)
-        Logger.recordOutput("Superstructure/GoalState", goalState)
-    }
-
-    fun runGoal(goal: State) =
-        Commands.sequence(
-                runOnce { setGoal(goal) },
-                Commands.waitUntil { currentState == goalState },
-                Commands.idle(this),
-            )
-            .withName("Superstructure Goal $goal")
-
-    private fun setGoal(newGoal: State) {
-        println("Setting state to $newGoal")
-        // Don't bother if it's already the target
-        if (newGoal == goalState) return
-
-        // Update the goal state
-        goalState = newGoal
-    }
-
     enum class State {
         STOW,
         TEST_ARM,
@@ -108,53 +29,90 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
         SCORE_L4,
     }
 
-    private fun runElevatorToGoal(goal: Elevator.Goal) =
-        Commands.sequence(Commands.runOnce({ elevator.goal = goal }), Commands.waitUntil(elevator::atGoal))
+    private val transitions = TransitionCommands(elevator, arm, dispenser)
+    private val visualizer = SuperstructureVisualizer("Superstructure/Poses")
 
-    private fun runArmToGoal(goal: Arm.Goal) =
-        Commands.sequence(Commands.runOnce({ arm.goal = goal }), Commands.waitUntil(arm::atGoal))
+    /** The latest complete state of the system. */
+    private var currentState: State = STOW
 
-    private fun runDispenser(goal: Dispenser.Goal) = Commands.runOnce({ dispenser.goal = goal })
+    /** The current state being moved towards on a path to [goal]. */
+    private var step: State? = null
 
-    // Builds the set of legal moves
-    init {
-        val transitions = mutableMapOf<Pair<State, State>, Command>()
+    /** The current targeted state of the system. */
+    private var goal: State = STOW
 
-        transitions[STOW to PREPARE_TALL_SCORE] =
-            Commands.sequence(runElevatorToGoal(Elevator.Goal.MIN_ARM_OUT), runArmToGoal(Arm.Goal.PREPARE_SCORE))
+    /** The current command running between states. */
+    private var currentMovementCommand: Command = Commands.none()
 
-        transitions[PREPARE_TALL_SCORE to STOW] =
-            Commands.sequence(runArmToGoal(Arm.Goal.STOW), runElevatorToGoal(Elevator.Goal.STOW))
+    private var stateTrackingDisabled = false
 
-        transitions[STOW to INTAKE_CORAL] = runDispenser(Dispenser.Goal.INTAKE_CORAL)
-        transitions[INTAKE_CORAL to STOW] = runDispenser(Dispenser.Goal.IDLE)
+    override fun periodic() {
+        dispenser.periodic()
 
-        transitions[PREPARE_TALL_SCORE to PREPARE_L2] =
-            runElevatorToGoal(Elevator.Goal.L2).andThen(runArmToGoal(Arm.Goal.L2))
-        transitions[PREPARE_TALL_SCORE to PREPARE_L3] =
-            runElevatorToGoal(Elevator.Goal.L3).andThen(runArmToGoal(Arm.Goal.L3))
-        transitions[PREPARE_TALL_SCORE to PREPARE_L4] =
-            runElevatorToGoal(Elevator.Goal.L4).andThen(runArmToGoal(Arm.Goal.L4))
-
-        for (scoringGoal in setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4)) {
-            transitions[scoringGoal to PREPARE_TALL_SCORE] =
-                runArmToGoal(Arm.Goal.PREPARE_SCORE).andThen(runElevatorToGoal(Elevator.Goal.MIN_ARM_OUT))
+        if (!stateTrackingDisabled) {
+            trackToNextState()
         }
 
-        transitions[PREPARE_L2 to SCORE_L2] = runDispenser(Dispenser.Goal.OUTTAKE_CORAL)
-        transitions[SCORE_L2 to PREPARE_L2] = runDispenser(Dispenser.Goal.IDLE)
-        transitions[PREPARE_L3 to SCORE_L3] = runDispenser(Dispenser.Goal.OUTTAKE_CORAL)
-        transitions[SCORE_L3 to PREPARE_L3] = runDispenser(Dispenser.Goal.IDLE)
-        transitions[PREPARE_L4 to SCORE_L4] = runDispenser(Dispenser.Goal.OUTTAKE_CORAL)
-        transitions[SCORE_L4 to PREPARE_L4] = runDispenser(Dispenser.Goal.IDLE)
+        visualizer.publish(elevatorMeters = elevator.positionMeters, armRotations = arm.positionRotations)
 
-        transitions[STOW to TEST_ARM] = runArmToGoal(Arm.Goal.TEST)
-        transitions[TEST_ARM to STOW] = runArmToGoal(Arm.Goal.STOW)
-
-        transitionCommands = transitions
+        Logger.recordOutput("Superstructure/CurrentState", currentState)
+        Logger.recordOutput("Superstructure/StepState", step)
+        Logger.recordOutput("Superstructure/GoalState", goal)
     }
 
-    fun getCommandBetween(start: State, goal: State): State? {
+    fun runToGoal(goal: State) = runOnce { updateGoal(goal) }.withName("Superstructure Goal $goal")
+
+    private fun trackToNextState() {
+        // If there isn't a command running, but we still have a step state set, the move to that
+        // step was just completed
+        if (!currentMovementCommand.isScheduled && step != null) {
+            // Update our current state
+            currentState = step!!
+            step = null
+        }
+
+        // If the robot is not at the goal
+        if (currentState != goal) {
+            // Find the next state and the command to move to it
+            val nextState = getStepBetween(start = currentState, goal = goal)
+            step = nextState
+            currentMovementCommand = transitions[currentState to nextState]
+            currentMovementCommand.schedule()
+        }
+    }
+
+    private fun updateGoal(newGoal: State) {
+        // Don't bother if it's already the target
+        if (newGoal == goal) return
+
+        // Update the goal state
+        goal = newGoal
+
+        // Don't do anything if tracking is disabled
+        if (stateTrackingDisabled) return
+
+        // Return if not already moving, if moving its more complicated
+        if (step == null) return
+
+        // Get the ideal next state from where we are going
+        val idealStep = getStepBetween(step!!, newGoal)
+
+        // If it's the same position, nothing to change
+        if (idealStep == step) return
+
+        // If it's back where we were, it's safe to cancel and reverse
+        if (idealStep == currentState) {
+            // Otherwise, set our current state to where we were going and move backwards
+            currentMovementCommand.cancel()
+            currentMovementCommand = transitions[step to currentState]
+            currentMovementCommand.schedule()
+            val temp = currentState
+            currentState = step!!
+            step = temp
+        }
+    }
+
+    fun getStepBetween(start: State, goal: State): State? {
         val visited = mutableMapOf<State, State?>()
         val queue = ArrayDeque<State>()
         queue.add(start)
@@ -163,7 +121,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
             val current = queue.removeFirst()
             if (current == goal) break
 
-            val neighbors = transitionCommands.keys.filter { it.first == current }.map { it.second }
+            val neighbors = transitions.allValidMoves.filter { it.first == current }.map { it.second }
 
             for (neighbor in neighbors) {
                 if (neighbor !in visited.keys) {
@@ -195,31 +153,31 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
         return nextState
     }
 
-    fun runElevatorCharacterizationAmps(amps: Double) {
-        elevator.characterizationInput = amps
-        isCharacterizing = true
-    }
+    fun homeSystem(): Command =
+        Commands.sequence(
+                elevator.homeElevator(),
+                elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT),
+                arm.homeArm(),
+                elevator.runToGoal(Elevator.Goal.STOW),
+                arm.runToGoal(Arm.Goal.STOW),
+            )
+            .beforeStarting({ stateTrackingDisabled = true })
+            .finallyDo { _ -> stateTrackingDisabled = false }
+            .chainAddRequirements(this)
+            .withName("Home Superstructure")
 
-    fun getElevatorCharacterizationVelocity(): Double {
-        return elevator.velocityMps
-    }
+    fun elevatorStaticCharacterization() =
+        elevator
+            .staticCharacterization()
+            .beforeStarting({ stateTrackingDisabled = true })
+            .finallyDo { _ -> stateTrackingDisabled = false }
+            .chainAddRequirements(this)
+            .withName("Elevator Static Characterization")
 
-    fun endElevatorCharacterization() {
-        elevator.characterizationInput = null
-        isCharacterizing = false
-    }
-
-    fun runCoralArmCharacterizationAmps(amps: Double) {
-        arm.characterizationInput = amps
-        isCharacterizing = true
-    }
-
-    fun getCoralArmCharacterizationVelocity(): Double {
-        return arm.velocityRotationsPerSecond
-    }
-
-    fun endCoralArmCharacterization() {
-        arm.characterizationInput = null
-        isCharacterizing = false
-    }
+    fun armStaticCharacterization() =
+        arm.staticCharacterization()
+            .beforeStarting({ stateTrackingDisabled = true })
+            .finallyDo { _ -> stateTrackingDisabled = false }
+            .chainAddRequirements(this)
+            .withName("Arm Static Characterization")
 }

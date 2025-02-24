@@ -30,7 +30,6 @@ import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
-import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
@@ -219,23 +218,41 @@ class Robot : LoggedRobot() {
             .leftBumper()
             .whileTrue(
                 superstructure
-                    .runGoal(Superstructure.State.INTAKE_CORAL)
+                    .runToGoal(Superstructure.State.INTAKE_CORAL)
                     .alongWith(funnel.runGoal(Funnel.Goal.INTAKE_CORAL))
             )
 
-        //        controller.y().whileTrue(superstructure.runGoal(Superstructure.State.TEST_ARM))
-        //
-        // controller.x().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_TALL_SCORE))
+        controller
+            .a()
+            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L2))
+            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        controller
+            .b()
+            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L3))
+            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        controller
+            .y()
+            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L4))
+            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
 
-        controller.a().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_L2))
-        controller.b().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_L3))
-        controller.y().whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_L4))
-
-        controller.a().and(controller.rightBumper()).whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L2))
-        controller.b().and(controller.rightBumper()).whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L3))
-        controller.y().and(controller.rightBumper()).whileTrue(superstructure.runGoal(Superstructure.State.SCORE_L4))
+        controller
+            .a()
+            .and(controller.rightBumper())
+            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L2))
+            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        controller
+            .b()
+            .and(controller.rightBumper())
+            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L3))
+            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        controller
+            .y()
+            .and(controller.rightBumper())
+            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L4))
+            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
 
         controller.back().onTrue(Commands.runOnce({ drive.resetGyro() }))
+        controller.start().onTrue(superstructure.homeSystem())
 
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
     }
@@ -279,25 +296,11 @@ class Robot : LoggedRobot() {
                             addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
                             addOption(
                                 "Elevator Static Characterization",
-                                {
-                                    StaticCharacterization(
-                                        superstructure,
-                                        { amps -> superstructure.runElevatorCharacterizationAmps(amps) },
-                                        { superstructure.getElevatorCharacterizationVelocity() },
-                                        { superstructure.endElevatorCharacterization() },
-                                    )
-                                },
+                                { superstructure.elevatorStaticCharacterization() },
                             )
                             addOption(
                                 "CoralArm Static Characterization",
-                                {
-                                    StaticCharacterization(
-                                        superstructure,
-                                        { amps -> superstructure.runCoralArmCharacterizationAmps(amps) },
-                                        { superstructure.getCoralArmCharacterizationVelocity() },
-                                        { superstructure.endCoralArmCharacterization() },
-                                    )
-                                },
+                                { superstructure.armStaticCharacterization() },
                             )
                         }
                     }

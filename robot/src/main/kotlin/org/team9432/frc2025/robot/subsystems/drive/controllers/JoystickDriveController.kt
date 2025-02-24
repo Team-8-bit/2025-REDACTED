@@ -12,6 +12,7 @@ import kotlin.math.pow
 import kotlin.math.withSign
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
+import org.team9432.frc2025.lib.util.Rotation2dWithout0Error
 import org.team9432.frc2025.robot.RobotState
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
@@ -53,7 +54,7 @@ class JoystickDriveController(
         var linearMagnitude = MathUtil.applyDeadband(hypot(xInput, yInput), linearDeadband)
 
         // Get direction of the input
-        val linearDirection = Rotation2d(xInput, yInput)
+        val linearDirection = Rotation2dWithout0Error(xInput, yInput)
 
         // Square magnitude
         linearMagnitude = linearMagnitude.pow(2).withSign(linearMagnitude)

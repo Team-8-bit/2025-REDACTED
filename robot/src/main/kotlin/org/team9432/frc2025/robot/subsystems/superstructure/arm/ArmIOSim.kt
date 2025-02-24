@@ -14,9 +14,7 @@ class ArmIOSim : ArmIOReal() {
         SingleJointedArmSim(
             /* gearbox = */ DCMotor.getKrakenX60Foc(1),
             /* gearing = */ ArmConstants.REDUCTION,
-            /* jKgMetersSquared = */ Units.inchesToMeters(
-                163.67174 * 0.00029263965
-            ), // onshape ft-lbs (xx measurement) to m-kg
+            /* jKgMetersSquared = */ 163.67174 * 0.00029263965, // onshape ft-lbs (xx measurement) to m-kg
             /* armLengthMeters = */ Units.inchesToMeters(hypot(4.911385, 2.136103)),
             /* minAngleRads = */ Units.rotationsToRadians(ArmConstants.MIN_POSITION),
             /* maxAngleRads = */ Units.rotationsToRadians(ArmConstants.MAX_POSITION),
@@ -33,11 +31,11 @@ class ArmIOSim : ArmIOReal() {
     override fun updateInputs(inputs: ArmIO.ArmIOInputs) {
         talonSim.setSupplyVoltage(RobotController.getBatteryVoltage())
 
-        armSim.setInputVoltage(talonSim.motorVoltage)
+        armSim.setInputVoltage(-talonSim.motorVoltage)
         armSim.update(LoggedRobot.defaultPeriodSecs)
 
-        talonSim.setRawRotorPosition(Units.radiansToRotations(armSim.angleRads) * ArmConstants.REDUCTION)
-        talonSim.setRotorVelocity(Units.radiansToRotations(armSim.velocityRadPerSec) * ArmConstants.REDUCTION)
+        talonSim.setRawRotorPosition(-Units.radiansToRotations(armSim.angleRads) * ArmConstants.REDUCTION)
+        talonSim.setRotorVelocity(-Units.radiansToRotations(armSim.velocityRadPerSec) * ArmConstants.REDUCTION)
 
         super.updateInputs(inputs)
     }

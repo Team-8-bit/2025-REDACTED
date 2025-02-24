@@ -5,7 +5,7 @@ import kotlin.system.exitProcess
 
 object Constants {
     /** The robot this code is running on. */
-    private val ROBOT_TYPE = RobotType.COMP
+    private val ROBOT_TYPE = RobotType.SIM
 
     /** Overrides the type of the robot, ONLY TO BE USED IN UNIT TESTS. */
     private var overrideUnitTestRobotType: RobotType? = null

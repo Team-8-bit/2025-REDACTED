@@ -36,7 +36,13 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
         PREPARE_SCORE({ 0.16 }),
         L2(LoggedTunableNumber("Arm/Setpoints/L2", 0.17)),
         L3(LoggedTunableNumber("Arm/Setpoints/L3", 0.17)),
-        L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.17));
+        L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.17)),
+        INTAKE_ALGAE_REEF(LoggedTunableNumber("Arm/Setpoints/IntakeAlgaeReef", -0.1)),
+        HOLD_ALGAE_LOW(LoggedTunableNumber("Arm/Setpoints/HoldAlgaeLow", -0.2)),
+        PREPARE_PROCESSOR(LoggedTunableNumber("Arm/Setpoints/PrepareProcessor", -0.2)),
+        SCORE_PROCESSOR(LoggedTunableNumber("Arm/Setpoints/ScoreProcessor", -0.2)),
+        PREPARE_NET(LoggedTunableNumber("Arm/Setpoints/PrepareNet", 0.16)),
+        SCORE_NET(LoggedTunableNumber("Arm/Setpoints/ScoreNet", 0.17));
 
         val rotations
             get() = angleSupplier.invoke()

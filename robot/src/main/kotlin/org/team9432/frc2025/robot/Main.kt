@@ -222,33 +222,62 @@ class Robot : LoggedRobot() {
                     .alongWith(funnel.runGoal(Funnel.Goal.INTAKE_CORAL))
             )
 
+        //        controller
+        //            .a()
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L2))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        //        controller
+        //            .b()
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L3))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        //        controller
+        //            .y()
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L4))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        //
+        //        controller
+        //            .a()
+        //            .and(controller.rightBumper())
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L2))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        //        controller
+        //            .b()
+        //            .and(controller.rightBumper())
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L3))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        //        controller
+        //            .y()
+        //            .and(controller.rightBumper())
+        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L4))
+        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+
+        controller
+            .x()
+            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_PROCESSOR))
+            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
         controller
             .a()
-            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L2))
-            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+            .onTrue(superstructure.runToGoal(Superstructure.State.INTAKE_ALGAE_LOW))
+            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
         controller
             .b()
-            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L3))
-            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+            .onTrue(superstructure.runToGoal(Superstructure.State.INTAKE_ALGAE_HIGH))
+            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
         controller
             .y()
-            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L4))
+            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_NET))
+            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
+
+        controller
+            .x()
+            .and(controller.rightBumper())
+            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_PROCESSOR))
             .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
 
         controller
-            .a()
-            .and(controller.rightBumper())
-            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L2))
-            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-        controller
-            .b()
-            .and(controller.rightBumper())
-            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L3))
-            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-        controller
             .y()
             .and(controller.rightBumper())
-            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L4))
+            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_NET))
             .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
 
         controller.back().onTrue(Commands.runOnce({ drive.resetGyro() }))

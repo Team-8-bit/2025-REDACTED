@@ -56,7 +56,7 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
             get() = setpointSupplier.invoke()
     }
 
-    private val homingVolts = LoggedTunableNumber("Elevator/Tuning/HomingVolts", -2.0)
+    private val homingVolts = LoggedTunableNumber("Elevator/Tuning/HomingVolts", -1.0)
     private val homingTimeSecs = LoggedTunableNumber("Elevator/Tuning/HomingThresholdSecs", 0.25)
     private val homingVelocityThreshold =
         LoggedTunableNumber("Elevator/Tuning/HomingVelocityThresholdMPS", Units.inchesToMeters(3.0))

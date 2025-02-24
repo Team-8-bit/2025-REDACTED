@@ -16,7 +16,6 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorConstants
 
 class Arm(private val io: ArmIO) : SubsystemBase() {
     private val inputs = LoggedArmIOInputs()
@@ -48,7 +47,7 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
             get() = angleSupplier.invoke()
     }
 
-    private val homingVolts = LoggedTunableNumber("Arm/Tuning/HomingVolts", -2.0)
+    private val homingVolts = LoggedTunableNumber("Arm/Tuning/HomingVolts", -1.0)
     private val homingTimeSecs = LoggedTunableNumber("Arm/Tuning/HomingThresholdSecs", 0.25)
     private val homingVelocityThreshold = LoggedTunableNumber("Arm/Tuning/HomingVelocityThresholdRPS", 0.1)
     private var homingDebouncer = Debouncer(homingTimeSecs.get())

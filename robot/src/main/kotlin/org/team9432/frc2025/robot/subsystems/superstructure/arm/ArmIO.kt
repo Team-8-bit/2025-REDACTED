@@ -30,7 +30,7 @@ interface ArmIO {
     fun updateConfig(block: (TalonFXConfiguration) -> Unit) {}
 
     /** Sets the sensor position of the motor. */
-    fun setSensorPosition(meters: Double) {}
+    fun setSensorPosition(rotations: Double) {}
 
     fun setBrake(enable: Boolean) {}
 }

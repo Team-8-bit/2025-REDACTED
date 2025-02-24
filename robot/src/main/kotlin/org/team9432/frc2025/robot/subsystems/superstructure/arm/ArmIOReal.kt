@@ -109,6 +109,10 @@ open class ArmIOReal : ArmIO {
         PhoenixUtil.tryUntilOk(5) { talon.configurator.apply(config) }
     }
 
+    override fun setSensorPosition(rotations: Double) {
+        talon.setPosition(rotations)
+    }
+
     override fun setBrake(enable: Boolean) {
         Thread { talon.setNeutralMode(if (enable) NeutralModeValue.Brake else NeutralModeValue.Coast) }.start()
     }

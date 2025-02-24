@@ -136,7 +136,7 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
             )
             .until { homingDebouncer.calculate(abs(inputs.velocityRotationsPerSec) < homingVelocityThreshold.get()) }
             .andThen({
-                io.setSensorPosition(ElevatorConstants.MIN_POSITION)
+                io.setSensorPosition(ArmConstants.MIN_POSITION)
                 hasHomed = true
             })
             .andThen(runOnce { this.goal = Goal.STOW })

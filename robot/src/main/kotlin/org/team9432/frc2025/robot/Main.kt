@@ -66,7 +66,7 @@ class Robot : LoggedRobot() {
     private val funnel: Funnel
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
-    private val robotState = RobotState()
+    private val localizer = Localizer()
 
     init {
         SignalLogger.start()
@@ -93,7 +93,7 @@ class Robot : LoggedRobot() {
                             ModuleIOKraken(ModuleConfig.BACK_LEFT, odometryThread),
                             ModuleIOKraken(ModuleConfig.BACK_RIGHT, odometryThread),
                             odometryThread,
-                            robotState,
+                            localizer,
                         )
 
                     superstructure =
@@ -148,7 +148,7 @@ class Robot : LoggedRobot() {
                             ModuleIOSim(backLeft),
                             ModuleIOSim(backRight),
                             odometryThread,
-                            robotState,
+                            localizer,
                         )
 
                     driveSim = swerveSim
@@ -174,7 +174,7 @@ class Robot : LoggedRobot() {
                     object : ModuleIO {},
                     object : ModuleIO {},
                     odometryThread,
-                    robotState,
+                    localizer,
                 )
 
             superstructure =
@@ -209,10 +209,11 @@ class Robot : LoggedRobot() {
                 controllerY = { -controller.leftX },
                 controllerR = { controller.leftTriggerAxis - controller.rightTriggerAxis },
                 robotState,
+                localizer,
             )
 
         val alignStraightController =
-            JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, robotState)
+            JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, localizer)
 
         controller
             .leftBumper()
@@ -301,7 +302,7 @@ class Robot : LoggedRobot() {
                             val driveRoutines = DrivetrainSysIdCommands(drive)
                             addOption(
                                 "Drive Wheel Radius Characterization",
-                                { WheelRadiusCharacterization(drive, robotState) },
+                                { WheelRadiusCharacterization(drive, localizer) },
                             )
                             addOption(
                                 "Drive Linear SysId (Quasistatic Forward)",
@@ -416,7 +417,7 @@ class Robot : LoggedRobot() {
         }
 
         // Log robot state
-        robotState.log()
+        localizer.log()
 
         autoChooser.update()
     }

@@ -6,7 +6,7 @@ import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import kotlin.collections.set
 import org.littletonrobotics.junction.Logger
-import org.team9432.frc2025.lib.util.chainAddRequirements
+import org.team9432.frc2025.lib.util.withRequirements
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State.STOW
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
 import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
@@ -166,7 +166,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
             )
             .beforeStarting({ stateTrackingDisabled = true })
             .finallyDo { _ -> stateTrackingDisabled = false }
-            .chainAddRequirements(this)
+            .withRequirements(this)
             .withName("Home Superstructure")
 
     fun elevatorStaticCharacterization() =
@@ -174,13 +174,13 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
             .staticCharacterization()
             .beforeStarting({ stateTrackingDisabled = true })
             .finallyDo { _ -> stateTrackingDisabled = false }
-            .chainAddRequirements(this)
+            .withRequirements(this)
             .withName("Elevator Static Characterization")
 
     fun armStaticCharacterization() =
         arm.staticCharacterization()
             .beforeStarting({ stateTrackingDisabled = true })
             .finallyDo { _ -> stateTrackingDisabled = false }
-            .chainAddRequirements(this)
+            .withRequirements(this)
             .withName("Arm Static Characterization")
 }

@@ -53,8 +53,8 @@ object DrivetrainConstants {
                 ffkS = 0.014
                 ffkV = 0.134
                 ffkT = 0.0
-                drivekP = 0.1
-                drivekD = 0.0
+                drivekP = 100.0
+                drivekD = 10.0
                 steerkP = 10.0
                 steerkD = 0.0
             }

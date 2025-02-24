@@ -219,12 +219,13 @@ class Robot : LoggedRobot() {
 
         driver
             .leftBumper()
-            .and(driver.leftBumper().negate())
+            .and(driver.rightBumper().negate())
             .whileTrue(
                 superstructure
                     .runToGoal(Superstructure.State.INTAKE_CORAL)
                     .alongWith(funnel.runGoal(Funnel.Goal.INTAKE_CORAL))
             )
+            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
 
         val scoreCommand = ScoreGamePiece(superstructure, scoringState, isReadyToScore = driver.leftBumper(), localizer)
         driver.rightBumper().onTrue(scoreCommand.scoreCommand()).onFalse(scoreCommand.retractCommand())

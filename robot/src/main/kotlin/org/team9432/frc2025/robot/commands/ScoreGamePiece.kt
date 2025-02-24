@@ -54,7 +54,7 @@ class ScoreGamePiece(
                 } else {
                     localizer
                         .waitUntilRelativeMovement { dx, dy, dr ->
-                            dx > retreatBeforeRetractX.get() ||
+                            dx < -retreatBeforeRetractX.get() ||
                                 abs(dy) > retreatBeforeRetractY.get() ||
                                 abs(dr.rotations) > retreatBeforeRetractR.get()
                         }

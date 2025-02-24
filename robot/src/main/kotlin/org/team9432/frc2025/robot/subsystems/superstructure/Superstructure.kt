@@ -162,6 +162,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
                 arm.homeArm(),
                 elevator.runToGoal(Elevator.Goal.STOW),
                 arm.runToGoal(Arm.Goal.STOW),
+                runOnce { currentState = STOW },
             )
             .beforeStarting({ stateTrackingDisabled = true })
             .finallyDo { _ -> stateTrackingDisabled = false }

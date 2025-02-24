@@ -60,7 +60,8 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
     private val motorOutputDisabled = { DriverStation.isDisabled() }
 
     private var goal = Goal.STOW
-    private var hasHomed = false
+    var hasHomed = false
+        private set
 
     /** Characterization input in amps sent to the elevator. If set to null will run position control. */
     private var characterizationInput: Double? = null
@@ -134,7 +135,9 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
         }
 
         // Diagnostic information
+        Logger.recordOutput("Elevator/Goal", goal)
         Logger.recordOutput("Elevator/AtGoal", atGoal())
+        Logger.recordOutput("Elevator/Homed", hasHomed)
         Logger.recordOutput("Elevator/CharacterizationInput", characterizationInput ?: 0.0)
     }
 

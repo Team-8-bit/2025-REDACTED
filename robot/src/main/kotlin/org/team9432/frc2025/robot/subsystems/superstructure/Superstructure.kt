@@ -55,6 +55,8 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
 
         visualizer.publish(elevatorMeters = elevator.positionMeters, armRotations = arm.positionRotations)
 
+        Logger.recordOutput("Superstructure/StateTrackingEnabled", !stateTrackingDisabled)
+        Logger.recordOutput("Superstructure/Homed", elevator.hasHomed && arm.hasHomed)
         Logger.recordOutput("Superstructure/CurrentState", currentState)
         Logger.recordOutput("Superstructure/StepState", step)
         Logger.recordOutput("Superstructure/GoalState", goal)

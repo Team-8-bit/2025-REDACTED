@@ -52,10 +52,11 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
     private val motorOutputDisabled = { DriverStation.isDisabled() }
 
     private var goal = Goal.STOW
-    private var hasHomed = false
+    var hasHomed = false
+        private set
 
     /** Characterization input in amps sent to the arm. If set to null will run position control. */
-    var characterizationInput: Double? = null
+    private var characterizationInput: Double? = null
 
     init {
         io.setBrake(true)
@@ -106,6 +107,8 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
         }
 
         Logger.recordOutput("Arm/Goal", goal)
+        Logger.recordOutput("Arm/AtGoal", atGoal())
+        Logger.recordOutput("Arm/Homed", hasHomed)
         Logger.recordOutput("Arm/CharacterizationInput", characterizationInput ?: 0.0)
     }
 

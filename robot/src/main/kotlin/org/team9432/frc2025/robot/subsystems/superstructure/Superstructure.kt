@@ -18,7 +18,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
     SubsystemBase() {
     enum class State {
         STOW,
-        TEST_ARM,
+        ARM_ABOVE_BUMPER,
         INTAKE_CORAL,
         PREPARE_TALL_SCORE,
         PREPARE_L2,
@@ -27,6 +27,13 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
         SCORE_L2,
         SCORE_L3,
         SCORE_L4,
+        HOLD_ALGAE_LOW,
+        INTAKE_ALGAE_LOW,
+        INTAKE_ALGAE_HIGH,
+        PREPARE_NET,
+        SCORE_NET,
+        PREPARE_PROCESSOR,
+        SCORE_PROCESSOR,
     }
 
     private val transitions = TransitionCommands(elevator, arm, dispenser)
@@ -157,6 +164,10 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
 
     fun homeSystem(): Command =
         Commands.sequence(
+                runOnce {
+                    goal = STOW
+                    step = null
+                },
                 elevator.homeElevator(),
                 elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT),
                 arm.homeArm(),

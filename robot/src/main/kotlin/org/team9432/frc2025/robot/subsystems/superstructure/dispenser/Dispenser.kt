@@ -16,6 +16,10 @@ class Dispenser(private val io: DispenserIO) {
         IDLE,
         INTAKE_CORAL,
         OUTTAKE_CORAL,
+        INTAKE_ALGAE,
+        HOLD_ALGAE,
+        SCORE_ALGAE_PROCESSOR,
+        SCORE_ALGAE_NET,
     }
 
     var goal = Goal.IDLE
@@ -25,15 +29,13 @@ class Dispenser(private val io: DispenserIO) {
         Logger.processInputs("Dispenser", inputs)
 
         when (goal) {
-            Goal.IDLE -> {
-                io.setControl(neutralOut)
-            }
-            Goal.INTAKE_CORAL -> {
-                io.setControl(voltageControl.withOutput(5.0))
-            }
-            Goal.OUTTAKE_CORAL -> {
-                io.setControl(voltageControl.withOutput(-6.0))
-            }
+            Goal.IDLE -> io.setControl(neutralOut)
+            Goal.INTAKE_CORAL -> io.setControl(voltageControl.withOutput(5.0))
+            Goal.OUTTAKE_CORAL -> io.setControl(voltageControl.withOutput(-6.0))
+            Goal.INTAKE_ALGAE -> io.setControl(voltageControl.withOutput(-10.0))
+            Goal.HOLD_ALGAE -> io.setControl(currentControl.withOutput(-40.0))
+            Goal.SCORE_ALGAE_PROCESSOR -> io.setControl(voltageControl.withOutput(5.0))
+            Goal.SCORE_ALGAE_NET -> io.setControl(voltageControl.withOutput(12.0))
         }
     }
 }

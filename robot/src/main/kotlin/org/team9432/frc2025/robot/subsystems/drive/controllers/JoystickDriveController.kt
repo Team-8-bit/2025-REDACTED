@@ -33,8 +33,7 @@ class JoystickDriveController(
     }
 
     override fun calculate(): ChassisSpeeds {
-        val linearSpeed = getLinearSpeed()
-        val rotationSpeed = MathUtil.applyDeadband(controllerR(), rotationDeadband)
+        val (linearSpeed, rotationSpeed) = getSpeeds()
 
         val invert = AllianceTracker.switch(blue = 1, red = -1)
 
@@ -46,12 +45,16 @@ class JoystickDriveController(
         )
     }
 
-    fun getLinearSpeed(): Translation2d {
+    fun getSpeeds(): Pair<Translation2d, Double> {
         val xInput = controllerX()
         val yInput = controllerY()
 
         // Apply deadband
         var linearMagnitude = MathUtil.applyDeadband(hypot(xInput, yInput), linearDeadband)
+
+        // Calculate angular velocity
+        val angularMagnitude = MathUtil.applyDeadband(controllerR(), rotationDeadband)
+        val angularVelocity = angularMagnitude.pow(2).withSign(angularMagnitude)
 
         // Get direction of the input
         val linearDirection = Rotation2dWithout0Error(xInput, yInput)
@@ -63,6 +66,6 @@ class JoystickDriveController(
         val linearVelocity =
             Pose2d(0.0, 0.0, linearDirection).transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d())).translation
 
-        return linearVelocity
+        return linearVelocity to angularVelocity
     }
 }

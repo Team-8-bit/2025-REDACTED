@@ -18,7 +18,6 @@ import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
 import org.team9432.frc2025.robot.subsystems.superstructure.SuperstructureConstants
-import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm.Goal
 
 class Elevator(private val io: ElevatorIO) : SubsystemBase() {
     private val inputs: LoggedElevatorIOInputs = LoggedElevatorIOInputs()
@@ -38,14 +37,13 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
         STOW({ 0.0 }),
         MIN_ARM_OUT(
             LoggedTunableNumber(
-                "Elevator/Setpoints/MinFreeArm",
+                "Elevator/Setpoints/MinArmOut",
                 SuperstructureConstants.MIN_ARM_EXTENSION_ELEVATOR_HEIGHT,
             )
         ),
         L2(LoggedTunableNumber("Elevator/Setpoints/L2", 0.35)),
         L3(LoggedTunableNumber("Elevator/Setpoints/L3", 0.75)),
-        L4(LoggedTunableNumber("Elevator/Setpoints/L4", 1.35)),
-        TEST(LoggedTunableNumber("Elevator/Setpoints/Test", 0.0));
+        L4(LoggedTunableNumber("Elevator/Setpoints/L4", 1.35));
 
         val meters
             get() = setpointSupplier.invoke()

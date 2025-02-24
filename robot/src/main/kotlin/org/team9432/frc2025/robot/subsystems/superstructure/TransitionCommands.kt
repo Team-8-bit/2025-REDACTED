@@ -44,9 +44,6 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm, p
         transitions[PREPARE_L4 to SCORE_L4] = runDispenser(Dispenser.Goal.OUTTAKE_CORAL)
         transitions[SCORE_L4 to PREPARE_L4] = runDispenser(Dispenser.Goal.IDLE)
 
-        transitions[STOW to TEST_ARM] = arm.runToGoal(Arm.Goal.TEST)
-        transitions[TEST_ARM to STOW] = arm.runToGoal(Arm.Goal.STOW)
-
         transitions.forEach { (between, command) ->
             command.addRequirements(elevator, arm)
             command.name = "Transition from ${between.first} to ${between.second}."

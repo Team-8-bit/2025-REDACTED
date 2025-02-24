@@ -18,7 +18,6 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
     SubsystemBase() {
     enum class State {
         STOW,
-        TEST_ARM,
         INTAKE_CORAL,
         PREPARE_TALL_SCORE,
         PREPARE_L2,

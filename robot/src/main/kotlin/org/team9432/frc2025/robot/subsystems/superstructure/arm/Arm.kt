@@ -16,7 +16,6 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator.Goal
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorConstants
 
 class Arm(private val io: ArmIO) : SubsystemBase() {
@@ -37,8 +36,7 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
         PREPARE_SCORE({ 0.16 }),
         L2(LoggedTunableNumber("Arm/Setpoints/L2", 0.17)),
         L3(LoggedTunableNumber("Arm/Setpoints/L3", 0.17)),
-        L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.17)),
-        TEST(LoggedTunableNumber("Arm/Setpoints/Test", 0.0));
+        L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.17));
 
         val rotations
             get() = angleSupplier.invoke()

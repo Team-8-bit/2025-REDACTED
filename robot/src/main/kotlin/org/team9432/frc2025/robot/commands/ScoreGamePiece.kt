@@ -26,6 +26,7 @@ class ScoreGamePiece(
     fun scoreCommand(): Command {
         return defer(
             {
+                println("Starting score at ${scoringState.target}")
                 sequence(
                     superstructure.runToGoal(getPrepareScoreState(scoringState.target)),
                     waitUntil(isReadyToScore),

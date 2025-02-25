@@ -230,34 +230,12 @@ class Robot : LoggedRobot() {
         val scoreCommand = ScoreGamePiece(superstructure, scoringState, isReadyToScore = driver.leftBumper(), localizer)
         driver.rightBumper().onTrue(scoreCommand.scoreCommand()).onFalse(scoreCommand.retractCommand())
 
-        //        controller
-        //            .a()
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L2))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-        //        controller
-        //            .b()
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L3))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-        //        controller
-        //            .y()
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_L4))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-        //
-        //        controller
-        //            .a()
-        //            .and(controller.rightBumper())
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L2))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-        //        controller
-        //            .b()
-        //            .and(controller.rightBumper())
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L3))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-        //        controller
-        //            .y()
-        //            .and(controller.rightBumper())
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_L4))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+        driver.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
+        driver.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
+        driver.y().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
+
+        driver.povUp().onTrue(Commands.runOnce({ scoringState.algaePickupTarget = ScoringState.AlgaePickupTarget.HIGH }))
+        driver.povDown().onTrue(Commands.runOnce({ scoringState.algaePickupTarget = ScoringState.AlgaePickupTarget.LOW }))
 
         //        driver
         //            .x()

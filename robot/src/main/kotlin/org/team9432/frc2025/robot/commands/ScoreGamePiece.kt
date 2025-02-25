@@ -23,17 +23,15 @@ class ScoreGamePiece(
         private val retreatBeforeRetractR = LoggedTunableNumber("ScoreGamePiece/RetreatBeforeRetractRotations", 0.25)
     }
 
-    private var finalizedScoringLocation = ScoringTarget.L4
-
     fun scoreCommand(): Command {
         return defer(
             {
+                println("Starting score at ${scoringState.target}")
                 sequence(
-                    runOnce({ finalizedScoringLocation = scoringState.target }),
-                    superstructure.runToGoal(getPrepareScoreState(finalizedScoringLocation)),
+                    superstructure.runToGoal(getPrepareScoreState(scoringState.target)),
                     waitUntil(isReadyToScore),
                     waitUntil(superstructure::atGoal),
-                    superstructure.runToGoal(getScoreState(finalizedScoringLocation)),
+                    superstructure.runToGoal(getScoreState(scoringState.target)),
                     waitSeconds(scoreRollerTime.get()),
                     runOnce({ scoringState.holdingCoral = false }),
                     retractCommand(),

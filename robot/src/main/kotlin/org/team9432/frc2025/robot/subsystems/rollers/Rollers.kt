@@ -71,7 +71,7 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         Logger.recordOutput("Rollers/State", state)
     }
 
-    fun runGoal(state: State) = run { this.state = state }
+    fun runGoal(state: State) = startEnd({ this.state = state }, { this.state = State.IDLE })
 
     val coralCollected = Trigger {
         state == State.INTAKE_CORAL &&

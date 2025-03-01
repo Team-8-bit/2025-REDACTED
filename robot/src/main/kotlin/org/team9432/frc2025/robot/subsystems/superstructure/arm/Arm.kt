@@ -47,7 +47,7 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
             get() = angleSupplier.invoke()
     }
 
-    private val homingVolts = LoggedTunableNumber("Arm/Tuning/HomingVolts", -1.0)
+    private val homingVolts = LoggedTunableNumber("Arm/Tuning/HomingVolts", -0.5)
     private val homingTimeSecs = LoggedTunableNumber("Arm/Tuning/HomingThresholdSecs", 0.25)
     private val homingVelocityThreshold = LoggedTunableNumber("Arm/Tuning/HomingVelocityThresholdRPS", 0.1)
     private var homingDebouncer = Debouncer(homingTimeSecs.get())
@@ -104,7 +104,11 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
 
         if (shouldRunPosition) {
             val goalPosition = MathUtil.clamp(goal.rotations, ArmConstants.MIN_POSITION, ArmConstants.MAX_POSITION)
+            //            if (goal == Goal.STOW && atGoal(0.07)) {
+            //                io.setControl(neutralOut)
+            //            } else {
             io.setControl(motionMagicPositionControl.withPosition(goalPosition))
+            //            }
         } else if (characterizationInput != null) {
             io.setControl(currentControl.withOutput(characterizationInput!!))
         }
@@ -134,6 +138,8 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
                 /* run = */ { io.setControl(voltageControl.withOutput(homingVolts.get())) },
             )
             .until { homingDebouncer.calculate(abs(inputs.velocityRotationsPerSec) < homingVelocityThreshold.get()) }
+            .andThen({ io.setControl(neutralOut) })
+            .andThen(Commands.waitSeconds(0.1))
             .andThen({
                 io.setSensorPosition(ArmConstants.MIN_POSITION)
                 hasHomed = true

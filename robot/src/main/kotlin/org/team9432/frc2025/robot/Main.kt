@@ -32,6 +32,9 @@ import org.team9432.frc2025.lib.util.not
 import org.team9432.frc2025.robot.commands.ScoreGamePiece
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
+import org.team9432.frc2025.robot.subsystems.climber.Climber
+import org.team9432.frc2025.robot.subsystems.climber.ClimberIO
+import org.team9432.frc2025.robot.subsystems.climber.ClimberIOReal
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
@@ -68,6 +71,7 @@ class Robot : LoggedRobot() {
     private val drive: Drive
     private val superstructure: Superstructure
     private val rollers: Rollers
+    private val climber: Climber
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
     private val localizer = Localizer()
@@ -103,6 +107,7 @@ class Robot : LoggedRobot() {
 
                     superstructure = Superstructure(Elevator(ElevatorIOReal()), Arm(ArmIOReal()))
                     rollers = Rollers(Funnel(FunnelIOReal()), Manipulator(ManipulatorIOReal()))
+                    climber = Climber(ClimberIOReal())
 
                     setSimulationPose = null
                     driveSim = null
@@ -165,6 +170,7 @@ class Robot : LoggedRobot() {
 
                     superstructure = Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()))
                     rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
+                    climber = Climber(object : ClimberIO {})
                 }
             }
         } else {
@@ -182,6 +188,7 @@ class Robot : LoggedRobot() {
 
             superstructure = Superstructure(Elevator(object : ElevatorIO {}), Arm(object : ArmIO {}))
             rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
+            climber = Climber(object : ClimberIO {})
 
             setSimulationPose = null
             driveSim = null
@@ -218,13 +225,16 @@ class Robot : LoggedRobot() {
             .whileTrue(
                 superstructure
                     .runToGoal(Superstructure.State.INTAKE_CORAL)
-                    .andThen(rollers.runGoal(Rollers.State.INTAKE_CORAL).until(rollers.coralCollected))
+                    .andThen(rollers.runGoal(Rollers.State.INTAKE_CORAL)) // .until(rollers.coralCollected))
             )
 
-        rollers.coralCollected.onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_TALL_SCORE))
+        // rollers.coralCollected.onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_TALL_SCORE))
 
         val scoreCommand = ScoreGamePiece(superstructure, rollers, scoringState, isReadyToScore = driver.a(), localizer)
         driver.rightBumper().onTrue(scoreCommand.scoreCommand()).onFalse(scoreCommand.retractCommand())
+
+        driver.povUp().whileTrue(climber.runGoal(Climber.Goal.UP))
+        driver.povDown().whileTrue(climber.runGoal(Climber.Goal.DOWN))
 
         operator.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
         operator.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))

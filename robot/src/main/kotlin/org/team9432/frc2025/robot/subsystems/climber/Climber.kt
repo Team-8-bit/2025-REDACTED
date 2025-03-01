@@ -10,11 +10,12 @@ class Climber(private val io: ClimberIO) : SubsystemBase() {
     private val inputs = LoggedClimberIOInputs()
 
     private val neutralOut = NeutralOut()
-    private val voltageControl = VoltageOut(0.0)
+    private val voltageControl = VoltageOut(0.0).withEnableFOC(true)
     private val torqueCurrent = TorqueCurrentFOC(0.0)
 
     enum class Goal {
         IDLE,
+        PREPARE,
         UP,
         DOWN,
         HOLD,
@@ -28,7 +29,8 @@ class Climber(private val io: ClimberIO) : SubsystemBase() {
 
         when (goal) {
             Goal.IDLE -> io.setControl(neutralOut)
-            Goal.UP -> io.setControl(voltageControl.withOutput(6.0))
+            Goal.PREPARE -> io.setControl(voltageControl.withOutput(6.0))
+            Goal.UP -> io.setControl(torqueCurrent.withOutput(120.0))
             Goal.DOWN -> io.setControl(voltageControl.withOutput(-6.0))
             Goal.HOLD -> io.setControl(torqueCurrent.withOutput(5.0))
         }

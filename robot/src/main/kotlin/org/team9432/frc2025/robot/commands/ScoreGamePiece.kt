@@ -8,10 +8,12 @@ import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.ScoringState
 import org.team9432.frc2025.robot.ScoringState.ScoringTarget
+import org.team9432.frc2025.robot.subsystems.rollers.Rollers
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
 
 class ScoreGamePiece(
     private val superstructure: Superstructure,
+    private val rollers: Rollers,
     private val scoringState: ScoringState,
     private val isReadyToScore: Trigger,
     private val localizer: Localizer,
@@ -26,13 +28,15 @@ class ScoreGamePiece(
     fun scoreCommand(): Command {
         return defer(
             {
-                println("Starting score at ${scoringState.target}")
                 sequence(
                     superstructure.runToGoal(getPrepareScoreState(scoringState.target)),
                     waitUntil(isReadyToScore),
                     waitUntil(superstructure::atGoal),
-                    superstructure.runToGoal(getScoreState(scoringState.target)),
-                    waitSeconds(scoreRollerTime.get()),
+                    parallel(
+                            superstructure.runToGoal(getScoreState(scoringState.target)),
+                            rollers.runGoal(Rollers.State.SCORE_CORAL),
+                        )
+                        .withDeadline(waitSeconds(scoreRollerTime.get())),
                     runOnce({ scoringState.holdingCoral = false }),
                     retractCommand(),
                 )
@@ -79,9 +83,9 @@ class ScoreGamePiece(
 
     private fun getScoreState(target: ScoringTarget) =
         when (target) {
-            ScoringTarget.L2 -> Superstructure.State.SCORE_L2
-            ScoringTarget.L3 -> Superstructure.State.SCORE_L3
-            ScoringTarget.L4 -> Superstructure.State.SCORE_L4
+            ScoringTarget.L2 -> Superstructure.State.PREPARE_L2
+            ScoringTarget.L3 -> Superstructure.State.PREPARE_L3
+            ScoringTarget.L4 -> Superstructure.State.PREPARE_L4
             ScoringTarget.PROCESSOR -> Superstructure.State.SCORE_PROCESSOR
             ScoringTarget.NET -> Superstructure.State.SCORE_NET
         }

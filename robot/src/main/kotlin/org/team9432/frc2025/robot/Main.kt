@@ -28,6 +28,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
+import org.team9432.frc2025.lib.util.not
 import org.team9432.frc2025.robot.commands.ScoreGamePiece
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
@@ -43,17 +44,18 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOSim
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
-import org.team9432.frc2025.robot.subsystems.funnel.Funnel
-import org.team9432.frc2025.robot.subsystems.funnel.FunnelIO
-import org.team9432.frc2025.robot.subsystems.funnel.FunnelIOReal
+import org.team9432.frc2025.robot.subsystems.rollers.Rollers
+import org.team9432.frc2025.robot.subsystems.rollers.dispenser.Manipulator
+import org.team9432.frc2025.robot.subsystems.rollers.dispenser.ManipulatorIO
+import org.team9432.frc2025.robot.subsystems.rollers.dispenser.ManipulatorIOReal
+import org.team9432.frc2025.robot.subsystems.rollers.funnel.Funnel
+import org.team9432.frc2025.robot.subsystems.rollers.funnel.FunnelIO
+import org.team9432.frc2025.robot.subsystems.rollers.funnel.FunnelIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIO
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIOSim
-import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
-import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.DispenserIO
-import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.DispenserIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOReal
@@ -65,7 +67,7 @@ class Robot : LoggedRobot() {
 
     private val drive: Drive
     private val superstructure: Superstructure
-    private val funnel: Funnel
+    private val rollers: Rollers
     private val setSimulationPose: ((Pose2d) -> Unit)?
     private val driveSim: SwerveDriveSimulation?
     private val localizer = Localizer()
@@ -99,9 +101,8 @@ class Robot : LoggedRobot() {
                             localizer,
                         )
 
-                    superstructure =
-                        Superstructure(Elevator(ElevatorIOReal()), Arm(ArmIOReal()), Dispenser(DispenserIOReal()))
-                    funnel = Funnel(FunnelIOReal())
+                    superstructure = Superstructure(Elevator(ElevatorIOReal()), Arm(ArmIOReal()))
+                    rollers = Rollers(Funnel(FunnelIOReal()), Manipulator(ManipulatorIOReal()))
 
                     setSimulationPose = null
                     driveSim = null
@@ -162,9 +163,8 @@ class Robot : LoggedRobot() {
                         gyroIO.setAngle(it.rotation)
                     }
 
-                    superstructure =
-                        Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()), Dispenser(object : DispenserIO {}))
-                    funnel = Funnel(object : FunnelIO {})
+                    superstructure = Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()))
+                    rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
                 }
             }
         } else {
@@ -180,13 +180,8 @@ class Robot : LoggedRobot() {
                     localizer,
                 )
 
-            superstructure =
-                Superstructure(
-                    Elevator(object : ElevatorIO {}),
-                    Arm(object : ArmIO {}),
-                    Dispenser(object : DispenserIO {}),
-                )
-            funnel = Funnel(object : FunnelIO {})
+            superstructure = Superstructure(Elevator(object : ElevatorIO {}), Arm(object : ArmIO {}))
+            rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
 
             setSimulationPose = null
             driveSim = null
@@ -219,23 +214,28 @@ class Robot : LoggedRobot() {
 
         driver
             .leftBumper()
-            .and(driver.rightBumper().negate())
+            .and(!driver.rightBumper())
             .whileTrue(
                 superstructure
                     .runToGoal(Superstructure.State.INTAKE_CORAL)
-                    .alongWith(funnel.runGoal(Funnel.Goal.INTAKE_CORAL))
+                    .andThen(rollers.runGoal(Rollers.State.INTAKE_CORAL).until(rollers.coralCollected))
             )
-            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
 
-        val scoreCommand = ScoreGamePiece(superstructure, scoringState, isReadyToScore = driver.leftBumper(), localizer)
+        rollers.coralCollected.onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_TALL_SCORE))
+
+        val scoreCommand = ScoreGamePiece(superstructure, rollers, scoringState, isReadyToScore = driver.a(), localizer)
         driver.rightBumper().onTrue(scoreCommand.scoreCommand()).onFalse(scoreCommand.retractCommand())
 
-        driver.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
-        driver.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
-        driver.y().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
+        operator.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
+        operator.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
+        operator.y().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
 
-        driver.povUp().onTrue(Commands.runOnce({ scoringState.algaePickupTarget = ScoringState.AlgaePickupTarget.HIGH }))
-        driver.povDown().onTrue(Commands.runOnce({ scoringState.algaePickupTarget = ScoringState.AlgaePickupTarget.LOW }))
+        operator
+            .povUp()
+            .onTrue(Commands.runOnce({ scoringState.algaePickupTarget = ScoringState.AlgaePickupTarget.HIGH }))
+        operator
+            .povDown()
+            .onTrue(Commands.runOnce({ scoringState.algaePickupTarget = ScoringState.AlgaePickupTarget.LOW }))
 
         //        driver
         //            .x()

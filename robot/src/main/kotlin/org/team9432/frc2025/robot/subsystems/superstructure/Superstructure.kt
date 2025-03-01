@@ -9,13 +9,11 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.util.withRequirements
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State.STOW
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
-import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 
 // Inspired by 6328 <3
 // https://www.chiefdelphi.com/t/frc-6328-mechanical-advantage-2025-build-thread/477314/244#p-3503708-implementation-part-one-structure-4
-class Superstructure(private val elevator: Elevator, private val arm: Arm, private val dispenser: Dispenser) :
-    SubsystemBase() {
+class Superstructure(private val elevator: Elevator, private val arm: Arm) : SubsystemBase() {
     enum class State {
         STOW,
         ARM_ABOVE_BUMPER,
@@ -24,9 +22,6 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
         PREPARE_L2,
         PREPARE_L3,
         PREPARE_L4,
-        SCORE_L2,
-        SCORE_L3,
-        SCORE_L4,
         HOLD_ALGAE_LOW,
         INTAKE_ALGAE_LOW,
         INTAKE_ALGAE_HIGH,
@@ -36,7 +31,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
         SCORE_PROCESSOR,
     }
 
-    private val transitions = TransitionCommands(elevator, arm, dispenser)
+    private val transitions = TransitionCommands(elevator, arm)
     private val visualizer = SuperstructureVisualizer("Superstructure/Poses")
 
     /** The latest complete state of the system. */
@@ -55,8 +50,6 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
     private var stateTrackingDisabled = false
 
     override fun periodic() {
-        dispenser.periodic()
-
         if (!stateTrackingDisabled) {
             trackToNextState()
         }

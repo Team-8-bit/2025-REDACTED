@@ -1,4 +1,4 @@
-package org.team9432.frc2025.robot.subsystems.superstructure.dispenser
+package org.team9432.frc2025.robot.subsystems.rollers.dispenser
 
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.StatusSignal
@@ -11,7 +11,7 @@ import edu.wpi.first.units.measure.*
 import org.team9432.frc2025.lib.util.PhoenixUtil
 import org.team9432.frc2025.robot.RobotMap
 
-open class DispenserIOReal : DispenserIO {
+open class ManipulatorIOReal : ManipulatorIO {
     private val talon = TalonFX(RobotMap.coralArmDispenser.canID, RobotMap.coralArmDispenser.canBus)
 
     private val appliedVolts: StatusSignal<Voltage> = talon.motorVoltage
@@ -48,7 +48,7 @@ open class DispenserIOReal : DispenserIO {
         talon.optimizeBusUtilization()
     }
 
-    override fun updateInputs(inputs: DispenserIO.DispenserIOInputs) {
+    override fun updateInputs(inputs: ManipulatorIO.ManipulatorIOInputs) {
         val status =
             BaseStatusSignal.refreshAll(appliedVolts, supplyCurrent, torqueCurrent, temperature, position, velocity)
 

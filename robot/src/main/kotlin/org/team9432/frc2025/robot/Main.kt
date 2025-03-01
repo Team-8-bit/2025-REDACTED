@@ -234,11 +234,21 @@ class Robot : LoggedRobot() {
         driver.rightBumper().onTrue(scoreCommand.scoreCommand()).onFalse(scoreCommand.retractCommand())
 
         driver.povUp().whileTrue(climber.runGoal(Climber.Goal.UP))
+        driver.povRight().whileTrue(climber.runGoal(Climber.Goal.PREPARE))
         driver.povDown().whileTrue(climber.runGoal(Climber.Goal.DOWN))
 
-        operator.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
-        operator.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
-        operator.y().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
+        driver
+            .a()
+            .and(!driver.rightBumper())
+            .onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
+        driver
+            .b()
+            .and(!driver.rightBumper())
+            .onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
+        driver
+            .y()
+            .and(!driver.rightBumper())
+            .onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
 
         operator
             .povUp()

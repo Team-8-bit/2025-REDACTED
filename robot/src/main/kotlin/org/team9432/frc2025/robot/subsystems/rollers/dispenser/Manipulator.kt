@@ -25,14 +25,14 @@ class Manipulator(private val io: ManipulatorIO) {
 
     fun periodic() {
         io.updateInputs(inputs)
-        Logger.processInputs("Dispenser", inputs)
+        Logger.processInputs("Manipulator", inputs)
 
         when (goal) {
             Goal.IDLE -> io.setControl(neutralOut)
             Goal.INTAKE_CORAL -> io.setControl(voltageControl.withOutput(5.0))
             Goal.OUTTAKE_CORAL -> io.setControl(voltageControl.withOutput(-6.0))
             Goal.INTAKE_ALGAE -> io.setControl(voltageControl.withOutput(-10.0))
-            Goal.HOLD_ALGAE -> io.setControl(currentControl.withOutput(-40.0))
+            Goal.HOLD_ALGAE -> io.setControl(currentControl.withOutput(-30.0))
             Goal.SCORE_ALGAE -> io.setControl(voltageControl.withOutput(12.0))
         }
     }

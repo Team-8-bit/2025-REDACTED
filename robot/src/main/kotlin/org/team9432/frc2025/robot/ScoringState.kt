@@ -5,7 +5,7 @@ class ScoringState {
     var holdingAlgae = false
 
     var target = ScoringTarget.L4
-    var algaePickupTarget = AlgaePickupTarget.HIGH
+    var algaeIntakeTarget = AlgaeIntakeTarget.HIGH
 
     enum class ScoringTarget(val isCoral: Boolean) {
         L2(isCoral = true),
@@ -17,7 +17,7 @@ class ScoringState {
         val isAlgae = !isCoral
     }
 
-    enum class AlgaePickupTarget {
+    enum class AlgaeIntakeTarget {
         LOW,
         HIGH,
     }

@@ -33,6 +33,10 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
             transitions[scoringGoal to PREPARE_TALL_SCORE] = arm.runToGoal(Arm.Goal.PREPARE_SCORE).andThen(elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT))
         }
 
+        for (scoringGoal in setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4)) {
+            transitions[scoringGoal to STOW] = arm.runToGoal(Arm.Goal.STOW).andThen(elevator.runToGoal(Elevator.Goal.STOW))
+        }
+
         transitions.forEach { (between, command) ->
             command.addRequirements(elevator, arm)
             command.name = "Transition from ${between.first} to ${between.second}."
@@ -59,6 +63,17 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
                 arm.runToGoal(Arm.Goal.HOLD_ALGAE_LOW),
                 elevator.runToGoal(Elevator.Goal.HOLD_ALGAE_LOW)
             )
+//
+//        transitions[INTAKE_ALGAE_LOW to STOW] =
+//            sequence(
+//                arm.runToGoal(Arm.Goal.STOW),
+//                elevator.runToGoal(Elevator.Goal.STOW)
+//            )
+//        transitions[INTAKE_ALGAE_HIGH to STOW] =
+//            sequence(
+//                arm.runToGoal(Arm.Goal.STOW),
+//                elevator.runToGoal(Elevator.Goal.STOW)
+//            )
 
         transitions[HOLD_ALGAE_LOW to PREPARE_PROCESSOR] = parallel(arm.runToGoal(Arm.Goal.PREPARE_PROCESSOR), elevator.runToGoal(Elevator.Goal.PREPARE_PROCESSOR))
         transitions[HOLD_ALGAE_LOW to PREPARE_NET] = parallel(arm.runToGoal(Arm.Goal.PREPARE_NET), elevator.runToGoal(Elevator.Goal.PREPARE_NET))

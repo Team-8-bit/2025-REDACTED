@@ -10,10 +10,12 @@ import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.PowerDistribution
 import edu.wpi.first.wpilibj.RobotBase
+import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
+import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.ironmaple.simulation.SimulatedArena
 import org.ironmaple.simulation.drivesims.COTS
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation
@@ -29,6 +31,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.util.not
+import org.team9432.frc2025.robot.commands.IntakeAlgae
 import org.team9432.frc2025.robot.commands.ScoreGamePiece
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
@@ -219,23 +222,38 @@ class Robot : LoggedRobot() {
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, localizer)
 
+        var isClimbMode = false
+        val climbMode = Trigger { isClimbMode }
+
+        driver.rightStick().onTrue(Commands.runOnce({ isClimbMode = !isClimbMode }))
+
+        val doublePressIntakeTimer = Timer()
+
+        driver
+            .leftBumper()
+            .negate()
+            .and { !doublePressIntakeTimer.hasElapsed(0.3) }
+            .onTrue(rollers.runGoal(Rollers.State.UNJAM_CORAL).withTimeout(0.5))
+
         driver
             .leftBumper()
             .and(!driver.rightBumper())
+            .onTrue(Commands.runOnce({ doublePressIntakeTimer.restart() }))
             .whileTrue(
                 superstructure
                     .runToGoal(Superstructure.State.INTAKE_CORAL)
                     .andThen(rollers.runGoal(Rollers.State.INTAKE_CORAL)) // .until(rollers.coralCollected))
             )
+            .onFalse(Commands.runOnce({ doublePressIntakeTimer.stop() }))
 
         // rollers.coralCollected.onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_TALL_SCORE))
 
         val scoreCommand = ScoreGamePiece(superstructure, rollers, scoringState, isReadyToScore = driver.a(), localizer)
         driver.rightBumper().onTrue(scoreCommand.scoreCommand()).onFalse(scoreCommand.retractCommand())
 
-        driver.povUp().whileTrue(climber.runGoal(Climber.Goal.UP))
-        driver.povRight().whileTrue(climber.runGoal(Climber.Goal.PREPARE))
-        driver.povDown().whileTrue(climber.runGoal(Climber.Goal.DOWN))
+        driver.povUp().and(climbMode).whileTrue(climber.runGoal(Climber.Goal.UP))
+        driver.povRight().and(climbMode).whileTrue(climber.runGoal(Climber.Goal.PREPARE))
+        driver.povDown().and(climbMode).whileTrue(climber.runGoal(Climber.Goal.DOWN))
 
         driver
             .a()
@@ -250,12 +268,31 @@ class Robot : LoggedRobot() {
             .and(!driver.rightBumper())
             .onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
 
-        operator
+        driver
             .povUp()
-            .onTrue(Commands.runOnce({ scoringState.algaePickupTarget = ScoringState.AlgaePickupTarget.HIGH }))
-        operator
+            .and(!climbMode)
+            .onTrue(Commands.runOnce({ scoringState.algaeIntakeTarget = ScoringState.AlgaeIntakeTarget.HIGH }))
+        driver
             .povDown()
-            .onTrue(Commands.runOnce({ scoringState.algaePickupTarget = ScoringState.AlgaePickupTarget.LOW }))
+            .and(!climbMode)
+            .onTrue(Commands.runOnce({ scoringState.algaeIntakeTarget = ScoringState.AlgaeIntakeTarget.LOW }))
+
+        val algaeIntakeCommand = IntakeAlgae(superstructure, rollers, scoringState, localizer)
+
+        driver
+            .leftBumper()
+            .and(driver.povUp().or(driver.povDown()))
+            .onTrue(algaeIntakeCommand.collectCommand())
+            .onFalse(algaeIntakeCommand.retractCommand())
+
+        Trigger { scoringState.holdingAlgae }.whileTrue(rollers.runGoal(Rollers.State.HOLD_ALGAE))
+
+        rollers.algaeCollected.onTrue(
+            Commands.runOnce({ scoringState.holdingAlgae = true }).andThen(Commands.print("Grabbed Algae"))
+        )
+        rollers.algaeDropped.onTrue(
+            Commands.runOnce({ scoringState.holdingAlgae = false }).andThen(Commands.print("Dropped Algae"))
+        )
 
         //        driver
         //            .x()

@@ -74,15 +74,12 @@ class Robot : LoggedRobot() {
     private val superstructure: Superstructure
     private val rollers: Rollers
     private val climber: Climber
-    private val setSimulationPose: ((Pose2d) -> Unit)?
-    private val driveSim: SwerveDriveSimulation?
     private val scoringState = ScoringState()
 
     private val cameras: Set<Camera>
     private val localizer = Localizer()
     private var simUpdateCall: (() -> Unit)? = null
     private val robotPosition = RobotPosition(localizer)
-
 
     init {
         SignalLogger.start()
@@ -115,9 +112,6 @@ class Robot : LoggedRobot() {
                     superstructure = Superstructure(Elevator(ElevatorIOReal()), Arm(ArmIOReal()))
                     rollers = Rollers(Funnel(FunnelIOReal()), Manipulator(ManipulatorIOReal()))
                     climber = Climber(ClimberIOReal())
-
-                    setSimulationPose = null
-                    driveSim = null
 
                     cameras =
                         setOf(

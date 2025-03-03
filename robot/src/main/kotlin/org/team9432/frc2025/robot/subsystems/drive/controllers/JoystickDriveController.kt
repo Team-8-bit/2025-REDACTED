@@ -64,7 +64,9 @@ class JoystickDriveController(
 
         // Calculate new linear velocity
         val linearVelocity =
-            Pose2d(0.0, 0.0, linearDirection).transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d.kZero)).translation
+            Pose2d(0.0, 0.0, linearDirection)
+                .transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d.kZero))
+                .translation
 
         return linearVelocity to angularVelocity
     }

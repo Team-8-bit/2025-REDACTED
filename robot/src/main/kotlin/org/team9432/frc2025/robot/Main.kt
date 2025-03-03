@@ -15,7 +15,6 @@ import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
-import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.ironmaple.simulation.SimulatedArena
 import org.ironmaple.simulation.drivesims.COTS
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation
@@ -31,8 +30,6 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.util.not
-import org.team9432.frc2025.robot.commands.IntakeAlgae
-import org.team9432.frc2025.robot.commands.ScoreGamePiece
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.subsystems.climber.Climber
@@ -79,6 +76,7 @@ class Robot : LoggedRobot() {
     private val driveSim: SwerveDriveSimulation?
     private val localizer = Localizer()
     private val scoringState = ScoringState()
+    private val robotPosition = RobotPosition(localizer)
 
     init {
         SignalLogger.start()
@@ -222,17 +220,14 @@ class Robot : LoggedRobot() {
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, localizer)
 
-        var isClimbMode = false
-        val climbMode = Trigger { isClimbMode }
-
-        driver.rightStick().onTrue(Commands.runOnce({ isClimbMode = !isClimbMode }))
-
         val doublePressIntakeTimer = Timer()
+
+        val prepareScoreButton = driver.rightBumper()
 
         driver
             .leftBumper()
             .negate()
-            .and { !doublePressIntakeTimer.hasElapsed(0.3) }
+            .and { !doublePressIntakeTimer.hasElapsed(0.2) }
             .onTrue(rollers.runGoal(Rollers.State.UNJAM_CORAL).withTimeout(0.5))
 
         driver
@@ -241,90 +236,82 @@ class Robot : LoggedRobot() {
             .onTrue(Commands.runOnce({ doublePressIntakeTimer.restart() }))
             .whileTrue(
                 superstructure
-                    .runToGoal(Superstructure.State.INTAKE_CORAL)
-                    .andThen(rollers.runGoal(Rollers.State.INTAKE_CORAL)) // .until(rollers.coralCollected))
+                    .runGoal(Superstructure.State.INTAKE_CORAL)
+                    .alongWith(rollers.runGoal(Rollers.State.INTAKE_CORAL))
             )
             .onFalse(Commands.runOnce({ doublePressIntakeTimer.stop() }))
 
-        // rollers.coralCollected.onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_TALL_SCORE))
+        rollers.hasCoralTrigger
+            .and(!prepareScoreButton)
+            .whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_TALL_SCORE))
 
-        val scoreCommand = ScoreGamePiece(superstructure, rollers, scoringState, isReadyToScore = driver.a(), localizer)
-        driver.rightBumper().onTrue(scoreCommand.scoreCommand()).onFalse(scoreCommand.retractCommand())
+        prepareScoreButton.whileTrue(
+            superstructure
+                .runGoal {
+                    when (scoringState.target) {
+                        ScoringState.ScoringTarget.L2 -> Superstructure.State.PREPARE_L2
+                        ScoringState.ScoringTarget.L3 -> Superstructure.State.PREPARE_L3
+                        ScoringState.ScoringTarget.L4 -> Superstructure.State.PREPARE_L4
+                        ScoringState.ScoringTarget.PROCESSOR -> Superstructure.State.PREPARE_PROCESSOR
+                        ScoringState.ScoringTarget.NET -> Superstructure.State.PREPARE_NET
+                    }
+                }
+                .alongWith(
+                    Commands.sequence(
+                        Commands.waitUntil(driver.a().and(superstructure::atGoal)),
+                        Commands.runOnce(robotPosition::resetLastScorePoseToCurrent),
+                        rollers.runGoal(Rollers.State.SCORE_CORAL),
+                    )
+                )
+        )
 
-        driver.povUp().and(climbMode).whileTrue(climber.runGoal(Climber.Goal.UP))
-        driver.povRight().and(climbMode).whileTrue(climber.runGoal(Climber.Goal.PREPARE))
-        driver.povDown().and(climbMode).whileTrue(climber.runGoal(Climber.Goal.DOWN))
+        superstructure.defaultCommand =
+            superstructure.runGoal {
+                if (
+                    robotPosition.isSafeToStowArm.asBoolean ||
+                        superstructure.currentState == Superstructure.State.STOW ||
+                        superstructure.currentState == Superstructure.State.ALGAE_STOW
+                ) {
+                    if (rollers.hasAlgae) {
+                        Superstructure.State.ALGAE_STOW
+                    } else {
+                        Superstructure.State.STOW
+                    }
+                } else {
+                    Superstructure.State.PREPARE_TALL_SCORE
+                }
+            }
 
-        driver
-            .a()
-            .and(!driver.rightBumper())
-            .onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
-        driver
-            .b()
-            .and(!driver.rightBumper())
-            .onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
-        driver
-            .y()
-            .and(!driver.rightBumper())
-            .onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
+        operator.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
+        operator.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
+        operator.y().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
 
-        driver
+        operator
             .povUp()
-            .and(!climbMode)
             .onTrue(Commands.runOnce({ scoringState.algaeIntakeTarget = ScoringState.AlgaeIntakeTarget.HIGH }))
-        driver
+        operator
             .povDown()
-            .and(!climbMode)
             .onTrue(Commands.runOnce({ scoringState.algaeIntakeTarget = ScoringState.AlgaeIntakeTarget.LOW }))
-
-        val algaeIntakeCommand = IntakeAlgae(superstructure, rollers, scoringState, localizer)
 
         driver
             .leftBumper()
-            .and(driver.povUp().or(driver.povDown()))
-            .onTrue(algaeIntakeCommand.collectCommand())
-            .onFalse(algaeIntakeCommand.retractCommand())
-
-        Trigger { scoringState.holdingAlgae }.whileTrue(rollers.runGoal(Rollers.State.HOLD_ALGAE))
-
-        rollers.algaeCollected.onTrue(
-            Commands.runOnce({ scoringState.holdingAlgae = true }).andThen(Commands.print("Grabbed Algae"))
-        )
-        rollers.algaeDropped.onTrue(
-            Commands.runOnce({ scoringState.holdingAlgae = false }).andThen(Commands.print("Dropped Algae"))
-        )
-
-        //        driver
-        //            .x()
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_PROCESSOR))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
-        //        driver
-        //            .a()
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.INTAKE_ALGAE_LOW))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
-        //        driver
-        //            .b()
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.INTAKE_ALGAE_HIGH))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
-        //        driver
-        //            .y()
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.PREPARE_NET))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.HOLD_ALGAE_LOW))
-        //
-        //        driver
-        //            .x()
-        //            .and(driver.rightBumper())
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_PROCESSOR))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
-        //
-        //        driver
-        //            .y()
-        //            .and(driver.rightBumper())
-        //            .onTrue(superstructure.runToGoal(Superstructure.State.SCORE_NET))
-        //            .onFalse(superstructure.runToGoal(Superstructure.State.STOW))
+            .and(driver.rightBumper())
+            .whileTrue(
+                superstructure
+                    .runGoal {
+                        when (scoringState.algaeIntakeTarget) {
+                            ScoringState.AlgaeIntakeTarget.LOW -> Superstructure.State.INTAKE_ALGAE_LOW
+                            ScoringState.AlgaeIntakeTarget.HIGH -> Superstructure.State.INTAKE_ALGAE_HIGH
+                        }
+                    }
+                    .alongWith(rollers.runGoal(Rollers.State.INTAKE_ALGAE))
+            )
 
         driver.back().onTrue(Commands.runOnce({ drive.resetGyro() }))
         driver.start().onTrue(superstructure.homeSystem())
+
+        driver.rightStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasAlgae(true) }))
+        driver.leftStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasCoral(true) }))
 
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
     }
@@ -460,6 +447,7 @@ class Robot : LoggedRobot() {
 
         // Log robot state
         localizer.log()
+        robotPosition.outputTelemetry()
 
         autoChooser.update()
     }

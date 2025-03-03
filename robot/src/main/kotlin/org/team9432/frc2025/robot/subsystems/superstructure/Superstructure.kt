@@ -22,7 +22,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
         PREPARE_L2,
         PREPARE_L3,
         PREPARE_L4,
-        HOLD_ALGAE_LOW,
+        ALGAE_STOW,
         INTAKE_ALGAE_LOW,
         INTAKE_ALGAE_HIGH,
         PREPARE_NET,
@@ -42,7 +42,8 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
     private var step: State? = null
 
     /** The current targeted state of the system. */
-    private var goal: State = STOW
+    var goal: State = STOW
+        private set
 
     /** The current command running between states. */
     private var currentMovementCommand: Command = Commands.none()
@@ -63,7 +64,9 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
         Logger.recordOutput("Superstructure/GoalState", goal)
     }
 
-    fun runToGoal(goal: State) = run { updateGoal(goal) }.until(::atGoal)
+    fun runGoal(goal: () -> State) = run { updateGoal(goal()) }
+
+    fun runGoal(goal: State) = runGoal { goal }
 
     fun atGoal() = currentState == goal
 
@@ -160,10 +163,6 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
 
     fun homeSystem(): Command =
         Commands.sequence(
-                runOnce {
-                    goal = STOW
-                    step = null
-                },
                 elevator.homeElevator(),
                 elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT),
                 Commands.waitSeconds(0.25),
@@ -171,7 +170,10 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
                 Commands.waitSeconds(0.25),
                 elevator.runToGoal(Elevator.Goal.STOW),
                 arm.runToGoal(Arm.Goal.STOW),
-                runOnce { currentState = STOW },
+                runOnce {
+                    currentState = STOW
+                    updateGoal(STOW)
+                },
             )
             .beforeStarting({ stateTrackingDisabled = true })
             .finallyDo { _ -> stateTrackingDisabled = false }

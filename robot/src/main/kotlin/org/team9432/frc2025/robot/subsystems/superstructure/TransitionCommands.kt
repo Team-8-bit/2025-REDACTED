@@ -46,40 +46,29 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
             parallel(
                 elevator.runToGoal(Elevator.Goal.INTAKE_ALGAE_REEF_LOW),
                 arm.runToGoal(Arm.Goal.INTAKE_ALGAE_REEF)
-            )
+            )   
         transitions[ARM_ABOVE_BUMPER to INTAKE_ALGAE_HIGH] =
             parallel(
                 elevator.runToGoal(Elevator.Goal.INTAKE_ALGAE_REEF_HIGH),
                 arm.runToGoal(Arm.Goal.INTAKE_ALGAE_REEF)
             )
 
-        transitions[INTAKE_ALGAE_LOW to HOLD_ALGAE_LOW] =
+        transitions[INTAKE_ALGAE_LOW to ALGAE_STOW] =
             sequence(
                 arm.runToGoal(Arm.Goal.HOLD_ALGAE_LOW),
                 elevator.runToGoal(Elevator.Goal.HOLD_ALGAE_LOW)
             )
-        transitions[INTAKE_ALGAE_HIGH to HOLD_ALGAE_LOW] =
+        transitions[INTAKE_ALGAE_HIGH to ALGAE_STOW] =
             sequence(
                 arm.runToGoal(Arm.Goal.HOLD_ALGAE_LOW),
                 elevator.runToGoal(Elevator.Goal.HOLD_ALGAE_LOW)
             )
-//
-//        transitions[INTAKE_ALGAE_LOW to STOW] =
-//            sequence(
-//                arm.runToGoal(Arm.Goal.STOW),
-//                elevator.runToGoal(Elevator.Goal.STOW)
-//            )
-//        transitions[INTAKE_ALGAE_HIGH to STOW] =
-//            sequence(
-//                arm.runToGoal(Arm.Goal.STOW),
-//                elevator.runToGoal(Elevator.Goal.STOW)
-//            )
 
-        transitions[HOLD_ALGAE_LOW to PREPARE_PROCESSOR] = parallel(arm.runToGoal(Arm.Goal.PREPARE_PROCESSOR), elevator.runToGoal(Elevator.Goal.PREPARE_PROCESSOR))
-        transitions[HOLD_ALGAE_LOW to PREPARE_NET] = parallel(arm.runToGoal(Arm.Goal.PREPARE_NET), elevator.runToGoal(Elevator.Goal.PREPARE_NET))
+        transitions[ALGAE_STOW to PREPARE_PROCESSOR] = parallel(arm.runToGoal(Arm.Goal.PREPARE_PROCESSOR), elevator.runToGoal(Elevator.Goal.PREPARE_PROCESSOR))
+        transitions[ALGAE_STOW to PREPARE_NET] = parallel(arm.runToGoal(Arm.Goal.PREPARE_NET), elevator.runToGoal(Elevator.Goal.PREPARE_NET))
 
-        transitions[PREPARE_PROCESSOR to HOLD_ALGAE_LOW] = parallel(arm.runToGoal(Arm.Goal.HOLD_ALGAE_LOW), elevator.runToGoal(Elevator.Goal.HOLD_ALGAE_LOW))
-        transitions[PREPARE_NET to HOLD_ALGAE_LOW] = parallel(arm.runToGoal(Arm.Goal.HOLD_ALGAE_LOW), elevator.runToGoal(Elevator.Goal.HOLD_ALGAE_LOW))
+        transitions[PREPARE_PROCESSOR to ALGAE_STOW] = parallel(arm.runToGoal(Arm.Goal.HOLD_ALGAE_LOW), elevator.runToGoal(Elevator.Goal.HOLD_ALGAE_LOW))
+        transitions[PREPARE_NET to ALGAE_STOW] = parallel(arm.runToGoal(Arm.Goal.HOLD_ALGAE_LOW), elevator.runToGoal(Elevator.Goal.HOLD_ALGAE_LOW))
 
         transitions[PREPARE_PROCESSOR to SCORE_PROCESSOR] = parallel(
             arm.runToGoal(Arm.Goal.SCORE_PROCESSOR),

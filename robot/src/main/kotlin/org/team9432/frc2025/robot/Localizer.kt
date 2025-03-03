@@ -8,7 +8,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
-import edu.wpi.first.wpilibj2.command.Commands
 import kotlin.math.max
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
@@ -37,9 +36,9 @@ class Localizer {
         poseEstimator.addVisionMeasurement(visionPose, timestamp, measurementStdDevs)
         previousVisionMeasurementTimeStamp = max(timestamp, previousVisionMeasurementTimeStamp)
 
-        Logger.recordOutput("RobotPosition/LatestVisionPose", visionPose)
-        Logger.recordOutput("RobotPosition/LatestVisionStddevsXY", measurementStdDevs.get(0, 0))
-        Logger.recordOutput("RobotPosition/LatestVisionStddevsRotation", measurementStdDevs.get(2, 0))
+        Logger.recordOutput("Localizer/LatestVisionPose", visionPose)
+        Logger.recordOutput("Localizer/LatestVisionStddevsXY", measurementStdDevs.get(0, 0))
+        Logger.recordOutput("Localizer/LatestVisionStddevsRotation", measurementStdDevs.get(2, 0))
     }
 
     fun addVelocityData(velocity: ChassisSpeeds) {
@@ -63,15 +62,4 @@ class Localizer {
             ChassisSpeeds.fromRobotRelativeSpeeds(getRobotRelativeChassisSpeeds(), currentPose.rotation),
         )
     }
-
-    fun waitUntilRelativeMovement(passing: (Double, Double, Rotation2d) -> Boolean) =
-        Commands.defer(
-            {
-                val initialPose = currentPose
-                Commands.waitUntil {
-                    currentPose.relativeTo(initialPose).let { passing.invoke(it.x, it.y, it.rotation) }
-                }
-            },
-            emptySet(),
-        )
 }

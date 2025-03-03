@@ -1,11 +1,13 @@
 package org.team9432.frc2025.robot.subsystems.rollers
 
 import edu.wpi.first.math.filter.Debouncer
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
+import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.subsystems.rollers.dispenser.Manipulator
 import org.team9432.frc2025.robot.subsystems.rollers.funnel.Funnel
 
@@ -27,19 +29,26 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         SCORE_CORAL,
         UNJAM_CORAL,
         INTAKE_ALGAE,
-        HOLD_ALGAE,
         SCORE_ALGAE,
     }
 
-    var state: State = State.IDLE
+    private var state: State = State.IDLE
+
+    var hasCoral = false
         private set
+
+    var hasAlgae = false
+        private set
+
+    val hasCoralTrigger = Trigger { hasCoral }
+    val hasAlgaeTrigger = Trigger { hasAlgae }
 
     private var coralAlignedDebouncer = Debouncer(coralAlignedDebounceTime.get())
     private var algaeCollectedDebouncer = Debouncer(algaeCollectionDebounceTime.get())
     private var algaeDroppedDebouncer = Debouncer(algaeDroppedDebounceTime.get())
 
     init {
-        defaultCommand = runGoal(State.IDLE)
+        defaultCommand = runGoal { if (hasAlgae) State.INTAKE_ALGAE else State.IDLE }
 
         LoggedTunableNumber.ifChanged(hashCode(), coralAlignedDebounceTime) { (dt) ->
             coralAlignedDebouncer = Debouncer(dt)
@@ -64,10 +73,18 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             State.INTAKE_CORAL -> {
                 funnel.goal = Funnel.Goal.INTAKE_CORAL
                 manipulator.goal = Manipulator.Goal.INTAKE_CORAL
+
+                // Check if the coral has been collected
+                val coralAligned =
+                    coralAlignedDebouncer.calculate(abs(manipulator.velocityRPS) < coralAlignedVelocityThreshold.get())
+                if (coralAligned && !Constants.robot.isSim) {
+                    hasCoral = true
+                }
             }
 
             State.SCORE_CORAL -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL
+                hasCoral = false
             }
 
             State.UNJAM_CORAL -> {
@@ -75,36 +92,47 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             }
 
             State.INTAKE_ALGAE -> {
-                manipulator.goal = Manipulator.Goal.INTAKE_ALGAE
-            }
+                if (!hasAlgae) {
+                    manipulator.goal = Manipulator.Goal.INTAKE_ALGAE
 
-            State.HOLD_ALGAE -> {
-                manipulator.goal = Manipulator.Goal.INTAKE_ALGAE
+                    val algaeCollected =
+                        algaeCollectedDebouncer.calculate(
+                            abs(manipulator.velocityRPS) < algaeCollectionThresholdRPS.get()
+                        )
+                    if (algaeCollected && !Constants.robot.isSim) {
+                        hasAlgae = true
+                    }
+                } else {
+                    manipulator.goal = Manipulator.Goal.HOLD_ALGAE
+
+                    val algaeDropped =
+                        algaeDroppedDebouncer.calculate(abs(manipulator.velocityRPS) > algaeDroppedThresholdRPS.get())
+                    if (algaeDropped && !Constants.robot.isSim) {
+                        hasAlgae = false
+                    }
+                }
             }
 
             State.SCORE_ALGAE -> {
                 manipulator.goal = Manipulator.Goal.SCORE_ALGAE
+                hasAlgae = false
             }
         }
 
         Logger.recordOutput("Rollers/State", state)
+        SmartDashboard.putBoolean("Rollers/HasAlgae", hasAlgae)
+        SmartDashboard.putBoolean("Rollers/HasCoral", hasCoral)
     }
 
-    fun runGoal(state: State) = startEnd({ this.state = state }, { this.state = State.IDLE })
+    fun runGoal(state: State) = runGoal { state }
 
-    val coralCollected = Trigger {
-        state == State.INTAKE_CORAL &&
-            coralAlignedDebouncer.calculate(abs(manipulator.velocityRPS) < coralAlignedVelocityThreshold.get())
+    fun runGoal(state: () -> State) = run { this.state = state() }
+
+    fun simSetHasAlgae(hasAlgae: Boolean) {
+        if (Constants.robot.isSim) this.hasAlgae = hasAlgae
     }
 
-    val algaeCollected = Trigger {
-        state == State.INTAKE_ALGAE &&
-            algaeCollectedDebouncer.calculate(abs(manipulator.velocityRPS) < algaeCollectionThresholdRPS.get())
-    }
-    val algaeDropped = Trigger {
-        false
-        //        state == State.HOLD_ALGAE &&
-        //            algaeDroppedDebouncer.calculate(abs(manipulator.velocityRPS) >
-        // algaeDroppedThresholdRPS.get())
+    fun simSetHasCoral(hasCoral: Boolean) {
+        if (Constants.robot.isSim) this.hasCoral = hasCoral
     }
 }

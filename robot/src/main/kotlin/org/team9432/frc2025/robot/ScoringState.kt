@@ -1,9 +1,6 @@
 package org.team9432.frc2025.robot
 
 class ScoringState {
-    var holdingCoral = false
-    var holdingAlgae = false
-
     var target = ScoringTarget.L4
     var algaeIntakeTarget = AlgaeIntakeTarget.HIGH
 

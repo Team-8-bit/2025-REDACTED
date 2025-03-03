@@ -10,7 +10,6 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
@@ -56,7 +55,7 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
             get() = setpointSupplier.invoke()
     }
 
-    private val homingVolts = LoggedTunableNumber("Elevator/Tuning/HomingVolts", -2.0)
+    private val homingVolts = LoggedTunableNumber("Elevator/Tuning/HomingVolts", -1.0)
     private val homingTimeSecs = LoggedTunableNumber("Elevator/Tuning/HomingThresholdSecs", 0.25)
     private val homingVelocityThreshold =
         LoggedTunableNumber("Elevator/Tuning/HomingVelocityThresholdMPS", Units.inchesToMeters(3.0))
@@ -173,7 +172,7 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
             .onlyWhile { !motorOutputDisabled() }
 
     /** Runs the elevator to the given [goal] and ends when the position is reached. */
-    fun runToGoal(goal: Goal) = runOnce { this.goal = goal }.andThen(Commands.idle(this)).until(::atGoal)
+    fun runToGoal(goal: Goal) = run { this.goal = goal }.until(::atGoal)
 
     fun staticCharacterization() =
         StaticCharacterization(

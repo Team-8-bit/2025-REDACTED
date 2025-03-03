@@ -9,13 +9,11 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.util.withRequirements
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State.STOW
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
-import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 
 // Inspired by 6328 <3
 // https://www.chiefdelphi.com/t/frc-6328-mechanical-advantage-2025-build-thread/477314/244#p-3503708-implementation-part-one-structure-4
-class Superstructure(private val elevator: Elevator, private val arm: Arm, private val dispenser: Dispenser) :
-    SubsystemBase() {
+class Superstructure(private val elevator: Elevator, private val arm: Arm) : SubsystemBase() {
     enum class State {
         STOW,
         ARM_ABOVE_BUMPER,
@@ -24,10 +22,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
         PREPARE_L2,
         PREPARE_L3,
         PREPARE_L4,
-        SCORE_L2,
-        SCORE_L3,
-        SCORE_L4,
-        HOLD_ALGAE_LOW,
+        ALGAE_STOW,
         INTAKE_ALGAE_LOW,
         INTAKE_ALGAE_HIGH,
         PREPARE_NET,
@@ -36,17 +31,19 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
         SCORE_PROCESSOR,
     }
 
-    private val transitions = TransitionCommands(elevator, arm, dispenser)
+    private val transitions = TransitionCommands(elevator, arm)
     private val visualizer = SuperstructureVisualizer("Superstructure/Poses")
 
     /** The latest complete state of the system. */
-    private var currentState: State = STOW
+    var currentState: State = STOW
+        private set
 
     /** The current state being moved towards on a path to [goal]. */
     private var step: State? = null
 
     /** The current targeted state of the system. */
-    private var goal: State = STOW
+    var goal: State = STOW
+        private set
 
     /** The current command running between states. */
     private var currentMovementCommand: Command = Commands.none()
@@ -54,8 +51,6 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
     private var stateTrackingDisabled = false
 
     override fun periodic() {
-        dispenser.periodic()
-
         if (!stateTrackingDisabled) {
             trackToNextState()
         }
@@ -69,7 +64,11 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
         Logger.recordOutput("Superstructure/GoalState", goal)
     }
 
-    fun runToGoal(goal: State) = runOnce { updateGoal(goal) }.withName("Superstructure Goal $goal")
+    fun runGoal(goal: () -> State) = run { updateGoal(goal()) }
+
+    fun runGoal(goal: State) = runGoal { goal }
+
+    fun atGoal() = currentState == goal
 
     private fun trackToNextState() {
         // If there isn't a command running, but we still have a step state set, the move to that
@@ -164,16 +163,17 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm, priva
 
     fun homeSystem(): Command =
         Commands.sequence(
-                runOnce {
-                    goal = STOW
-                    step = null
-                },
                 elevator.homeElevator(),
                 elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT),
+                Commands.waitSeconds(0.25),
                 arm.homeArm(),
+                Commands.waitSeconds(0.25),
                 elevator.runToGoal(Elevator.Goal.STOW),
                 arm.runToGoal(Arm.Goal.STOW),
-                runOnce { currentState = STOW },
+                runOnce {
+                    currentState = STOW
+                    updateGoal(STOW)
+                },
             )
             .beforeStarting({ stateTrackingDisabled = true })
             .finallyDo { _ -> stateTrackingDisabled = false }

@@ -1,4 +1,4 @@
-package org.team9432.frc2025.robot.subsystems.funnel
+package org.team9432.frc2025.robot.subsystems.rollers.funnel
 
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.StatusSignal

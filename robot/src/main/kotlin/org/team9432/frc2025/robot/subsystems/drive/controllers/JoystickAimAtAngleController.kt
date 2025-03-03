@@ -8,13 +8,13 @@ import edu.wpi.first.math.util.Units
 import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
-import org.team9432.frc2025.robot.RobotState
+import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
 class JoystickAimAtAngleController(
     private val joystickController: JoystickDriveController,
     private val goal: () -> Rotation2d,
-    private val robotState: RobotState,
+    private val localizer: Localizer,
     var toleranceDegrees: Double = 1.0,
 ) : DriveController {
     private val controller =
@@ -22,8 +22,8 @@ class JoystickAimAtAngleController(
             enableContinuousInput(-Math.PI, Math.PI)
 
             reset(
-                robotState.currentPose.rotation.radians,
-                robotState.getRobotRelativeChassisSpeeds().omegaRadiansPerSecond,
+                localizer.currentPose.rotation.radians,
+                localizer.getRobotRelativeChassisSpeeds().omegaRadiansPerSecond,
             )
         }
 
@@ -44,7 +44,7 @@ class JoystickAimAtAngleController(
         val maxAngularAcceleration = DrivetrainConstants.MAX_LINEAR_ACCEL_MPSPS * maxAccelerationMultiplier
         controller.constraints = TrapezoidProfile.Constraints(maxAngularVelocity, maxAngularAcceleration)
 
-        val controllerOutput = controller.calculate(robotState.currentPose.rotation.radians, goal.invoke().radians)
+        val controllerOutput = controller.calculate(localizer.currentPose.rotation.radians, goal.invoke().radians)
 
         Logger.recordOutput("$TABLE_KEY/PositionErrorDegrees", Units.radiansToDegrees(controller.positionError))
 

@@ -9,11 +9,11 @@ import edu.wpi.first.wpilibj2.command.Command
 import java.text.DecimalFormat
 import java.text.NumberFormat
 import kotlin.math.abs
-import org.team9432.frc2025.robot.RobotState
+import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-class WheelRadiusCharacterization(private val drive: Drive, private val robotState: RobotState) : Command() {
+class WheelRadiusCharacterization(private val drive: Drive, private val localizer: Localizer) : Command() {
     private val maxAccelDegreesPerSecPerSec = 3.0
     private val maxVelocityDegreesPerSec = 15.0
 
@@ -40,11 +40,11 @@ class WheelRadiusCharacterization(private val drive: Drive, private val robotSta
         // Record initial module positions and robot angle
         if (initialPositions == null) {
             initialPositions = drive.getModuleCharacterizationPositionRads()
-            lastAngle = robotState.currentPose.rotation
+            lastAngle = localizer.currentPose.rotation
         }
 
         // Record new information
-        val rotation = robotState.currentPose.rotation
+        val rotation = localizer.currentPose.rotation
         accumulatedRotationRadians += abs((rotation - lastAngle).radians)
         lastAngle = rotation
     }

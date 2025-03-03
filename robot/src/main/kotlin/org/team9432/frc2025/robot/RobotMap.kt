@@ -35,4 +35,7 @@ object RobotMap {
 
     /* ******* Funnel ******* */
     val funnel = MotorInformation(canID = 31, pdhChannel = 9, DRIVETRAIN_CANBUS_NAME)
+
+    /* ******* Climber ******* */
+    val climber = MotorInformation(canID = 41, pdhChannel = 9, DRIVETRAIN_CANBUS_NAME)
 }

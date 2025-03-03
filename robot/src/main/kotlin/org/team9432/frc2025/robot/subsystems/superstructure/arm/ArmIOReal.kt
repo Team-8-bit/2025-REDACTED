@@ -38,7 +38,7 @@ open class ArmIOReal : ArmIO {
             Slot0.GravityType = GravityTypeValue.Arm_Cosine
             Slot0.StaticFeedforwardSign = StaticFeedforwardSignValue.UseVelocitySign
 
-            MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
+            MotorOutput.Inverted = InvertedValue.Clockwise_Positive
             MotorOutput.NeutralMode = NeutralModeValue.Brake
 
             TorqueCurrent.PeakForwardTorqueCurrent = ArmConstants.PEAK_TORQUE_AMPS
@@ -107,6 +107,10 @@ open class ArmIOReal : ArmIO {
     override fun updateConfig(block: TalonFXConfiguration.() -> Unit) {
         block.invoke(config)
         PhoenixUtil.tryUntilOk(5) { talon.configurator.apply(config) }
+    }
+
+    override fun setSensorPosition(rotations: Double) {
+        talon.setPosition(rotations)
     }
 
     override fun setBrake(enable: Boolean) {

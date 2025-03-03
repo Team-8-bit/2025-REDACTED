@@ -5,16 +5,13 @@ import kotlin.test.assertNotNull
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIO
-import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.Dispenser
-import org.team9432.frc2025.robot.subsystems.superstructure.dispenser.DispenserIO
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
 
 internal class SuperstructureSequencerTest {
     @Test
     fun allStatesReachable() {
-        val superstructure =
-            Superstructure(Elevator(object : ElevatorIO {}), Arm(object : ArmIO {}), Dispenser(object : DispenserIO {}))
+        val superstructure = Superstructure(Elevator(object : ElevatorIO {}), Arm(object : ArmIO {}))
 
         // Build a list of all possible movements
         val allPossibleMovements = mutableListOf<Pair<State, State>>()

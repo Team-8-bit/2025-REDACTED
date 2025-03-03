@@ -1,36 +1,29 @@
-package org.team9432.frc2025.robot.subsystems.superstructure.arm
+package org.team9432.frc2025.robot.subsystems.rollers.dispenser
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.ControlRequest
 import org.team9432.annotation.Logged
 
-interface ArmIO {
+interface ManipulatorIO {
     @Logged
-    open class ArmIOInputs {
-        var positionRotations: Double = 0.0
-        var velocityRotationsPerSec: Double = 0.0
-        var closedLoopPositionReference: Double = 0.0
-        var closedLoopVelocityReference: Double = 0.0
-        var closedLoopOutput: Double = 0.0
-
+    open class ManipulatorIOInputs {
         var motorConnected: Boolean = true
         var appliedVolts: Double = 0.0
         var supplyCurrentAmps: Double = 0.0
         var torqueCurrentAmps: Double = 0.0
         var tempFahrenheit: Double = 0.0
+        var positionRotations: Double = 0.0
+        var velocityRotationsPerSec: Double = 0.0
     }
 
     /** Updates the inputs with the latest sensor information. */
-    fun updateInputs(inputs: ArmIOInputs) {}
+    fun updateInputs(inputs: ManipulatorIOInputs) {}
 
     /** Sends the specified control request to the motor. */
     fun setControl(control: ControlRequest) {}
 
     /** Updates the configuration of the motor. */
     fun updateConfig(block: (TalonFXConfiguration) -> Unit) {}
-
-    /** Sets the sensor position of the motor. */
-    fun setSensorPosition(rotations: Double) {}
 
     fun setBrake(enable: Boolean) {}
 }

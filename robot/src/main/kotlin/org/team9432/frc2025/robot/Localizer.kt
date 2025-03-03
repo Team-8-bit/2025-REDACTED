@@ -12,7 +12,7 @@ import kotlin.math.max
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-class RobotState {
+class Localizer {
     private val poseEstimator: SwerveDrivePoseEstimator =
         SwerveDrivePoseEstimator(
             DrivetrainConstants.KINEMATICS,
@@ -36,9 +36,9 @@ class RobotState {
         poseEstimator.addVisionMeasurement(visionPose, timestamp, measurementStdDevs)
         previousVisionMeasurementTimeStamp = max(timestamp, previousVisionMeasurementTimeStamp)
 
-        Logger.recordOutput("RobotPosition/LatestVisionPose", visionPose)
-        Logger.recordOutput("RobotPosition/LatestVisionStddevsXY", measurementStdDevs.get(0, 0))
-        Logger.recordOutput("RobotPosition/LatestVisionStddevsRotation", measurementStdDevs.get(2, 0))
+        Logger.recordOutput("Localizer/LatestVisionPose", visionPose)
+        Logger.recordOutput("Localizer/LatestVisionStddevsXY", measurementStdDevs.get(0, 0))
+        Logger.recordOutput("Localizer/LatestVisionStddevsRotation", measurementStdDevs.get(2, 0))
     }
 
     fun addVelocityData(velocity: ChassisSpeeds) {

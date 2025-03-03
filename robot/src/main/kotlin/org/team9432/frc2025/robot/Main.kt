@@ -210,6 +210,8 @@ class Robot : LoggedRobot() {
     }
 
     private fun bindButtons() {
+        superstructure.coastOverride = { switches.one.asBoolean }
+
         val joystickDriveController =
             JoystickDriveController(
                 controllerX = { -driver.leftY },

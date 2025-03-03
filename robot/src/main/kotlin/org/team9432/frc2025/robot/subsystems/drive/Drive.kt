@@ -22,13 +22,13 @@ import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.SwerveModule
 
 class Drive(
-    private val localizer: Localizer,
     private val gyroIO: GyroIO,
     frontLeft: ModuleIO,
     frontRight: ModuleIO,
     backLeft: ModuleIO,
     backRight: ModuleIO,
     private val odometryThread: OdometryThread,
+    private val localizer: Localizer,
 ) : SubsystemBase() {
     private val gyroInputs = LoggedGyroIOInputs()
     private val odometryThreadInputs = LoggedOdometryThreadInputs()
@@ -112,6 +112,10 @@ class Drive(
 
         // Update gyro alert
         gyroDisconnectedAlert.set(!gyroInputs.connected)
+    }
+
+    fun resetGyro() {
+        gyroIO.setAngle(Rotation2d())
     }
 
     fun controllerCommand(controller: DriveController): Command = run { runVelocity(controller.calculate()) }

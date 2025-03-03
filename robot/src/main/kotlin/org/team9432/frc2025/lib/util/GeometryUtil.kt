@@ -75,3 +75,18 @@ fun Pose2d.transformBySpeeds(speeds: ChassisSpeeds, timeSeconds: Double) =
         this.y + speeds.vyMetersPerSecond * timeSeconds,
         Rotation2d(this.rotation.radians + speeds.omegaRadiansPerSecond * timeSeconds),
     )
+
+fun Rotation2dWithout0Error(x: Double, y: Double): Rotation2d {
+    val cos: Double
+    val sin: Double
+
+    val magnitude = hypot(x, y)
+    if (magnitude > 1e-6) {
+        cos = x / magnitude
+        sin = y / magnitude
+    } else {
+        cos = 1.0
+        sin = 0.0
+    }
+    return Rotation2d(atan2(sin, cos))
+}

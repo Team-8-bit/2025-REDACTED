@@ -10,6 +10,7 @@ import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.PowerDistribution
 import edu.wpi.first.wpilibj.RobotBase
+import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
@@ -29,9 +30,12 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.photonvision.simulation.VisionSystemSim
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
-import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
+import org.team9432.frc2025.lib.util.not
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
+import org.team9432.frc2025.robot.subsystems.climber.Climber
+import org.team9432.frc2025.robot.subsystems.climber.ClimberIO
+import org.team9432.frc2025.robot.subsystems.climber.ClimberIOReal
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
@@ -44,19 +48,43 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOSim
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
+import org.team9432.frc2025.robot.subsystems.rollers.Rollers
+import org.team9432.frc2025.robot.subsystems.rollers.dispenser.Manipulator
+import org.team9432.frc2025.robot.subsystems.rollers.dispenser.ManipulatorIO
+import org.team9432.frc2025.robot.subsystems.rollers.dispenser.ManipulatorIOReal
+import org.team9432.frc2025.robot.subsystems.rollers.funnel.Funnel
+import org.team9432.frc2025.robot.subsystems.rollers.funnel.FunnelIO
+import org.team9432.frc2025.robot.subsystems.rollers.funnel.FunnelIOReal
+import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIO
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIOReal
+import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIOSim
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOReal
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOSim
 import org.team9432.frc2025.robot.vision.*
 
 class Robot : LoggedRobot() {
-    private val controller = CommandXboxController(0)
+    private val driver = CommandXboxController(0)
+    private val operator = CommandXboxController(1)
 
     private val drive: Drive
+    private val superstructure: Superstructure
+    private val rollers: Rollers
+    private val climber: Climber
+    private val setSimulationPose: ((Pose2d) -> Unit)?
+    private val driveSim: SwerveDriveSimulation?
+    private val scoringState = ScoringState()
+
     private val cameras: Set<Camera>
     private val localizer = Localizer()
     private var simUpdateCall: (() -> Unit)? = null
+    private val robotPosition = RobotPosition(localizer)
+
 
     init {
-        LoggedTunableNumber.setTuningModeEnabled(true)
-
         SignalLogger.start()
 
         loggerInit()
@@ -75,14 +103,21 @@ class Robot : LoggedRobot() {
                 Constants.RobotType.COMP -> {
                     drive =
                         Drive(
-                            localizer,
                             GyroIOPigeon2(odometryThread),
                             ModuleIOKraken(ModuleConfig.FRONT_LEFT, odometryThread),
                             ModuleIOKraken(ModuleConfig.FRONT_RIGHT, odometryThread),
                             ModuleIOKraken(ModuleConfig.BACK_LEFT, odometryThread),
                             ModuleIOKraken(ModuleConfig.BACK_RIGHT, odometryThread),
                             odometryThread,
+                            localizer,
                         )
+
+                    superstructure = Superstructure(Elevator(ElevatorIOReal()), Arm(ArmIOReal()))
+                    rollers = Rollers(Funnel(FunnelIOReal()), Manipulator(ManipulatorIOReal()))
+                    climber = Climber(ClimberIOReal())
+
+                    setSimulationPose = null
+                    driveSim = null
 
                     cameras =
                         setOf(
@@ -137,13 +172,13 @@ class Robot : LoggedRobot() {
 
                     drive =
                         Drive(
-                            localizer,
                             gyroIO,
                             ModuleIOSim(frontLeft),
                             ModuleIOSim(frontRight),
                             ModuleIOSim(backLeft),
                             ModuleIOSim(backRight),
                             odometryThread,
+                            localizer,
                         )
 
                     SimulatedArena.getInstance().addDriveTrainSimulation(swerveSim)
@@ -167,20 +202,28 @@ class Robot : LoggedRobot() {
                         )
 
                     simUpdateCall = { visionSim.update(swerveSim.simulatedDriveTrainPose) }
+
+                    superstructure = Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()))
+                    rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
+                    climber = Climber(object : ClimberIO {})
                 }
             }
         } else {
             // No-op replay implementations
             drive =
                 Drive(
-                    localizer,
                     object : GyroIO {},
                     object : ModuleIO {},
                     object : ModuleIO {},
                     object : ModuleIO {},
                     object : ModuleIO {},
                     odometryThread,
+                    localizer,
                 )
+
+            superstructure = Superstructure(Elevator(object : ElevatorIO {}), Arm(object : ArmIO {}))
+            rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
+            climber = Climber(object : ClimberIO {})
 
             cameras =
                 setOf(
@@ -205,18 +248,109 @@ class Robot : LoggedRobot() {
     private fun bindButtons() {
         val joystickDriveController =
             JoystickDriveController(
-                controllerX = { -controller.leftY },
-                controllerY = { -controller.leftX },
-                controllerR = { controller.leftTriggerAxis - controller.rightTriggerAxis },
+                controllerX = { -driver.leftY },
+                controllerY = { -driver.leftX },
+                controllerR = { driver.leftTriggerAxis - driver.rightTriggerAxis },
                 localizer,
             )
 
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, localizer)
 
-        drive.defaultCommand = drive.controllerCommand(joystickDriveController)
+        val doublePressIntakeTimer = Timer()
 
-        controller.a().whileTrue(drive.controllerCommand(alignStraightController))
+        val prepareScoreButton = driver.rightBumper()
+
+        driver
+            .leftBumper()
+            .negate()
+            .and { !doublePressIntakeTimer.hasElapsed(0.2) }
+            .onTrue(rollers.runGoal(Rollers.State.UNJAM_CORAL).withTimeout(0.5))
+
+        driver
+            .leftBumper()
+            .and(!driver.rightBumper())
+            .onTrue(Commands.runOnce({ doublePressIntakeTimer.restart() }))
+            .whileTrue(
+                superstructure
+                    .runGoal(Superstructure.State.INTAKE_CORAL)
+                    .alongWith(rollers.runGoal(Rollers.State.INTAKE_CORAL))
+            )
+            .onFalse(Commands.runOnce({ doublePressIntakeTimer.stop() }))
+
+        rollers.hasCoralTrigger
+            .and(!prepareScoreButton)
+            .whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_TALL_SCORE))
+
+        prepareScoreButton.whileTrue(
+            superstructure
+                .runGoal {
+                    when (scoringState.target) {
+                        ScoringState.ScoringTarget.L2 -> Superstructure.State.PREPARE_L2
+                        ScoringState.ScoringTarget.L3 -> Superstructure.State.PREPARE_L3
+                        ScoringState.ScoringTarget.L4 -> Superstructure.State.PREPARE_L4
+                        ScoringState.ScoringTarget.PROCESSOR -> Superstructure.State.PREPARE_PROCESSOR
+                        ScoringState.ScoringTarget.NET -> Superstructure.State.PREPARE_NET
+                    }
+                }
+                .alongWith(
+                    Commands.sequence(
+                        Commands.waitUntil(driver.a().and(superstructure::atGoal)),
+                        Commands.runOnce(robotPosition::resetLastScorePoseToCurrent),
+                        rollers.runGoal(Rollers.State.SCORE_CORAL),
+                    )
+                )
+        )
+
+        superstructure.defaultCommand =
+            superstructure.runGoal {
+                if (
+                    robotPosition.isSafeToStowArm.asBoolean ||
+                        superstructure.currentState == Superstructure.State.STOW ||
+                        superstructure.currentState == Superstructure.State.ALGAE_STOW
+                ) {
+                    if (rollers.hasAlgae) {
+                        Superstructure.State.ALGAE_STOW
+                    } else {
+                        Superstructure.State.STOW
+                    }
+                } else {
+                    Superstructure.State.PREPARE_TALL_SCORE
+                }
+            }
+
+        operator.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
+        operator.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
+        operator.y().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
+
+        operator
+            .povUp()
+            .onTrue(Commands.runOnce({ scoringState.algaeIntakeTarget = ScoringState.AlgaeIntakeTarget.HIGH }))
+        operator
+            .povDown()
+            .onTrue(Commands.runOnce({ scoringState.algaeIntakeTarget = ScoringState.AlgaeIntakeTarget.LOW }))
+
+        driver
+            .leftBumper()
+            .and(driver.rightBumper())
+            .whileTrue(
+                superstructure
+                    .runGoal {
+                        when (scoringState.algaeIntakeTarget) {
+                            ScoringState.AlgaeIntakeTarget.LOW -> Superstructure.State.INTAKE_ALGAE_LOW
+                            ScoringState.AlgaeIntakeTarget.HIGH -> Superstructure.State.INTAKE_ALGAE_HIGH
+                        }
+                    }
+                    .alongWith(rollers.runGoal(Rollers.State.INTAKE_ALGAE))
+            )
+
+        driver.back().onTrue(Commands.runOnce({ drive.resetGyro() }))
+        driver.start().onTrue(superstructure.homeSystem())
+
+        driver.rightStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasAlgae(true) }))
+        driver.leftStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasCoral(true) }))
+
+        drive.defaultCommand = drive.controllerCommand(joystickDriveController)
     }
 
     private var currentAuto = Commands.none()
@@ -256,6 +390,14 @@ class Robot : LoggedRobot() {
                             )
                             addOption("Drive Angular SysId (Dynamic Forward)", { driveRoutines.angularDynamicForward })
                             addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
+                            addOption(
+                                "Elevator Static Characterization",
+                                { superstructure.elevatorStaticCharacterization() },
+                            )
+                            addOption(
+                                "CoralArm Static Characterization",
+                                { superstructure.armStaticCharacterization() },
+                            )
                         }
                     }
                 }
@@ -268,7 +410,7 @@ class Robot : LoggedRobot() {
 
     private fun loggerInit() {
         Logger.recordMetadata("Robot", Constants.robot.toString())
-        Logger.recordMetadata("TuningMode", LoggedTunableNumber.isTuningModeEnabled().toString())
+        Logger.recordMetadata("TuningMode", Constants.TUNING_MODE.toString())
         Logger.recordMetadata("RuntimeType", getRuntimeType().toString())
         Logger.recordMetadata("ProjectName", MAVEN_NAME)
         Logger.recordMetadata("GitSha", GIT_SHA)
@@ -336,6 +478,7 @@ class Robot : LoggedRobot() {
 
         // Log robot state
         localizer.log()
+        robotPosition.outputTelemetry()
 
         autoChooser.update()
     }

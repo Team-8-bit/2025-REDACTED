@@ -48,7 +48,7 @@ class JoystickAimAtAngleController(
 
         Logger.recordOutput("$TABLE_KEY/PositionErrorDegrees", Units.radiansToDegrees(controller.positionError))
 
-        val joystickSpeeds = joystickController.getLinearSpeed()
+        val joystickSpeeds = joystickController.getSpeeds().first
 
         return ChassisSpeeds(joystickSpeeds.x, joystickSpeeds.y, controllerOutput)
     }

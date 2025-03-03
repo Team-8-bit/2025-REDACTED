@@ -12,6 +12,7 @@ import kotlin.math.pow
 import kotlin.math.withSign
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
+import org.team9432.frc2025.lib.util.Rotation2dWithout0Error
 import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
@@ -32,39 +33,39 @@ class JoystickDriveController(
     }
 
     override fun calculate(): ChassisSpeeds {
-        val linearSpeed = getLinearSpeed()
-        val rotationSpeed = MathUtil.applyDeadband(controllerR(), rotationDeadband)
+        val (linearSpeed, rotationSpeed) = getSpeeds()
 
         val invert = AllianceTracker.switch(blue = 1, red = -1)
 
         return ChassisSpeeds.fromFieldRelativeSpeeds(
-            ratelimitX.calculate(linearSpeed.x) * invert,
-            ratelimitY.calculate(linearSpeed.y) * invert,
+            ratelimitX.calculate(linearSpeed.x * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
+            ratelimitY.calculate(linearSpeed.y * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             rotationSpeed * DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
             localizer.currentPose.rotation,
         )
     }
 
-    fun getLinearSpeed(): Translation2d {
+    fun getSpeeds(): Pair<Translation2d, Double> {
         val xInput = controllerX()
         val yInput = controllerY()
 
         // Apply deadband
         var linearMagnitude = MathUtil.applyDeadband(hypot(xInput, yInput), linearDeadband)
 
+        // Calculate angular velocity
+        val angularMagnitude = MathUtil.applyDeadband(controllerR(), rotationDeadband)
+        val angularVelocity = angularMagnitude.pow(2).withSign(angularMagnitude)
+
         // Get direction of the input
-        val linearDirection = Rotation2d(xInput, yInput)
+        val linearDirection = Rotation2dWithout0Error(xInput, yInput)
 
         // Square magnitude
         linearMagnitude = linearMagnitude.pow(2).withSign(linearMagnitude)
 
         // Calculate new linear velocity
         val linearVelocity =
-            Pose2d(0.0, 0.0, linearDirection)
-                .transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d.kZero))
-                .translation
-                .times(DrivetrainConstants.MAX_LINEAR_SPEED_MPS)
+            Pose2d(0.0, 0.0, linearDirection).transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d.kZero)).translation
 
-        return linearVelocity
+        return linearVelocity to angularVelocity
     }
 }

@@ -14,6 +14,9 @@ object Constants {
     val robot: RobotType
         get() = overrideUnitTestRobotType ?: ROBOT_TYPE
 
+    /** Enables LoggedTunableNumbers. */
+    const val TUNING_MODE: Boolean = true
+
     enum class RobotType {
         COMP,
         SIM;

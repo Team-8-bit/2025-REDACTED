@@ -67,6 +67,7 @@ import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOS
 class Robot : LoggedRobot() {
     private val driver = CommandXboxController(0)
     private val operator = CommandXboxController(1)
+    private val switches = DriverstationSwitches(2)
 
     private val drive: Drive
     private val superstructure: Superstructure
@@ -285,6 +286,7 @@ class Robot : LoggedRobot() {
         operator.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
         operator.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
         operator.y().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
+        operator.x().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.NET }))
 
         operator
             .povUp()

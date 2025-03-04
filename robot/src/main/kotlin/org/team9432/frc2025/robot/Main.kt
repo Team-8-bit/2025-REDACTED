@@ -235,7 +235,7 @@ class Robot : LoggedRobot() {
 
         driver
             .leftBumper()
-            .and(!driver.rightBumper())
+            .and(!prepareScoreButton)
             .onTrue(Commands.runOnce({ doublePressIntakeTimer.restart() }))
             .whileTrue(
                 superstructure
@@ -281,7 +281,7 @@ class Robot : LoggedRobot() {
                         Superstructure.State.STOW
                     }
                 } else {
-                    Superstructure.State.PREPARE_TALL_SCORE
+                    superstructure.goal
                 }
             }
 

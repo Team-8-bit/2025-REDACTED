@@ -223,19 +223,20 @@ class Robot : LoggedRobot() {
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, localizer)
 
-        val doublePressIntakeTimer = Timer()
-
         val prepareScoreButton = driver.rightBumper()
+
+        val doublePressIntakeTimer = Timer()
 
         driver
             .leftBumper()
             .negate()
-            .and { !doublePressIntakeTimer.hasElapsed(0.2) }
+            .and { !doublePressIntakeTimer.hasElapsed(0.15) }
             .onTrue(rollers.runGoal(Rollers.State.UNJAM_CORAL).withTimeout(0.5))
 
         driver
             .leftBumper()
             .and(!prepareScoreButton)
+            .and(!rollers.hasAlgaeTrigger)
             .onTrue(Commands.runOnce({ doublePressIntakeTimer.restart() }))
             .whileTrue(
                 superstructure
@@ -300,6 +301,7 @@ class Robot : LoggedRobot() {
         driver
             .leftBumper()
             .and(driver.rightBumper())
+            .and(!rollers.hasAlgaeTrigger)
             .whileTrue(
                 superstructure
                     .runGoal {

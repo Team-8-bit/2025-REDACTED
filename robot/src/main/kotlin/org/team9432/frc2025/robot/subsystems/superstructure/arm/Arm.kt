@@ -54,6 +54,9 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
 
     private val motorOutputDisabled = { DriverStation.isDisabled() }
 
+    var coastOverride = { false }
+    private var wasCoast = false
+
     private var goal = Goal.STOW
     var hasHomed = false
         private set
@@ -100,7 +103,8 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
 
         gains.ifChanged(hashCode()) { io.updateConfig { config -> gains.applyToTalonFXConfig(config) } }
 
-        val shouldRunPosition = !motorOutputDisabled() && hasHomed && characterizationInput == null
+        val shouldCoast = coastOverride()
+        val shouldRunPosition = !motorOutputDisabled() && hasHomed && characterizationInput == null && !shouldCoast
 
         if (shouldRunPosition) {
             val goalPosition = MathUtil.clamp(goal.rotations, ArmConstants.MIN_POSITION, ArmConstants.MAX_POSITION)
@@ -111,6 +115,11 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
             //            }
         } else if (characterizationInput != null) {
             io.setControl(currentControl.withOutput(characterizationInput!!))
+        }
+
+        if (shouldCoast != wasCoast) {
+            wasCoast = shouldCoast
+            io.setBrake(!shouldCoast)
         }
 
         Logger.recordOutput("Arm/Goal", goal)

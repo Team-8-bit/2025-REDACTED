@@ -39,4 +39,7 @@ class Manipulator(private val io: ManipulatorIO) {
 
     val velocityRPS
         get() = inputs.velocityRotationsPerSec
+
+    val torqueCurrentAmps
+        get() = inputs.torqueCurrentAmps
 }

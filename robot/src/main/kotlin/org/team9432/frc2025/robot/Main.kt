@@ -69,6 +69,7 @@ import org.team9432.frc2025.robot.vision.*
 class Robot : LoggedRobot() {
     private val driver = CommandXboxController(0)
     private val operator = CommandXboxController(1)
+    private val switches = DriverstationSwitches(2)
 
     private val drive: Drive
     private val superstructure: Superstructure
@@ -240,6 +241,8 @@ class Robot : LoggedRobot() {
     }
 
     private fun bindButtons() {
+        superstructure.coastOverride = { switches.one.asBoolean }
+
         val joystickDriveController =
             JoystickDriveController(
                 controllerX = { -driver.leftY },
@@ -251,19 +254,20 @@ class Robot : LoggedRobot() {
         val alignStraightController =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, localizer)
 
-        val doublePressIntakeTimer = Timer()
-
         val prepareScoreButton = driver.rightBumper()
+
+        val doublePressIntakeTimer = Timer()
 
         driver
             .leftBumper()
             .negate()
-            .and { !doublePressIntakeTimer.hasElapsed(0.2) }
+            .and { !doublePressIntakeTimer.hasElapsed(0.15) }
             .onTrue(rollers.runGoal(Rollers.State.UNJAM_CORAL).withTimeout(0.5))
 
         driver
             .leftBumper()
-            .and(!driver.rightBumper())
+            .and(!prepareScoreButton)
+            .and(!rollers.hasAlgaeTrigger)
             .onTrue(Commands.runOnce({ doublePressIntakeTimer.restart() }))
             .whileTrue(
                 superstructure
@@ -309,13 +313,14 @@ class Robot : LoggedRobot() {
                         Superstructure.State.STOW
                     }
                 } else {
-                    Superstructure.State.PREPARE_TALL_SCORE
+                    superstructure.goal
                 }
             }
 
         operator.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
         operator.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
         operator.y().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
+        operator.x().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.NET }))
 
         operator
             .povUp()
@@ -327,6 +332,7 @@ class Robot : LoggedRobot() {
         driver
             .leftBumper()
             .and(driver.rightBumper())
+            .and(!rollers.hasAlgaeTrigger)
             .whileTrue(
                 superstructure
                     .runGoal {

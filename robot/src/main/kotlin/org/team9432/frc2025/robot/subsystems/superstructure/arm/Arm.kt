@@ -115,8 +115,6 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
             //            }
         } else if (characterizationInput != null) {
             io.setControl(currentControl.withOutput(characterizationInput!!))
-        } else {
-            io.setControl(neutralOut)
         }
 
         if (shouldCoast != wasCoast) {

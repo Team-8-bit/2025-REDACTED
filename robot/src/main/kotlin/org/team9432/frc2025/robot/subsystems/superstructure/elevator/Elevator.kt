@@ -140,8 +140,6 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
             }
         } else if (characterizationInput != null) {
             io.setControl(currentControl.withOutput(characterizationInput!!))
-        } else {
-            io.setControl(neutralOut)
         }
 
         if (shouldCoast != wasCoast) {
@@ -154,6 +152,7 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
         Logger.recordOutput("Elevator/AtGoal", atGoal())
         Logger.recordOutput("Elevator/Homed", hasHomed)
         Logger.recordOutput("Elevator/CharacterizationInput", characterizationInput ?: 0.0)
+        Logger.recordOutput("Elevator/RunningPositionControl", shouldRunPosition)
     }
 
     val positionMeters

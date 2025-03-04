@@ -41,24 +41,16 @@ object VisionConstants {
         val robotToCamera: Transform3d,
     ) {
         FRONT(
-            photonName = "Front",
+            photonName = "FrontLeft",
             robotToCamera =
                 Transform3d(
-                    Translation3d(Units.inchesToMeters(0.0), Units.inchesToMeters(0.0), Units.inchesToMeters(0.3)),
-                    Rotation3d(Units.degreesToRadians(0.0), Units.degreesToRadians(-15.0), Units.degreesToRadians(0.0)),
-                ),
-        ),
-        BACK(
-            photonName = "Back",
-            robotToCamera =
-                Transform3d(
-                    Translation3d(Units.inchesToMeters(0.0), Units.inchesToMeters(0.0), Units.inchesToMeters(0.3)),
+                    Translation3d(Units.inchesToMeters(13.0), Units.inchesToMeters(11.5), Units.inchesToMeters(8.5)),
                     Rotation3d(
                         Units.degreesToRadians(0.0),
-                        Units.degreesToRadians(-15.0),
-                        Units.degreesToRadians(180.0),
+                        Units.degreesToRadians(-20.0),
+                        Units.degreesToRadians(-39.901730),
                     ),
                 ),
-        ),
+        )
     }
 }

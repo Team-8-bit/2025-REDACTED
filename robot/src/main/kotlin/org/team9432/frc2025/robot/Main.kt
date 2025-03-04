@@ -120,12 +120,7 @@ class Robot : LoggedRobot() {
                                 CameraIOPhotonVision(VisionConstants.PhotonConfig.FRONT),
                                 VisionConstants.CameraConstants.FRONT,
                                 localizer,
-                            ),
-                            Camera(
-                                CameraIOPhotonVision(VisionConstants.PhotonConfig.BACK),
-                                VisionConstants.CameraConstants.BACK,
-                                localizer,
-                            ),
+                            )
                         )
                 }
 
@@ -188,15 +183,14 @@ class Robot : LoggedRobot() {
                                 CameraIOPhotonVisionSim(VisionConstants.PhotonConfig.FRONT, visionSim),
                                 VisionConstants.CameraConstants.FRONT,
                                 localizer,
-                            ),
-                            Camera(
-                                CameraIOPhotonVisionSim(VisionConstants.PhotonConfig.BACK, visionSim),
-                                VisionConstants.CameraConstants.BACK,
-                                localizer,
-                            ),
+                            )
                         )
 
-                    simUpdateCall = { visionSim.update(swerveSim.simulatedDriveTrainPose) }
+                    simUpdateCall = {
+                        visionSim.update(swerveSim.simulatedDriveTrainPose)
+                        // Log actual sim robot position
+                        Logger.recordOutput("SimulationArena/ActualRobotPosition", swerveSim.simulatedDriveTrainPose)
+                    }
 
                     superstructure = Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()))
                     rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))

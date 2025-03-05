@@ -35,6 +35,8 @@ class Manipulator(private val io: ManipulatorIO) {
             Goal.HOLD_ALGAE -> io.setControl(currentControl.withOutput(-30.0))
             Goal.SCORE_ALGAE -> io.setControl(voltageControl.withOutput(12.0))
         }
+
+        Logger.recordOutput("Rollers/ManipulatorState", goal)
     }
 
     val velocityRPS

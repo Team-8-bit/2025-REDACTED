@@ -264,7 +264,9 @@ class Robot : LoggedRobot() {
                     Commands.sequence(
                         Commands.waitUntil(driver.a().and(superstructure::atGoal)),
                         Commands.runOnce(robotPosition::resetLastScorePoseToCurrent),
-                        rollers.runGoal(Rollers.State.SCORE_CORAL),
+                        rollers.runGoal {
+                            if (scoringState.target.isAlgae) Rollers.State.SCORE_ALGAE else Rollers.State.SCORE_CORAL
+                        },
                     )
                 )
         )

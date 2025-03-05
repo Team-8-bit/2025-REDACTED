@@ -2,7 +2,7 @@ package org.team9432.frc2025.robot.subsystems.drive
 
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.system.plant.DCMotor
-import org.team9432.frc2025.lib.constants.MK4ISwerveConstants
+import org.team9432.frc2025.lib.constants.MK4NSwerveConstants
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 
@@ -18,7 +18,7 @@ object DrivetrainConstants {
 
     const val WHEEL_RADIUS_INCHES = 2.0
 
-    val MODULE_TRANSLATIONS = MK4ISwerveConstants.getModuleTranslationsForFrameSize(26.0)
+    val MODULE_TRANSLATIONS = MK4NSwerveConstants.getModuleTranslationsForFrameSize(29.5)
     val KINEMATICS = SwerveDriveKinematics(*MODULE_TRANSLATIONS)
     val DRIVE_RADIUS = MODULE_TRANSLATIONS[0].norm
 
@@ -26,8 +26,8 @@ object DrivetrainConstants {
     const val MAX_LINEAR_ACCEL_MPSPS = 6.0
     val MAX_ANGULAR_SPEED_RAD_PER_SEC = MAX_LINEAR_SPEED_MPS / DRIVE_RADIUS
 
-    const val DRIVE_RATIO = MK4ISwerveConstants.L2PLUS_DRIVE_REDUCTION
-    const val STEER_RATIO = MK4ISwerveConstants.STEER_REDUCTION
+    const val DRIVE_RATIO = MK4NSwerveConstants.L1PLUS_DRIVE_REDUCTION
+    const val STEER_RATIO = MK4NSwerveConstants.STEER_REDUCTION
 
     val ffkT: Double
     private val ffkS: Double

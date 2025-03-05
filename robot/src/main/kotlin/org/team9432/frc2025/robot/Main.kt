@@ -321,6 +321,12 @@ class Robot : LoggedRobot() {
         driver.rightStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasAlgae(true) }))
         driver.leftStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasCoral(true) }))
 
+        var climbMode = false
+        driver.rightStick().onTrue(Commands.runOnce({ climbMode = !climbMode }))
+        driver.povUp().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.UP))
+        driver.povDown().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.DOWN))
+        driver.povRight().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.CLIMB))
+
         drive.defaultCommand = drive.controllerCommand(joystickDriveController)
     }
 

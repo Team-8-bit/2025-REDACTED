@@ -3,7 +3,6 @@ package org.team9432.frc2025.robot.subsystems.drive
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
-import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj.Alert.AlertType
@@ -43,9 +42,6 @@ class Drive(
 
     private val gyroDisconnectedAlert = Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError)
 
-    private var rawGyroRotation = Rotation2d()
-    private val lastModulePositions = Array(4) { SwerveModulePosition() }
-
     companion object {
         val odometryLock = ReentrantLock()
     }
@@ -75,40 +71,21 @@ class Drive(
         val minSamples = min(odometryThreadInputs.timestamps.size, modules[0].odometrySampleSize)
 
         for (timestampIndex in 0..<minSamples) {
-            val modulePositions = arrayOfNulls<SwerveModulePosition>(4)
-            val moduleDeltas = arrayOfNulls<SwerveModulePosition>(4)
+            val modulePositions = Array(modules.size) { modules[it].getOdometryModulePositions()[timestampIndex] }
 
-            for (moduleIndex in modules.indices) {
-                val currentPosition = modules[moduleIndex].getOdometryModulePositions()[timestampIndex]
-                modulePositions[moduleIndex] = currentPosition
-                moduleDeltas[moduleIndex] =
-                    SwerveModulePosition(
-                        currentPosition.distanceMeters - lastModulePositions[moduleIndex].distanceMeters,
-                        currentPosition.angle,
-                    )
-                lastModulePositions[moduleIndex] = currentPosition
-            }
-
-            if (gyroInputs.connected) {
-                rawGyroRotation = gyroInputs.odometryYawPositions[timestampIndex]
-            } else {
-                val twist = DrivetrainConstants.KINEMATICS.toTwist2d(*moduleDeltas)
-                rawGyroRotation += Rotation2d(twist.dtheta)
-            }
-
-            localizer.applyOdometryObservation(
-                odometryThreadInputs.timestamps[timestampIndex],
-                rawGyroRotation,
-                modulePositions,
+            localizer.addOdometryObservation(
+                Localizer.OdometryObservation(
+                    modulePositions,
+                    if (gyroInputs.connected) gyroInputs.odometryYawPositions[timestampIndex] else null,
+                    odometryThreadInputs.timestamps[timestampIndex],
+                )
             )
         }
 
         // Add velocity data
         val robotRelativeSpeeds = DrivetrainConstants.KINEMATICS.toChassisSpeeds(*getModuleStates())
-        if (gyroInputs.connected) {
-            robotRelativeSpeeds.omegaRadiansPerSecond = gyroInputs.yawVelocityRadPerSec
-        }
-        localizer.addVelocityData(robotRelativeSpeeds)
+
+        localizer.robotVelocity = robotRelativeSpeeds
 
         // Update gyro alert
         gyroDisconnectedAlert.set(!gyroInputs.connected)

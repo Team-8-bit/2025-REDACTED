@@ -186,11 +186,7 @@ class Robot : LoggedRobot() {
                             )
                         )
 
-                    simUpdateCall = {
-                        visionSim.update(swerveSim.simulatedDriveTrainPose)
-                        // Log actual sim robot position
-                        Logger.recordOutput("SimulationArena/ActualRobotPosition", swerveSim.simulatedDriveTrainPose)
-                    }
+                    simUpdateCall = { visionSim.update(swerveSim.simulatedDriveTrainPose) }
 
                     superstructure = Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()))
                     rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))

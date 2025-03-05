@@ -41,7 +41,7 @@ class JoystickDriveController(
             ratelimitX.calculate(linearSpeed.x * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             ratelimitY.calculate(linearSpeed.y * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             rotationSpeed * DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
-            localizer.currentPose.rotation,
+            localizer.rotation,
         )
     }
 

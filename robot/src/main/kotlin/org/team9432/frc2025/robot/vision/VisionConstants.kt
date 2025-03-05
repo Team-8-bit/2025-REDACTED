@@ -2,6 +2,7 @@ package org.team9432.frc2025.robot.vision
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout
 import edu.wpi.first.apriltag.AprilTagFields
+import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.geometry.Transform3d
 import edu.wpi.first.math.geometry.Translation3d
@@ -12,7 +13,7 @@ object VisionConstants {
     const val DISABLED = false
 
     // AprilTag layout
-    val aprilTagLayout: AprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField)
+    val aprilTagLayout: AprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2025Reefscape)
 
     // Basic filtering thresholds
     const val MAX_AMBIGUITY = 0.3
@@ -23,6 +24,8 @@ object VisionConstants {
     // (Adjusted automatically based on distance and # of tags)
     const val LINEAR_STDDEV_BASELINE = 0.02 // Meters
     const val ANGULAR_STDDEV_BASELINE = 0.06 // Radians
+
+    val cameras = listOf(PhotonConfig.FRONT)
 
     enum class CameraConstants(
         /** Camera name to use in logs. */
@@ -51,6 +54,8 @@ object VisionConstants {
                         Units.degreesToRadians(-39.901730),
                     ),
                 ),
-        )
+        );
+
+        val pose = Pose3d(robotToCamera.x, robotToCamera.y, robotToCamera.z, robotToCamera.rotation)
     }
 }

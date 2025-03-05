@@ -21,10 +21,7 @@ class JoystickAimAtAngleController(
         ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0)).apply {
             enableContinuousInput(-Math.PI, Math.PI)
 
-            reset(
-                localizer.currentPose.rotation.radians,
-                localizer.getRobotRelativeChassisSpeeds().omegaRadiansPerSecond,
-            )
+            reset(localizer.rotation.radians, localizer.robotVelocity.omegaRadiansPerSecond)
         }
 
     private companion object {
@@ -44,7 +41,7 @@ class JoystickAimAtAngleController(
         val maxAngularAcceleration = DrivetrainConstants.MAX_LINEAR_ACCEL_MPSPS * maxAccelerationMultiplier
         controller.constraints = TrapezoidProfile.Constraints(maxAngularVelocity, maxAngularAcceleration)
 
-        val controllerOutput = controller.calculate(localizer.currentPose.rotation.radians, goal.invoke().radians)
+        val controllerOutput = controller.calculate(localizer.rotation.radians, goal.invoke().radians)
 
         Logger.recordOutput("$TABLE_KEY/PositionErrorDegrees", Units.radiansToDegrees(controller.positionError))
 

@@ -18,7 +18,7 @@ object DrivetrainConstants {
 
     const val WHEEL_RADIUS_INCHES = 2.0
 
-    val MODULE_TRANSLATIONS = MK4ISwerveConstants.getModuleTranslationsForFrameSize(26.0)
+    val MODULE_TRANSLATIONS = MK4ISwerveConstants.getModuleTranslationsForFrameSize(29.5)
     val KINEMATICS = SwerveDriveKinematics(*MODULE_TRANSLATIONS)
     val DRIVE_RADIUS = MODULE_TRANSLATIONS[0].norm
 
@@ -26,7 +26,7 @@ object DrivetrainConstants {
     const val MAX_LINEAR_ACCEL_MPSPS = 6.0
     val MAX_ANGULAR_SPEED_RAD_PER_SEC = MAX_LINEAR_SPEED_MPS / DRIVE_RADIUS
 
-    const val DRIVE_RATIO = MK4ISwerveConstants.L2PLUS_DRIVE_REDUCTION
+    const val DRIVE_RATIO = MK4ISwerveConstants.L1PLUS_DRIVE_REDUCTION
     const val STEER_RATIO = MK4ISwerveConstants.STEER_REDUCTION
 
     val ffkT: Double

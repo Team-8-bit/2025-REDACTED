@@ -67,7 +67,7 @@ class Camera(
             angularStdDev *= constants.stddevFactor
 
             //             Send vision observation
-            localizer.applyVisionMeasurement(
+            localizer.addVisionObservation(
                 observation.pose.toPose2d(),
                 observation.timestamp,
                 VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev),

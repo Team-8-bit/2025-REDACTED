@@ -40,11 +40,11 @@ class WheelRadiusCharacterization(private val drive: Drive, private val localize
         // Record initial module positions and robot angle
         if (initialPositions == null) {
             initialPositions = drive.getModuleCharacterizationPositionRads()
-            lastAngle = localizer.currentPose.rotation
+            lastAngle = localizer.rotation
         }
 
         // Record new information
-        val rotation = localizer.currentPose.rotation
+        val rotation = localizer.rotation
         accumulatedRotationRadians += abs((rotation - lastAngle).radians)
         lastAngle = rotation
     }

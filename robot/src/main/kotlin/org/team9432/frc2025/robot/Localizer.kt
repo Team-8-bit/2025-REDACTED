@@ -13,7 +13,6 @@ import edu.wpi.first.math.numbers.N3
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.Timer
-import java.util.*
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.pow
 import kotlin.math.sqrt

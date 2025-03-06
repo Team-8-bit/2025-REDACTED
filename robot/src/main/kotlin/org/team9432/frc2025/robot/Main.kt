@@ -117,7 +117,7 @@ class Robot : LoggedRobot() {
                     cameras =
                         setOf(
                             Camera(
-                                CameraIOPhotonVision(VisionConstants.PhotonConfig.FRONT),
+                                CameraIOPhotonVision(VisionConstants.PhotonConfig.FRONT, localizer::rotation),
                                 VisionConstants.CameraConstants.FRONT,
                                 localizer,
                             )
@@ -180,7 +180,11 @@ class Robot : LoggedRobot() {
                     cameras =
                         setOf(
                             Camera(
-                                CameraIOPhotonVisionSim(VisionConstants.PhotonConfig.FRONT, visionSim),
+                                CameraIOPhotonVisionSim(
+                                    VisionConstants.PhotonConfig.FRONT,
+                                    visionSim,
+                                    localizer::rotation,
+                                ),
                                 VisionConstants.CameraConstants.FRONT,
                                 localizer,
                             )

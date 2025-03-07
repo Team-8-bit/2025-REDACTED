@@ -16,7 +16,7 @@ class Camera(
 
     override fun periodic() {
         io.updateInputs(inputs)
-        Logger.processInputs("Cameras/${constants.logName}", inputs)
+        Logger.processInputs("Vision/${constants.logName}", inputs)
         alert.set(!inputs.connected)
 
         // Initialize logging values
@@ -72,9 +72,9 @@ class Camera(
         //        }
 
         // Log camera data
-        Logger.recordOutput("Cameras/${constants.logName}/TagPoses", *tagPoses.toTypedArray())
-        Logger.recordOutput("Cameras/${constants.logName}/AllPoses", *allRobotPoses.toTypedArray())
-        Logger.recordOutput("Cameras/${constants.logName}/AcceptedPoses", *acceptedPoses.toTypedArray())
-        Logger.recordOutput("Cameras/${constants.logName}/RejectedPoses", *rejectedPoses.toTypedArray())
+        Logger.recordOutput("Vision/${constants.logName}/TagPoses", *tagPoses.toTypedArray())
+        Logger.recordOutput("Vision/${constants.logName}/AllPoses", *allRobotPoses.toTypedArray())
+        Logger.recordOutput("Vision/${constants.logName}/AcceptedPoses", *acceptedPoses.toTypedArray())
+        Logger.recordOutput("Vision/${constants.logName}/RejectedPoses", *rejectedPoses.toTypedArray())
     }
 }

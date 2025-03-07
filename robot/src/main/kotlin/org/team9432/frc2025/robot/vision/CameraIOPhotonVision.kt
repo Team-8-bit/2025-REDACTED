@@ -1,105 +1,107 @@
 package org.team9432.frc2025.robot.vision
 
-import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform3d
-import java.util.*
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import org.photonvision.PhotonCamera
-import org.photonvision.PhotonPoseEstimator
-import org.team9432.frc2025.robot.FieldConstants
-import org.team9432.frc2025.robot.Localizer
+import org.photonvision.targeting.PhotonPipelineResult
 import org.team9432.frc2025.robot.vision.CameraIO.CameraIOInputs
+import org.team9432.frc2025.robot.vision.VisionConstants.aprilTagLayout
 
-open class CameraIOPhotonVision(
-    val config: VisionConstants.PhotonConfig,
-    private val rotationSupplier: () -> Rotation2d,
-) : CameraIO {
-    val camera = PhotonCamera(config.photonName)
-
-    private val poseEstimator =
-        PhotonPoseEstimator(
-                VisionConstants.aprilTagLayout,
-                PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-                config.robotToCamera,
-            )
-            .apply { setMultiTagFallbackStrategy(PhotonPoseEstimator.PoseStrategy.LOWEST_AMBIGUITY) }
+open class CameraIOPhotonVision(name: String, private val rotationSupplier: () -> Rotation2d) : CameraIO {
+    val camera = PhotonCamera(name)
 
     override fun updateInputs(inputs: CameraIOInputs) {
         inputs.connected = camera.isConnected
 
         // Read new camera observations
-        val visionObservations = mutableListOf<Localizer.VisionObservation>()
-        val txtyObservations = mutableListOf<Localizer.TxTyObservation>()
-
-        val ambiguityThreshold = 0.4
-
         val results = camera.allUnreadResults
+
+        val visionObservations = mutableListOf<CameraIO.VisionData>()
+        val txtyObservations = mutableListOf<CameraIO.TxTyData>()
         for (result in results) {
-            val multitagResult = result.multitagResult.getOrNull()
-
-            var pose: Pose3d? = null
-
-            when {
-                multitagResult != null -> {
-                    val bestTransform = multitagResult.estimatedPose.best
-                    pose = transformToRobotPose(bestTransform) // field-to-robot
-                }
-
-                result.targets.size > 1 -> {
-                    throw Exception("I don't think this should happen") // TODO: Remove before comp
-                }
-
-                result.targets.size == 1 -> {
-                    val target = result.targets.first()
-                    if (target.poseAmbiguity < ambiguityThreshold) {
-                        val currentRotation = rotationSupplier()
-                        val bestRotation = target.bestCameraToTarget.rotation.toRotation2d()
-                        val altRotation = target.alternateCameraToTarget.rotation.toRotation2d()
-                        if (
-                            abs(currentRotation.minus(bestRotation).radians) <
-                                abs(currentRotation.minus(altRotation).radians)
-                        ) {
-                            pose = transformToRobotPose(target.bestCameraToTarget)
-                        } else {
-                            pose = transformToRobotPose(target.alternateCameraToTarget)
-                        }
-                    }
-                }
-            }
-
-            if (pose == null) {
-                continue
-            }
-
-            val fieldBorderMargin = 0.5
-            if (
-                pose.x < -fieldBorderMargin ||
-                    pose.x > FieldConstants.fieldLength + fieldBorderMargin ||
-                    pose.y < -fieldBorderMargin ||
-                    pose.y > FieldConstants.fieldWidth + fieldBorderMargin
-            ) {
-                continue
-            }
-
-            visionObservations.add(
-                Localizer.VisionObservation(
-                    pose.toPose2d(),
-                    result.timestampSeconds,
-                    VecBuilder.fill(0.1, 0.1, 1.0), // TODO
+            val cameraPose = estimateCameraPose(result)
+            if (cameraPose != null) {
+                visionObservations.add(
+                    CameraIO.VisionData(
+                        cameraPose = cameraPose,
+                        tagList = AprilTagList(result.targets.map { it.fiducialId }),
+                        timestamp = result.timestampSeconds,
+                    )
                 )
-            )
+            }
+
+            for (target in result.targets) {
+                txtyObservations.add(
+                    CameraIO.TxTyData(
+                        tagId = target.fiducialId,
+                        tx = target.yaw,
+                        ty = target.pitch,
+                        distance = target.bestCameraToTarget.translation.norm,
+                        timestamp = result.timestampSeconds,
+                    )
+                )
+            }
         }
 
-        // Save pose observations to inputs object
         inputs.poseObservations = visionObservations.toTypedArray()
+        inputs.txTyObservations = txtyObservations.toTypedArray()
     }
 
-    private fun transformToRobotPose(bestTransform: Transform3d?): Pose3d =
-        Pose3d()
-            .plus(bestTransform) // field-to-camera
-            .relativeTo(VisionConstants.aprilTagLayout.origin)
-            .plus(config.robotToCamera.inverse())
+    /**
+     * Estimates the robot's position based on the given [PhotonPipelineResult].
+     *
+     * @return An estimated pose and a set of standard deviations, or null if no valid pose was found.
+     */
+    private fun estimateCameraPose(result: PhotonPipelineResult): Pose3d? {
+        // First thing is to find the where the camera is
+        val multitagResult = result.multitagResult.getOrNull()
+        val cameraToTarget: Transform3d? =
+            when {
+                // If we got a multitag result, use that
+                multitagResult != null -> multitagResult.estimatedPose.best
+
+                // Else take single tag and try to disambiguate
+                result.targets.size == 1 -> {
+                    val target = result.targets.first()
+
+                    // If the pose is too ambiguous, return null
+                    if (target.poseAmbiguity >= VisionConstants.MAX_AMBIGUITY) return null
+
+                    // Else disambiguate by which is closest to the robot's rotation
+                    val currentRotation = rotationSupplier()
+                    val bestRotation = target.bestCameraToTarget.rotation.toRotation2d()
+                    val altRotation = target.alternateCameraToTarget.rotation.toRotation2d()
+                    if (
+                        abs(currentRotation.minus(bestRotation).radians) <
+                            abs(currentRotation.minus(altRotation).radians)
+                    ) {
+                        target.bestCameraToTarget
+                    } else {
+                        target.alternateCameraToTarget
+                    }
+                }
+
+                result.targets.size == 0 -> {
+                    return null
+                }
+
+                else -> {
+                    println(result.targets.size)
+                    throw Exception("I don't think this should happen") // TODO: Replace with continue before comp
+                }
+            }
+
+        // Make sure we got a valid camera transform
+        if (cameraToTarget == null) return null
+
+        // Calculate camera pose
+        val cameraPose = Pose3d().plus(cameraToTarget).relativeTo(aprilTagLayout.origin)
+
+        println(cameraPose)
+
+        return cameraPose
+    }
 }

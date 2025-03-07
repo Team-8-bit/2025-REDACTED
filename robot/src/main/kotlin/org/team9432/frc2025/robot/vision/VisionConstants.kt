@@ -9,42 +9,31 @@ import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
 
 object VisionConstants {
-    // Set to true to invalidate all vision readings
-    const val DISABLED = false
-
     // AprilTag layout
     val aprilTagLayout: AprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2025Reefscape)
 
     // Basic filtering thresholds
-    const val MAX_AMBIGUITY = 0.3
+    const val MAX_AMBIGUITY = 0.4
+    const val FIELD_BORDER_MARGIN = 0.4
     const val MAX_Z_ERROR = 0.3 // Meters
     const val MAX_ANGLE_ERROR = 5.0 // Tilt of the robot in degrees
 
     // Standard deviation baselines, for 1 meter distance and 1 tag
     // (Adjusted automatically based on distance and # of tags)
-    const val LINEAR_STDDEV_BASELINE = 0.02 // Meters
-    const val ANGULAR_STDDEV_BASELINE = 0.06 // Radians
-
-    val cameras = listOf(PhotonConfig.FRONT)
+    const val LINEAR_STDDEV_BASELINE = 0.01 // Meters
+    const val ANGULAR_STDDEV_BASELINE = 5.0 // Degrees
 
     enum class CameraConstants(
-        /** Camera name to use in logs. */
-        val logName: String,
         /** Standard deviation multiplier. Adjust to trust some cameras more than others. */
-        val stddevFactor: Double,
-    ) {
-        FRONT(logName = "FrontCamera", stddevFactor = 1.0),
-        BACK(logName = "BackCamera", stddevFactor = 1.0),
-    }
-
-    enum class PhotonConfig(
-        /** Camera name as configured in photonvision, must match name configured on the coprocessor. */
-        val photonName: String,
+        val stdDevFactor: Double,
+        /** Camera name, must match name configured on the coprocessor. */
+        val cameraName: String,
         /** Robot to camera transform. */
         val robotToCamera: Transform3d,
     ) {
         FRONT(
-            photonName = "FrontLeft",
+            stdDevFactor = 1.0,
+            cameraName = "FrontCamera",
             robotToCamera =
                 Transform3d(
                     Translation3d(Units.inchesToMeters(13.0), Units.inchesToMeters(11.5), Units.inchesToMeters(8.5)),

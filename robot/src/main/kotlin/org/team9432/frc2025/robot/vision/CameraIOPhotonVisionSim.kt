@@ -7,10 +7,10 @@ import org.photonvision.simulation.VisionSystemSim
 
 // The goal here is to just hijack the real vision IO implementation and simulate the camera
 class CameraIOPhotonVisionSim(
-    cameraConfig: VisionConstants.PhotonConfig,
+    cameraConstants: VisionConstants.CameraConstants,
     private val visionSim: VisionSystemSim,
     rotationSupplier: () -> Rotation2d,
-) : CameraIOPhotonVision(cameraConfig, rotationSupplier) {
+) : CameraIOPhotonVision(cameraConstants.cameraName, rotationSupplier) {
     private val simCameraProperties =
         SimCameraProperties().apply {
             setCalibration(1280, 800, Rotation2d.fromDegrees(78.61))
@@ -29,6 +29,6 @@ class CameraIOPhotonVisionSim(
         }
 
     init {
-        visionSim.addCamera(cameraSim, config.robotToCamera)
+        visionSim.addCamera(cameraSim, cameraConstants.robotToCamera)
     }
 }

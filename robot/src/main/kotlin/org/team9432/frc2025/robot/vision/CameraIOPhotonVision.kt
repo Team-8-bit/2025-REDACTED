@@ -1,28 +1,17 @@
 package org.team9432.frc2025.robot.vision
 
-import edu.wpi.first.math.VecBuilder
-import edu.wpi.first.math.Vector
 import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform3d
-import edu.wpi.first.math.numbers.N3
-import edu.wpi.first.math.util.Units
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
-import kotlin.math.pow
 import org.photonvision.PhotonCamera
 import org.photonvision.targeting.PhotonPipelineResult
-import org.team9432.frc2025.robot.FieldConstants
-import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.vision.CameraIO.CameraIOInputs
-import org.team9432.frc2025.robot.vision.VisionConstants.FIELD_BORDER_MARGIN
 import org.team9432.frc2025.robot.vision.VisionConstants.aprilTagLayout
 
-open class CameraIOPhotonVision(
-    val cameraConstants: VisionConstants.CameraConstants,
-    private val rotationSupplier: () -> Rotation2d,
-) : CameraIO {
-    val camera = PhotonCamera(cameraConstants.cameraName)
+open class CameraIOPhotonVision(name: String, private val rotationSupplier: () -> Rotation2d) : CameraIO {
+    val camera = PhotonCamera(name)
 
     override fun updateInputs(inputs: CameraIOInputs) {
         inputs.connected = camera.isConnected
@@ -30,27 +19,24 @@ open class CameraIOPhotonVision(
         // Read new camera observations
         val results = camera.allUnreadResults
 
-        val visionObservations = mutableListOf<Localizer.VisionObservation>()
-        val txtyObservations = mutableListOf<Localizer.TxTyObservation>()
+        val visionObservations = mutableListOf<CameraIO.VisionData>()
+        val txtyObservations = mutableListOf<CameraIO.TxTyData>()
         for (result in results) {
-            val poseEstimate = estimatePose(result)
-            if (poseEstimate != null) {
-                val (pose, stdDevs) = poseEstimate
-
+            val cameraPose = estimateCameraPose(result)
+            if (cameraPose != null) {
                 visionObservations.add(
-                    Localizer.VisionObservation(
-                        visionPose = pose.toPose2d(),
+                    CameraIO.VisionData(
+                        cameraPose = cameraPose,
+                        tagList = AprilTagList(result.targets.map { it.fiducialId }),
                         timestamp = result.timestampSeconds,
-                        stdDevs = stdDevs,
                     )
                 )
             }
 
             for (target in result.targets) {
                 txtyObservations.add(
-                    Localizer.TxTyObservation(
+                    CameraIO.TxTyData(
                         tagId = target.fiducialId,
-                        camera = cameraConstants,
                         tx = target.yaw,
                         ty = target.pitch,
                         distance = target.bestCameraToTarget.translation.norm,
@@ -69,7 +55,7 @@ open class CameraIOPhotonVision(
      *
      * @return An estimated pose and a set of standard deviations, or null if no valid pose was found.
      */
-    private fun estimatePose(result: PhotonPipelineResult): Pair<Pose3d, Vector<N3>>? {
+    private fun estimateCameraPose(result: PhotonPipelineResult): Pose3d? {
         // First thing is to find the where the camera is
         val multitagResult = result.multitagResult.getOrNull()
         val cameraToTarget: Transform3d? =
@@ -98,6 +84,10 @@ open class CameraIOPhotonVision(
                     }
                 }
 
+                result.targets.size == 0 -> {
+                    return null
+                }
+
                 else -> {
                     println(result.targets.size)
                     throw Exception("I don't think this should happen") // TODO: Replace with continue before comp
@@ -107,40 +97,11 @@ open class CameraIOPhotonVision(
         // Make sure we got a valid camera transform
         if (cameraToTarget == null) return null
 
-        // Calculate camera and robot poses
+        // Calculate camera pose
         val cameraPose = Pose3d().plus(cameraToTarget).relativeTo(aprilTagLayout.origin)
-        val robotPose = cameraPose.plus(cameraConstants.robotToCamera.inverse())
 
-        // If the robot pose is invalid, return null
-        if (
-            robotPose.x < -FIELD_BORDER_MARGIN ||
-                robotPose.x > FieldConstants.fieldLength + FIELD_BORDER_MARGIN ||
-                robotPose.y < -FIELD_BORDER_MARGIN ||
-                robotPose.y > FieldConstants.fieldWidth + FIELD_BORDER_MARGIN ||
-                abs(robotPose.translation.z) > VisionConstants.MAX_Z_ERROR ||
-                abs(robotPose.rotation.y) > Units.degreesToRadians(VisionConstants.MAX_ANGLE_ERROR) ||
-                abs(robotPose.rotation.x) > Units.degreesToRadians(VisionConstants.MAX_ANGLE_ERROR)
-        )
-            return null
+        println(cameraPose)
 
-        // Calculate standard deviations of the estimate
-        val tagPoses = result.targets.mapNotNull { aprilTagLayout.getTagPose(it.fiducialId).getOrNull() }
-        val averageTagDistance = tagPoses.map { it.translation.getDistance(cameraPose.translation) }.average()
-        val calculatedStdDevFactor = averageTagDistance.pow(2.0) / result.targets.size
-
-        // Base standard deviation
-        var linearStdDev = VisionConstants.LINEAR_STDDEV_BASELINE
-        var angularStdDev = VisionConstants.ANGULAR_STDDEV_BASELINE
-
-        // Account for tag distance and count
-        linearStdDev *= calculatedStdDevFactor
-        angularStdDev *= calculatedStdDevFactor
-
-        // Account for per-camera trust
-        linearStdDev *= cameraConstants.stdDevFactor
-        angularStdDev *= cameraConstants.stdDevFactor
-
-        // Return results!
-        return robotPose to VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev)
+        return cameraPose
     }
 }

@@ -20,8 +20,8 @@ object VisionConstants {
 
     // Standard deviation baselines, for 1 meter distance and 1 tag
     // (Adjusted automatically based on distance and # of tags)
-    const val LINEAR_STDDEV_BASELINE = 0.02 // Meters
-    const val ANGULAR_STDDEV_BASELINE = 0.06 // Radians
+    const val LINEAR_STDDEV_BASELINE = 0.01 // Meters
+    const val ANGULAR_STDDEV_BASELINE = 5.0 // Degrees
 
     enum class CameraConstants(
         /** Standard deviation multiplier. Adjust to trust some cameras more than others. */

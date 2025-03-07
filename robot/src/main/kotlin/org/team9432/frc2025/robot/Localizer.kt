@@ -125,7 +125,7 @@ class Localizer {
         // difference between estimate and vision pose
         val transform = Transform2d(estimateAtTime, observation.visionPose)
         // scale transform by visionK
-        val kalmanTransform = kalmanGains.times(VecBuilder.fill(transform.x, transform.y, transform.rotation.radians))
+        val kalmanTransform = kalmanGains.times(VecBuilder.fill(transform.x, transform.y, transform.rotation.degrees))
         val scaledTransform =
             Transform2d(kalmanTransform[0, 0], kalmanTransform[1, 0], Rotation2d.fromRadians(kalmanTransform[2, 0]))
 

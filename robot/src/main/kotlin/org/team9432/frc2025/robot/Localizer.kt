@@ -25,7 +25,7 @@ import org.team9432.frc2025.robot.vision.VisionConstants
 // By 6328, and with math from the wpilib pose estimator:
 // https://github.com/Mechanical-Advantage/RobotCode2025Public/blob/8cd2135a6d7ee105b9f7596bb6261e5d611f4c91/src/main/java/org/littletonrobotics/frc2025/RobotState.java#L301
 class Localizer {
-    // Must be less than 2.0
+    // Must be less than the pose buffer
     private val txTyObservationStaleSecs: LoggedTunableNumber =
         LoggedTunableNumber("RobotState/TxTyObservationStaleSeconds", 0.5)
     private val minDistanceTagPoseBlend: LoggedTunableNumber =
@@ -77,8 +77,7 @@ class Localizer {
 
     fun resetPose(pose: Pose2d) {
         // Gyro offset is the rotation that maps the old gyro rotation (estimated - offset) to the
-        // new
-        // frame of rotation
+        // new frame of rotation
         gyroOffset = pose.rotation.minus(odometryPose.rotation.minus(gyroOffset))
         estimatedPose = pose
         odometryPose = pose
@@ -149,15 +148,11 @@ class Localizer {
 
         val robotRotation = estimatedPose.transformBy(Transform2d(odometryPose, sample)).rotation
 
-        // Average tx's and ty's
-        val tx = observation.tx.average()
-        val ty = observation.ty.average()
-
-        val cameraPose: Pose3d = VisionConstants.cameras[observation.camera].pose
+        val cameraPose = observation.camera.pose
 
         // Use 3D distance and tag angles to find robot pose
         val camToTagTranslation =
-            Pose3d(Translation3d.kZero, Rotation3d(0.0, ty, -tx))
+            Pose3d(Translation3d.kZero, Rotation3d(0.0, observation.ty, -observation.tx))
                 .transformBy(Transform3d(Translation3d(observation.distance, 0.0, 0.0), Rotation3d.kZero))
                 .translation
                 .rotateBy(Rotation3d(0.0, cameraPose.rotation.y, 0.0))
@@ -255,9 +250,9 @@ class Localizer {
     @JvmRecord
     data class TxTyObservation(
         val tagId: Int,
-        val camera: Int,
-        val tx: DoubleArray,
-        val ty: DoubleArray,
+        val camera: VisionConstants.CameraConstants,
+        val tx: Double,
+        val ty: Double,
         val distance: Double,
         val timestamp: Double,
     )

@@ -117,7 +117,7 @@ class Robot : LoggedRobot() {
                     cameras =
                         setOf(
                             Camera(
-                                CameraIOPhotonVision(VisionConstants.PhotonConfig.FRONT, localizer::rotation),
+                                CameraIOPhotonVision(VisionConstants.CameraConstants.FRONT, localizer::rotation),
                                 VisionConstants.CameraConstants.FRONT,
                                 localizer,
                             )
@@ -181,7 +181,7 @@ class Robot : LoggedRobot() {
                         setOf(
                             Camera(
                                 CameraIOPhotonVisionSim(
-                                    VisionConstants.PhotonConfig.FRONT,
+                                    VisionConstants.CameraConstants.FRONT,
                                     visionSim,
                                     localizer::rotation,
                                 ),
@@ -214,11 +214,7 @@ class Robot : LoggedRobot() {
             rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
             climber = Climber(object : ClimberIO {})
 
-            cameras =
-                setOf(
-                    Camera(object : CameraIO {}, VisionConstants.CameraConstants.FRONT, localizer),
-                    Camera(object : CameraIO {}, VisionConstants.CameraConstants.BACK, localizer),
-                )
+            cameras = setOf(Camera(object : CameraIO {}, VisionConstants.CameraConstants.FRONT, localizer))
         }
 
         if (Constants.mode != Constants.Mode.REPLAY) {

@@ -8,7 +8,7 @@ interface CameraIO {
     open class CameraIOInputs {
         var connected: Boolean = false
         var poseObservations: Array<Localizer.VisionObservation> = emptyArray()
-        var singleTagObservations: Array<Localizer.TxTyObservation> = emptyArray()
+        var txTyObservations: Array<Localizer.TxTyObservation> = emptyArray()
     }
 
     fun updateInputs(inputs: CameraIOInputs) {}

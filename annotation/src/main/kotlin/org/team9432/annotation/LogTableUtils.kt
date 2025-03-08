@@ -19,6 +19,8 @@ object LogTableUtils {
     private fun <T : WPISerializable> LogTable.getFromWPISerializable(key: String, defaultValue: T): T =
         this.get(key, defaultValue)
 
+    /* ******* SETTERS ******* */
+
     fun LogTable.kPut(key: String, value: LogValue) = put(key, value)
 
     fun LogTable.kPut(key: String, value: ByteArray) = put(key, value)
@@ -61,6 +63,12 @@ object LogTableUtils {
     fun <T : WPISerializable> LogTable.kPut(key: String, value: T) = put(key, value)
 
     fun <T : StructSerializable> LogTable.kPut(key: String, value: Array<T>) = put(key, *value)
+
+    fun <T : Record> LogTable.kPut(key: String, value: T) = put(key, value)
+
+    fun <T : Record> LogTable.kPut(key: String, value: Array<T>) = put(key, *value)
+
+    /* ******* GETTERS ******* */
 
     fun LogTable.kGet(key: String): LogValue = get(key)
 
@@ -108,4 +116,8 @@ object LogTableUtils {
     fun <T : WPISerializable> LogTable.kGet(key: String, defaultValue: T): T = get(key, defaultValue)
 
     fun <T : StructSerializable> LogTable.kGet(key: String, defaultValue: Array<T>): Array<T> = get(key, *defaultValue)
+
+    fun <T : Record> LogTable.kGet(key: String, defaultValue: T): T = get(key, defaultValue)
+
+    fun <T : Record> LogTable.kGet(key: String, defaultValue: Array<T>): Array<T> = get(key, *defaultValue)
 }

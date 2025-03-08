@@ -31,11 +31,11 @@ class ArmIOSim : ArmIOReal() {
     override fun updateInputs(inputs: ArmIO.ArmIOInputs) {
         talonSim.setSupplyVoltage(RobotController.getBatteryVoltage())
 
-        armSim.setInputVoltage(-talonSim.motorVoltage)
+        armSim.setInputVoltage(talonSim.motorVoltage)
         armSim.update(LoggedRobot.defaultPeriodSecs)
 
-        talonSim.setRawRotorPosition(-Units.radiansToRotations(armSim.angleRads) * ArmConstants.REDUCTION)
-        talonSim.setRotorVelocity(-Units.radiansToRotations(armSim.velocityRadPerSec) * ArmConstants.REDUCTION)
+        talonSim.setRawRotorPosition(Units.radiansToRotations(armSim.angleRads) * ArmConstants.REDUCTION)
+        talonSim.setRotorVelocity(Units.radiansToRotations(armSim.velocityRadPerSec) * ArmConstants.REDUCTION)
 
         super.updateInputs(inputs)
     }

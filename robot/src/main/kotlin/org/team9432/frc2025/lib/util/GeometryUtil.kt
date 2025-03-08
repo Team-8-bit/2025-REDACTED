@@ -65,6 +65,9 @@ fun Translation2d.pointAt(pose: Translation2d) = Pose2d(x, y, Rotation2d(this.an
 /** Returns a Pose2d at this translation with rotation to point at the given pose. */
 fun Translation2d.pointAt(pose: Pose2d) = Pose2d(x, y, Rotation2d(this.angleTo(pose.translation)))
 
+/** Returns the norm, or distance from the origin to the translation on the xy plane. */
+fun Translation3d.xyNorm() = hypot(x, y)
+
 /** Gets the position this pose would be in if it moved linearly at [speeds] for [timeSeconds]. */
 fun Pose2d.transformBySpeeds(speeds: ChassisSpeeds, timeSeconds: Double) =
     Pose2d(

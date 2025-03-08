@@ -41,7 +41,7 @@ class JoystickDriveController(
             ratelimitX.calculate(linearSpeed.x * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             ratelimitY.calculate(linearSpeed.y * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
             rotationSpeed * DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
-            localizer.currentPose.rotation,
+            localizer.rotation,
         )
     }
 
@@ -64,7 +64,9 @@ class JoystickDriveController(
 
         // Calculate new linear velocity
         val linearVelocity =
-            Pose2d(0.0, 0.0, linearDirection).transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d())).translation
+            Pose2d(0.0, 0.0, linearDirection)
+                .transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d.kZero))
+                .translation
 
         return linearVelocity to angularVelocity
     }

@@ -12,10 +12,10 @@ class SuperstructureVisualizer(private val path: String) {
         Logger.recordOutput(
             "$path/B_CoralArm",
             Pose3d(
-                Units.inchesToMeters(-8.25),
+                Units.inchesToMeters(8.25),
                 Units.inchesToMeters(0.0),
                 Units.inchesToMeters(19.157754) + elevatorMeters,
-                Rotation3d(0.0, Units.rotationsToRadians(armRotations - ArmConstants.MIN_POSITION), 0.0),
+                Rotation3d(0.0, Units.rotationsToRadians(-armRotations + ArmConstants.MIN_POSITION), 0.0),
             ),
         )
     }

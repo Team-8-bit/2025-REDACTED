@@ -2,6 +2,7 @@ package org.team9432.frc2025.robot
 
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import kotlin.math.abs
@@ -15,12 +16,12 @@ class RobotPosition(private val localizer: Localizer) {
         val minRetreatBeforeRetractR = LoggedTunableNumber("RobotPosition/RetreatBeforeRetractRotations", 0.25)
     }
 
-    fun waitUntilRelativeMovement(passing: (Double, Double, Rotation2d) -> Boolean) =
+    fun waitUntilRelativeMovement(passing: (Double, Double, Rotation2d) -> Boolean): Command =
         Commands.defer(
             {
-                val initialPose = localizer.currentPose
+                val initialPose = localizer.estimatedPose
                 Commands.waitUntil {
-                    localizer.currentPose.relativeTo(initialPose).let { passing.invoke(it.x, it.y, it.rotation) }
+                    localizer.estimatedPose.relativeTo(initialPose).let { passing.invoke(it.x, it.y, it.rotation) }
                 }
             },
             emptySet(),
@@ -29,11 +30,11 @@ class RobotPosition(private val localizer: Localizer) {
     private var lastScorePosition = Pose2d()
 
     fun resetLastScorePoseToCurrent() {
-        lastScorePosition = localizer.currentPose
+        lastScorePosition = localizer.estimatedPose
     }
 
     val isSafeToStowArm = Trigger {
-        val poseRelativeToLastScore = localizer.currentPose.relativeTo(lastScorePosition)
+        val poseRelativeToLastScore = localizer.estimatedPose.relativeTo(lastScorePosition)
         poseRelativeToLastScore.x < -minRetreatBeforeRetractX.get() ||
             abs(poseRelativeToLastScore.y) > minRetreatBeforeRetractY.get() ||
             abs(poseRelativeToLastScore.rotation.rotations) > minRetreatBeforeRetractR.get()

@@ -27,6 +27,7 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
+import org.photonvision.simulation.VisionSystemSim
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.util.not
@@ -63,6 +64,7 @@ import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOSim
+import org.team9432.frc2025.robot.vision.*
 
 class Robot : LoggedRobot() {
     private val driver = CommandXboxController(0)
@@ -73,10 +75,11 @@ class Robot : LoggedRobot() {
     private val superstructure: Superstructure
     private val rollers: Rollers
     private val climber: Climber
-    private val setSimulationPose: ((Pose2d) -> Unit)?
-    private val driveSim: SwerveDriveSimulation?
-    private val localizer = Localizer()
     private val scoringState = ScoringState()
+
+    private val cameras: Set<Camera>
+    private val localizer = Localizer()
+    private var simUpdateCall: (() -> Unit)? = null
     private val robotPosition = RobotPosition(localizer)
 
     init {
@@ -111,8 +114,19 @@ class Robot : LoggedRobot() {
                     rollers = Rollers(Funnel(FunnelIOReal()), Manipulator(ManipulatorIOReal()))
                     climber = Climber(ClimberIOReal())
 
-                    setSimulationPose = null
-                    driveSim = null
+                    cameras =
+                        setOf(
+                            Camera(
+                                CameraIOPhotonVision(VisionConstants.CameraConstants.FRONT_LEFT, localizer::rotation),
+                                VisionConstants.CameraConstants.FRONT_LEFT,
+                                localizer,
+                            ),
+                            Camera(
+                                CameraIOPhotonVision(VisionConstants.CameraConstants.FRONT_RIGHT, localizer::rotation),
+                                VisionConstants.CameraConstants.FRONT_RIGHT,
+                                localizer,
+                            ),
+                        )
                 }
 
                 Constants.RobotType.SIM -> {
@@ -162,13 +176,35 @@ class Robot : LoggedRobot() {
                             localizer,
                         )
 
-                    driveSim = swerveSim
                     SimulatedArena.getInstance().addDriveTrainSimulation(swerveSim)
 
-                    setSimulationPose = {
-                        swerveSim.setSimulationWorldPose(it)
-                        gyroIO.setAngle(it.rotation)
-                    }
+                    localizer.setSimulationPoseSupplier { swerveSim.simulatedDriveTrainPose }
+
+                    val visionSim = VisionSystemSim("main").apply { addAprilTags(VisionConstants.aprilTagLayout) }
+
+                    cameras =
+                        setOf(
+                            Camera(
+                                CameraIOPhotonVisionSim(
+                                    VisionConstants.CameraConstants.FRONT_LEFT,
+                                    visionSim,
+                                    localizer::rotation,
+                                ),
+                                VisionConstants.CameraConstants.FRONT_LEFT,
+                                localizer,
+                            ),
+                            Camera(
+                                CameraIOPhotonVisionSim(
+                                    VisionConstants.CameraConstants.FRONT_RIGHT,
+                                    visionSim,
+                                    localizer::rotation,
+                                ),
+                                VisionConstants.CameraConstants.FRONT_RIGHT,
+                                localizer,
+                            ),
+                        )
+
+                    simUpdateCall = { visionSim.update(swerveSim.simulatedDriveTrainPose) }
 
                     superstructure = Superstructure(Elevator(ElevatorIOSim()), Arm(ArmIOSim()))
                     rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
@@ -192,8 +228,11 @@ class Robot : LoggedRobot() {
             rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
             climber = Climber(object : ClimberIO {})
 
-            setSimulationPose = null
-            driveSim = null
+            cameras =
+                setOf(
+                    Camera(object : CameraIO {}, VisionConstants.CameraConstants.FRONT_LEFT, localizer),
+                    Camera(object : CameraIO {}, VisionConstants.CameraConstants.FRONT_RIGHT, localizer),
+                )
         }
 
         if (Constants.mode != Constants.Mode.REPLAY) {
@@ -450,13 +489,7 @@ class Robot : LoggedRobot() {
             Logger.recordOutput("CANivoreStatus/OffCount", canivoreStatus.BusOffCount)
             Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount)
             Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC)
-
             Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC)
-        }
-
-        // Log actual sim robot position
-        if (Constants.robot.isSim) {
-            Logger.recordOutput("SimulationArena/ActualRobotPosition", driveSim!!.simulatedDriveTrainPose)
         }
 
         // Log robot state
@@ -468,6 +501,7 @@ class Robot : LoggedRobot() {
 
     override fun simulationPeriodic() {
         SimulatedArena.getInstance().simulationPeriodic()
+        simUpdateCall?.invoke()
     }
 }
 

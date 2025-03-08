@@ -32,5 +32,7 @@ class Funnel(private val io: FunnelIO) {
         } else {
             io.setControl(voltageControl.withOutput(goal.voltage))
         }
+
+        Logger.recordOutput("Rollers/FunnelState", goal)
     }
 }

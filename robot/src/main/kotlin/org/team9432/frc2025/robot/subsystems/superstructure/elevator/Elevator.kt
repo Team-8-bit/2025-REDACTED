@@ -63,6 +63,9 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
 
     private val motorOutputDisabled = { DriverStation.isDisabled() }
 
+    var coastOverride = { false }
+    private var wasCoast = false
+
     private var goal = Goal.STOW
     var hasHomed = false
         private set
@@ -120,7 +123,8 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
         gains.ifChanged(hashCode()) { io.updateConfig { config -> gains.applyToTalonFXConfig(config) } }
 
         // Make sure we should run position control
-        val shouldRunPosition = !motorOutputDisabled() && hasHomed && characterizationInput == null
+        val shouldCoast = coastOverride()
+        val shouldRunPosition = !motorOutputDisabled() && hasHomed && characterizationInput == null && !shouldCoast
 
         if (shouldRunPosition) {
             // Make sure we don't go outside the limits
@@ -138,11 +142,17 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
             io.setControl(currentControl.withOutput(characterizationInput!!))
         }
 
+        if (shouldCoast != wasCoast) {
+            wasCoast = shouldCoast
+            io.setBrake(!shouldCoast)
+        }
+
         // Diagnostic information
         Logger.recordOutput("Elevator/Goal", goal)
         Logger.recordOutput("Elevator/AtGoal", atGoal())
         Logger.recordOutput("Elevator/Homed", hasHomed)
         Logger.recordOutput("Elevator/CharacterizationInput", characterizationInput ?: 0.0)
+        Logger.recordOutput("Elevator/RunningPositionControl", shouldRunPosition)
     }
 
     val positionMeters

@@ -5,7 +5,7 @@ import kotlin.math.acos
 import kotlin.math.hypot
 
 object ArmConstants {
-    const val REDUCTION = (5.0 / 1.0) * (5.0 / 1.0) * (42.0 / 12.0)
+    const val REDUCTION = (4.0 / 1.0) * (4.0 / 1.0) * (42.0 / 12.0)
 
     // Rotations
     val POSITION_TOLERANCE = 0.01

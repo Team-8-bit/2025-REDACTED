@@ -50,6 +50,13 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
 
     private var stateTrackingDisabled = false
 
+    var coastOverride = { false }
+        set(value) {
+            elevator.coastOverride = value
+            arm.coastOverride = value
+            field = value
+        }
+
     override fun periodic() {
         if (!stateTrackingDisabled) {
             trackToNextState()

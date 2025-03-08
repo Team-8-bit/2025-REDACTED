@@ -37,16 +37,11 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
             transitions[scoringGoal to STOW] = arm.runToGoal(Arm.Goal.STOW).andThen(elevator.runToGoal(Elevator.Goal.STOW))
         }
 
-        transitions.forEach { (between, command) ->
-            command.addRequirements(elevator, arm)
-            command.name = "Transition from ${between.first} to ${between.second}."
-        }
-
         transitions[ARM_ABOVE_BUMPER to INTAKE_ALGAE_LOW] =
             parallel(
                 elevator.runToGoal(Elevator.Goal.INTAKE_ALGAE_REEF_LOW),
                 arm.runToGoal(Arm.Goal.INTAKE_ALGAE_REEF)
-            )   
+            )
         transitions[ARM_ABOVE_BUMPER to INTAKE_ALGAE_HIGH] =
             parallel(
                 elevator.runToGoal(Elevator.Goal.INTAKE_ALGAE_REEF_HIGH),
@@ -88,7 +83,21 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
             arm.runToGoal(Arm.Goal.STOW)
         )
 
+        for (scoringGoal in setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4)) {
+            transitions[scoringGoal to INTAKE_ALGAE_HIGH] = arm.runToGoal(Arm.Goal.INTAKE_ALGAE_REEF).alongWith(elevator.runToGoal(Elevator.Goal.INTAKE_ALGAE_REEF_HIGH))
+            transitions[scoringGoal to INTAKE_ALGAE_LOW] = arm.runToGoal(Arm.Goal.INTAKE_ALGAE_REEF).alongWith(elevator.runToGoal(Elevator.Goal.INTAKE_ALGAE_REEF_LOW))
+        }
+
+        for (algaeIntakeGoal in setOf(INTAKE_ALGAE_HIGH, INTAKE_ALGAE_LOW)) {
+            transitions[algaeIntakeGoal to ARM_ABOVE_BUMPER] = arm.runToGoal(Arm.Goal.STOW).alongWith(elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT))
+        }
+
         // yay for spotless in all the other places though. spotless:on
+
+        transitions.forEach { (between, command) ->
+            command.addRequirements(elevator, arm)
+            command.name = "Transition from ${between.first} to ${between.second}."
+        }
 
         this.transitions = transitions
     }

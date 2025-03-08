@@ -13,14 +13,15 @@ import org.team9432.frc2025.robot.subsystems.rollers.funnel.Funnel
 
 class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) : SubsystemBase() {
     companion object {
-        val coralAlignedVelocityThreshold = LoggedTunableNumber("Rollers/CoralCollectedThresholdRPS", 5.0)
-        val coralAlignedDebounceTime = LoggedTunableNumber("Rollers/CoralAlignedDebounce", 1.0)
+        val coralAlignedTorqueCurrentThreshold =
+            LoggedTunableNumber("Rollers/CoralCollectedThresholdTorqueCurrent", 13.0)
+        val coralAlignedDebounceTime = LoggedTunableNumber("Rollers/CoralCollectedDebounce", 0.3)
 
         val algaeCollectionThresholdRPS = LoggedTunableNumber("Rollers/AlgaeCollectionThresholdRPS", 5.0)
-        val algaeCollectionDebounceTime = LoggedTunableNumber("Rollers/AlgaeCollectionDebounce", 1.0)
+        val algaeCollectionDebounceTime = LoggedTunableNumber("Rollers/AlgaeCollectionDebounce", 0.5)
 
-        val algaeDroppedThresholdRPS = LoggedTunableNumber("Rollers/AlgaeCollectionThresholdRPS", 10.0)
-        val algaeDroppedDebounceTime = LoggedTunableNumber("Rollers/AlgaeCollectionDebounce", 1.2)
+        val algaeDroppedThresholdRPS = LoggedTunableNumber("Rollers/AlgaeDroppedThresholdRPS", 10.0)
+        val algaeDroppedDebounceTime = LoggedTunableNumber("Rollers/AlgaeDroppedDebounce", 1.2)
     }
 
     enum class State {
@@ -73,13 +74,6 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             State.INTAKE_CORAL -> {
                 funnel.goal = Funnel.Goal.INTAKE_CORAL
                 manipulator.goal = Manipulator.Goal.INTAKE_CORAL
-
-                // Check if the coral has been collected
-                val coralAligned =
-                    coralAlignedDebouncer.calculate(abs(manipulator.velocityRPS) < coralAlignedVelocityThreshold.get())
-                if (coralAligned && !Constants.robot.isSim) {
-                    hasCoral = true
-                }
             }
 
             State.SCORE_CORAL -> {
@@ -94,22 +88,8 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             State.INTAKE_ALGAE -> {
                 if (!hasAlgae) {
                     manipulator.goal = Manipulator.Goal.INTAKE_ALGAE
-
-                    val algaeCollected =
-                        algaeCollectedDebouncer.calculate(
-                            abs(manipulator.velocityRPS) < algaeCollectionThresholdRPS.get()
-                        )
-                    if (algaeCollected && !Constants.robot.isSim) {
-                        hasAlgae = true
-                    }
                 } else {
                     manipulator.goal = Manipulator.Goal.HOLD_ALGAE
-
-                    val algaeDropped =
-                        algaeDroppedDebouncer.calculate(abs(manipulator.velocityRPS) > algaeDroppedThresholdRPS.get())
-                    if (algaeDropped && !Constants.robot.isSim) {
-                        hasAlgae = false
-                    }
                 }
             }
 
@@ -118,6 +98,35 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
                 hasAlgae = false
             }
         }
+
+        // Check if the coral has been collected
+        val coralAligned =
+            coralAlignedDebouncer.calculate(
+                state == State.INTAKE_CORAL &&
+                    abs(manipulator.torqueCurrentAmps) > coralAlignedTorqueCurrentThreshold.get()
+            )
+        if (coralAligned && !Constants.robot.isSim) {
+            hasCoral = true
+        }
+
+        val algaeCollected =
+            algaeCollectedDebouncer.calculate(
+                state == State.INTAKE_ALGAE && abs(manipulator.velocityRPS) < algaeCollectionThresholdRPS.get()
+            )
+        if (algaeCollected && !Constants.robot.isSim) {
+            hasAlgae = true
+            println("Collected Algae!")
+        }
+
+        //        val algaeDropped =
+        //            algaeDroppedDebouncer.calculate(
+        //                hasAlgae && state == State.INTAKE_ALGAE && abs(manipulator.velocityRPS) >
+        // algaeDroppedThresholdRPS.get()
+        //            )
+        //        if (algaeDropped && !Constants.robot.isSim) {
+        //            hasAlgae = false
+        //            println("Dropped Algae!")
+        //        }
 
         Logger.recordOutput("Rollers/State", state)
         SmartDashboard.putBoolean("Rollers/HasAlgae", hasAlgae)

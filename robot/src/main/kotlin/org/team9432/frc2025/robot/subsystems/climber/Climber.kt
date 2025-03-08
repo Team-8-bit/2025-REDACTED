@@ -15,10 +15,13 @@ class Climber(private val io: ClimberIO) : SubsystemBase() {
 
     enum class Goal {
         IDLE,
-        PREPARE,
         UP,
         DOWN,
-        HOLD,
+        CLIMB,
+    }
+
+    init {
+        defaultCommand = runGoal(Goal.IDLE)
     }
 
     private var goal = Goal.IDLE
@@ -29,12 +32,11 @@ class Climber(private val io: ClimberIO) : SubsystemBase() {
 
         when (goal) {
             Goal.IDLE -> io.setControl(neutralOut)
-            Goal.PREPARE -> io.setControl(voltageControl.withOutput(6.0))
-            Goal.UP -> io.setControl(torqueCurrent.withOutput(120.0))
-            Goal.DOWN -> io.setControl(voltageControl.withOutput(-6.0))
-            Goal.HOLD -> io.setControl(torqueCurrent.withOutput(5.0))
+            Goal.UP -> io.setControl(torqueCurrent.withOutput(10.0))
+            Goal.DOWN -> io.setControl(torqueCurrent.withOutput(-10.0))
+            Goal.CLIMB -> io.setControl(torqueCurrent.withOutput(40.0))
         }
     }
 
-    fun runGoal(goal: Climber.Goal) = startEnd({ this.goal = goal }, { this.goal = Goal.IDLE })
+    fun runGoal(goal: Goal) = run { this.goal = goal }
 }

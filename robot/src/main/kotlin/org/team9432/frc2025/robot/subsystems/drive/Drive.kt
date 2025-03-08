@@ -98,8 +98,12 @@ class Drive(
         runVelocity({ speed }, torqueFF?.let { { it } })
 
     fun runVelocity(speedSupplier: () -> ChassisSpeeds, torqueFF: (() -> Array<Double>)? = null): Command = run {
+        setVelocity(speedSupplier.invoke(), torqueFF?.invoke())
+    }
+
+    fun setVelocity(speed: ChassisSpeeds, torqueFF: Array<Double>? = null) {
         // Calculate module setpoints
-        val discreteSpeeds = ChassisSpeeds.discretize(speedSupplier.invoke(), 0.02)
+        val discreteSpeeds = ChassisSpeeds.discretize(speed, 0.02)
         val setpointStates = DrivetrainConstants.KINEMATICS.toSwerveModuleStates(discreteSpeeds)
         SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, DrivetrainConstants.MAX_LINEAR_SPEED_MPS)
 
@@ -109,7 +113,7 @@ class Drive(
 
         // Send setpoints to modules
         for (i in modules.indices) {
-            val feedforward = torqueFF?.invoke()?.get(i) ?: 0.0
+            val feedforward = torqueFF?.get(i) ?: 0.0
             val setpoint = setpointStates[i]
             setpoint.optimize(modules[i].angle)
             setpoint.cosineScale(modules[i].angle)

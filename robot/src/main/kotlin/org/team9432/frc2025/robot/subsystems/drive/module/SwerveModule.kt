@@ -45,14 +45,14 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
                 Constants.RobotType.COMP -> {
                     TunableModuleGains(
                         "Drive/ModuleGains",
-                        kPDrive = 60.0,
+                        kPDrive = 40.0,
                         kDDrive = 0.0,
-                        kSDrive = 0.0,
-                        kVDrive = 0.0,
-                        kPSteer = 3000.0,
-                        kDSteer = 50.0,
-                        mmCruiseSteer = 100.0 / DrivetrainConstants.STEER_RATIO,
-                        mmAccelSteer = 1000.0 / DrivetrainConstants.STEER_RATIO,
+                        kSDrive = 12.0,
+                        kVDrive = 1.4,
+                        kPSteer = 2500.0,
+                        kDSteer = 70.0,
+                        mmCruiseSteer = 8.0,
+                        mmAccelSteer = 28.0,
                     )
                 }
 
@@ -107,6 +107,10 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
             io.setDriveBrake(!shouldCoast)
             io.setSteerBrake(!shouldCoast)
         }
+
+        Logger.recordOutput("Drive/${name}/ModuleAngleRotations", angle.rotations)
+        Logger.recordOutput("Drive/${name}/CharacterizationInputAngle", characterizationAngle?.rotations ?: 0.0)
+        Logger.recordOutput("Drive/${name}/CharacterizationInputAmps", characterizationInput ?: 0.0)
     }
 
     /** Get an array of the module positions recorded in the last call to [periodic]. */

@@ -67,9 +67,9 @@ open class ModuleIOReal(private val config: ModuleConfig, odometryThread: Odomet
             steerSupplyCurrent,
             steerTorqueCurrent,
             steerTemperature,
-            driveClosedLoopPositionReference,
-            driveClosedLoopVelocityReference,
-            driveClosedLoopOutput,
+            steerClosedLoopPositionReference,
+            steerClosedLoopVelocityReference,
+            steerClosedLoopOutput,
         )
 
     /* CANCoder Signals */

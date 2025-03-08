@@ -24,7 +24,7 @@ fun DrivetrainSimpleFeedforward(drive: Drive): Command {
             Commands.runOnce(timer::restart), // Accelerate and gather data
             drive.runDriveCharacterizationAmperage(
                 {
-                    val amps: Double = timer.get() * 0.1 // a/s
+                    val amps: Double = timer.get() * 1.0 // a/s
                     velocitySamples.add(drive.getModuleCharacterizationVelocityRotationsPerSecond().average())
                     amperageSamples.add(amps)
                     amps

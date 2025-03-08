@@ -44,4 +44,8 @@ class RobotPosition(private val localizer: Localizer) {
         Logger.recordOutput("RobotPosition/isSafeToRetract", isSafeToStowArm)
         Logger.recordOutput("RobotPosition/LastScorePosition", lastScorePosition)
     }
+
+    fun getReefScoringTarget() {
+
+    }
 }

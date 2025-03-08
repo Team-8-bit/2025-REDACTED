@@ -7,17 +7,21 @@ class TunableModuleGains(
     ntPath: String,
     kPDrive: Double,
     kDDrive: Double,
-    kPSteer: Double,
-    kDSteer: Double,
     kSDrive: Double,
     kVDrive: Double,
+    kPSteer: Double,
+    kDSteer: Double,
+    mmCruiseSteer: Double,
+    mmAccelSteer: Double,
 ) {
     private val kPDrive = LoggedTunableNumber("$ntPath/kPDrive", kPDrive)
     private val kDDrive = LoggedTunableNumber("$ntPath/kDDrive", kDDrive)
-    private val kPSteer = LoggedTunableNumber("$ntPath/kPSteer", kPSteer)
-    private val kDSteer = LoggedTunableNumber("$ntPath/kDSteer", kDSteer)
     private val kSDrive = LoggedTunableNumber("$ntPath/kSDrive", kSDrive)
     private val kVDrive = LoggedTunableNumber("$ntPath/kVDrive", kVDrive)
+    private val kPSteer = LoggedTunableNumber("$ntPath/kPSteer", kPSteer)
+    private val kDSteer = LoggedTunableNumber("$ntPath/kDSteer", kDSteer)
+    private val mmCruiseSteer = LoggedTunableNumber("$ntPath/mmCruiseSteer", mmCruiseSteer)
+    private val mmAccelSteer = LoggedTunableNumber("$ntPath/mmAccelSteer", mmAccelSteer)
 
     fun ifDriveChanged(id: Int, function: () -> Unit) {
         val hasChanged = LoggedTunableNumber.hasChanged(id, kPDrive, kDDrive, kSDrive, kVDrive)
@@ -28,7 +32,7 @@ class TunableModuleGains(
     }
 
     fun ifSteerChanged(id: Int, function: () -> Unit) {
-        val hasChanged = LoggedTunableNumber.hasChanged(id, kPSteer, kDSteer)
+        val hasChanged = LoggedTunableNumber.hasChanged(id, kPSteer, kDSteer, mmCruiseSteer, mmAccelSteer)
 
         if (hasChanged) {
             function.invoke()
@@ -43,6 +47,10 @@ class TunableModuleGains(
     }
 
     fun applyToSteerConfig(config: TalonFXConfiguration) {
-        config.apply { Slot0.withKP(kPSteer.get()).withKD(kDSteer.get()) }
+        config.apply {
+            Slot0.withKP(kPSteer.get()).withKD(kDSteer.get())
+            MotionMagic.withMotionMagicCruiseVelocity(mmCruiseSteer.get())
+                .withMotionMagicAcceleration(mmAccelSteer.get())
+        }
     }
 }

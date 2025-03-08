@@ -59,7 +59,7 @@ class Drive(
             modules.forEach(SwerveModule::periodic)
         }
 
-        Logger.recordOutput("SwerveStates/Measured", *getModuleStates())
+        Logger.recordOutput("Drive/SwerveStates/Measured", *getModuleStates())
 
         // On the real robot these will be the same because the module's sensor samples are recorded
         // at the same time as the timestamps
@@ -94,21 +94,22 @@ class Drive(
 
     fun controllerCommand(controller: DriveController): Command = runVelocity(controller::calculate)
 
-    fun runVelocity(speed: ChassisSpeeds, torqueFF: Array<Double>? = null) = runVelocity({ speed }, torqueFF)
+    fun runVelocity(speed: ChassisSpeeds, torqueFF: Array<Double>? = null) =
+        runVelocity({ speed }, torqueFF?.let { { it } })
 
-    fun runVelocity(speedSupplier: () -> ChassisSpeeds, torqueFF: Array<Double>? = null): Command = run {
+    fun runVelocity(speedSupplier: () -> ChassisSpeeds, torqueFF: (() -> Array<Double>)? = null): Command = run {
         // Calculate module setpoints
         val discreteSpeeds = ChassisSpeeds.discretize(speedSupplier.invoke(), 0.02)
         val setpointStates = DrivetrainConstants.KINEMATICS.toSwerveModuleStates(discreteSpeeds)
         SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, DrivetrainConstants.MAX_LINEAR_SPEED_MPS)
 
         // Log unoptimized setpoints and setpoint speeds
-        Logger.recordOutput("SwerveStates/Setpoints", *setpointStates)
-        Logger.recordOutput("SwerveChassisSpeeds/Setpoints", discreteSpeeds)
+        Logger.recordOutput("Drive/SwerveStates/Setpoints", *setpointStates)
+        Logger.recordOutput("Drive/RunVelocitySpeeds", discreteSpeeds)
 
         // Send setpoints to modules
         for (i in modules.indices) {
-            val feedforward = torqueFF?.get(i) ?: 0.0
+            val feedforward = torqueFF?.invoke()?.get(i) ?: 0.0
             val setpoint = setpointStates[i]
             setpoint.optimize(modules[i].angle)
             setpoint.cosineScale(modules[i].angle)
@@ -117,7 +118,7 @@ class Drive(
         }
 
         // Log modified optimized setpoints
-        Logger.recordOutput("SwerveStates/SetpointsOptimized", *setpointStates)
+        Logger.recordOutput("Drive/SwerveStates/SetpointsOptimized", *setpointStates)
     }
 
     /** Sets the steer motors to the given setpoints and applies the given number of amps to the drive motors. */

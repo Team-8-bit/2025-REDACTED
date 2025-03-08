@@ -47,10 +47,12 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
                         "Drive/ModuleGains",
                         kPDrive = 60.0,
                         kDDrive = 0.0,
-                        kPSteer = 3000.0,
-                        kDSteer = 50.0,
                         kSDrive = 0.0,
                         kVDrive = 0.0,
+                        kPSteer = 3000.0,
+                        kDSteer = 50.0,
+                        mmCruiseSteer = 100.0 / DrivetrainConstants.STEER_RATIO,
+                        mmAccelSteer = 1000.0 / DrivetrainConstants.STEER_RATIO,
                     )
                 }
 
@@ -59,10 +61,12 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
                         "Drive/ModuleGains",
                         kPDrive = 0.0,
                         kDDrive = 0.0,
-                        kPSteer = 0.0,
-                        kDSteer = 0.0,
                         kSDrive = 0.0,
                         kVDrive = 0.0,
+                        kPSteer = 0.0,
+                        kDSteer = 0.0,
+                        mmCruiseSteer = 0.0,
+                        mmAccelSteer = 0.0,
                     )
                 }
             }
@@ -77,10 +81,10 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
         cancoderDisconnectedAlert.set(!inputs.cancoderConnected)
 
         gains.ifDriveChanged(hashCode()) { io.updateDriveConfig { config -> gains.applyToDriveConfig(config) } }
-        gains.ifSteerChanged(hashCode()) { io.updateSteerConfig { config -> gains.applyToDriveConfig(config) } }
+        gains.ifSteerChanged(hashCode()) { io.updateSteerConfig { config -> gains.applyToSteerConfig(config) } }
 
         val shouldCoast = coastOverride()
-        val shouldRunClosedLoop = characterizationInput != null && characterizationAngle != null && !shouldCoast
+        val shouldRunClosedLoop = characterizationInput == null && characterizationAngle == null && !shouldCoast
 
         if (shouldRunClosedLoop) {
             val torqueFeedforward =

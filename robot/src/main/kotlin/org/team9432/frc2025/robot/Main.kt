@@ -4,7 +4,6 @@ import choreo.Choreo
 import com.ctre.phoenix6.SignalLogger
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.net.PortForwarder
 import edu.wpi.first.units.Units.*
@@ -367,11 +366,11 @@ class Robot : LoggedRobot() {
         driver.povRight().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.CLIMB))
 
         drive.defaultCommand =
-            Commands.either(
-                drive.controllerCommand(joystickDriveController),
-                drive.runVelocity(ChassisSpeeds()),
-                ::isTeleopEnabled,
-            )
+            //            Commands.either(
+            drive.controllerCommand(joystickDriveController) // ,
+        //                drive.runVelocity(ChassisSpeeds()),
+        //                ::isTeleopEnabled,
+        //            )
     }
 
     private var currentAuto = Commands.none()

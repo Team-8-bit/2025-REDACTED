@@ -24,7 +24,7 @@ import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO.ModuleIOInputs
 
-open class ModuleIOReal(private val config: ModuleConfig, private val odometryThread: OdometryThread) : ModuleIO {
+open class ModuleIOReal(private val config: ModuleConfig, odometryThread: OdometryThread) : ModuleIO {
     /* Motors & Sensors */
     protected val driveTalon = TalonFX(config.driveInformation.canID, config.driveInformation.canBus)
     protected val steerTalon = TalonFX(config.steerInformation.canID, config.steerInformation.canBus)
@@ -164,6 +164,16 @@ open class ModuleIOReal(private val config: ModuleConfig, private val odometryTh
 
     override fun setSteerControl(control: ControlRequest) {
         steerTalon.setControl(control)
+    }
+
+    override fun updateDriveConfig(block: (TalonFXConfiguration) -> Unit) {
+        block.invoke(driveConfig)
+        PhoenixUtil.tryUntilOk(5) { driveTalon.configurator.apply(driveConfig) }
+    }
+
+    override fun updateSteerConfig(block: (TalonFXConfiguration) -> Unit) {
+        block.invoke(steerConfig)
+        PhoenixUtil.tryUntilOk(5) { steerTalon.configurator.apply(steerConfig) }
     }
 
     /** Enables or disables brake mode on the drive motor. */

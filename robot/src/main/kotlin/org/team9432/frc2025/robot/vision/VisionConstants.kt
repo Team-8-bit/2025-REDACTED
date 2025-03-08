@@ -38,11 +38,11 @@ object VisionConstants {
             cameraName = "FrontLeft",
             initialRobotToCamera =
                 Transform3d(
-                    Translation3d(Units.inchesToMeters(13.0), Units.inchesToMeters(11.5), Units.inchesToMeters(8.5)),
+                    Translation3d(Units.inchesToMeters(11.0), Units.inchesToMeters(11.5), Units.inchesToMeters(8.5)),
                     Rotation3d(
                         Units.degreesToRadians(0.0),
                         Units.degreesToRadians(-20.0),
-                        Units.degreesToRadians(-39.901730),
+                        Units.degreesToRadians(-45.0),
                     ),
                 ),
             initialPitchOffset = -3.0,
@@ -52,12 +52,8 @@ object VisionConstants {
             cameraName = "FrontRight",
             initialRobotToCamera =
                 Transform3d(
-                    Translation3d(Units.inchesToMeters(13.0), Units.inchesToMeters(-11.5), Units.inchesToMeters(8.5)),
-                    Rotation3d(
-                        Units.degreesToRadians(0.0),
-                        Units.degreesToRadians(-20.0),
-                        Units.degreesToRadians(39.901730),
-                    ),
+                    Translation3d(Units.inchesToMeters(11.0), Units.inchesToMeters(-11.5), Units.inchesToMeters(8.5)),
+                    Rotation3d(Units.degreesToRadians(0.0), Units.degreesToRadians(-20.0), Units.degreesToRadians(45.0)),
                 ),
             initialPitchOffset = 0.0,
         );

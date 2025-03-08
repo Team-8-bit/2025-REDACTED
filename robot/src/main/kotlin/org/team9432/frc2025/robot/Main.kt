@@ -46,7 +46,7 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIO
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOPigeon2
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOSim
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
-import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
+import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOReal
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
 import org.team9432.frc2025.robot.subsystems.rollers.Rollers
 import org.team9432.frc2025.robot.subsystems.rollers.dispenser.Manipulator
@@ -102,10 +102,10 @@ class Robot : LoggedRobot() {
                     drive =
                         Drive(
                             GyroIOPigeon2(odometryThread),
-                            ModuleIOKraken(ModuleConfig.FRONT_LEFT, odometryThread),
-                            ModuleIOKraken(ModuleConfig.FRONT_RIGHT, odometryThread),
-                            ModuleIOKraken(ModuleConfig.BACK_LEFT, odometryThread),
-                            ModuleIOKraken(ModuleConfig.BACK_RIGHT, odometryThread),
+                            ModuleIOReal(ModuleConfig.FRONT_LEFT, odometryThread),
+                            ModuleIOReal(ModuleConfig.FRONT_RIGHT, odometryThread),
+                            ModuleIOReal(ModuleConfig.BACK_LEFT, odometryThread),
+                            ModuleIOReal(ModuleConfig.BACK_RIGHT, odometryThread),
                             odometryThread,
                             localizer,
                         )

@@ -4,10 +4,7 @@ import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.StatusSignal
 import com.ctre.phoenix6.configs.CANcoderConfiguration
 import com.ctre.phoenix6.configs.TalonFXConfiguration
-import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
-import com.ctre.phoenix6.controls.TorqueCurrentFOC
-import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
-import com.ctre.phoenix6.controls.VoltageOut
+import com.ctre.phoenix6.controls.*
 import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.ParentDevice
 import com.ctre.phoenix6.hardware.TalonFX
@@ -18,49 +15,54 @@ import com.ctre.phoenix6.signals.SensorDirectionValue
 import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.units.measure.Angle
-import edu.wpi.first.units.measure.AngularVelocity
-import edu.wpi.first.units.measure.Current
-import edu.wpi.first.units.measure.Voltage
-import java.util.*
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
+import edu.wpi.first.units.measure.*
 import org.team9432.frc2025.lib.util.PhoenixUtil
 import org.team9432.frc2025.lib.util.PhoenixUtil.printOnError
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO.ModuleIOInputs
+import java.util.*
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
-class ModuleIOKraken(private val config: ModuleConfig, private val odometryThread: OdometryThread) : ModuleIO {
+class ModuleIOReal(private val config: ModuleConfig, private val odometryThread: OdometryThread): ModuleIO {
     /* Motors & Sensors */
-    private val driveMotor = TalonFX(config.driveInformation.canID, config.driveInformation.canBus)
-    private val steerMotor = TalonFX(config.steerInformation.canID, config.steerInformation.canBus)
+    private val driveTalon = TalonFX(config.driveInformation.canID, config.driveInformation.canBus)
+    private val steerTalon = TalonFX(config.steerInformation.canID, config.steerInformation.canBus)
     private val cancoder = CANcoder(config.cancoderInformation.canID, config.cancoderInformation.canBus)
 
     /* Drive Signals */
-    private val driveVelocity: StatusSignal<AngularVelocity> = driveMotor.velocity
-    private val driveAppliedVolts: StatusSignal<Voltage> = driveMotor.motorVoltage
-    private val driveSupplyCurrent: StatusSignal<Current> = driveMotor.supplyCurrent
-    private val driveTorqueCurrent: StatusSignal<Current> = driveMotor.torqueCurrent
+    private val driveVelocity: StatusSignal<AngularVelocity> = driveTalon.velocity
+    private val driveAppliedVolts: StatusSignal<Voltage> = driveTalon.motorVoltage
+    private val driveSupplyCurrent: StatusSignal<Current> = driveTalon.supplyCurrent
+    private val driveTorqueCurrent: StatusSignal<Current> = driveTalon.torqueCurrent
+    private val driveTemperature: StatusSignal<Temperature> = driveTalon.deviceTemp
+    private val driveClosedLoopPositionReference: StatusSignal<Double> = driveTalon.closedLoopReference
+    private val driveClosedLoopVelocityReference: StatusSignal<Double> = driveTalon.closedLoopReferenceSlope
+    private val driveClosedLoopOutput: StatusSignal<Double> = driveTalon.closedLoopOutput
     private val lowFrequencyDriveSignals =
-        arrayOf(driveVelocity, driveAppliedVolts, driveSupplyCurrent, driveTorqueCurrent)
+        arrayOf(driveVelocity, driveAppliedVolts, driveSupplyCurrent, driveTorqueCurrent, driveTemperature, driveClosedLoopPositionReference, driveClosedLoopVelocityReference, driveClosedLoopOutput)
 
     /* Steer Signals */
-    private val steerVelocity: StatusSignal<AngularVelocity> = steerMotor.velocity
-    private val steerAppliedVolts: StatusSignal<Voltage> = steerMotor.motorVoltage
-    private val steerSupplyCurrent: StatusSignal<Current> = steerMotor.supplyCurrent
-    private val steerTorqueCurrent: StatusSignal<Current> = steerMotor.torqueCurrent
+    private val steerVelocity: StatusSignal<AngularVelocity> = steerTalon.velocity
+    private val steerAppliedVolts: StatusSignal<Voltage> = steerTalon.motorVoltage
+    private val steerSupplyCurrent: StatusSignal<Current> = steerTalon.supplyCurrent
+    private val steerTorqueCurrent: StatusSignal<Current> = steerTalon.torqueCurrent
+    private val steerTemperature: StatusSignal<Temperature> = steerTalon.deviceTemp
+    private val steerClosedLoopPositionReference: StatusSignal<Double> = steerTalon.closedLoopReference
+    private val steerClosedLoopVelocityReference: StatusSignal<Double> = steerTalon.closedLoopReferenceSlope
+    private val steerClosedLoopOutput: StatusSignal<Double> = steerTalon.closedLoopOutput
     private val lowFrequencySteerSignals =
-        arrayOf(steerVelocity, steerAppliedVolts, steerSupplyCurrent, steerTorqueCurrent)
+        arrayOf(steerVelocity, steerAppliedVolts, steerSupplyCurrent, steerTorqueCurrent, steerTemperature, driveClosedLoopPositionReference, driveClosedLoopVelocityReference, driveClosedLoopOutput)
 
     /* CANCoder Signals */
     private val steerAbsolutePosition: StatusSignal<Angle> = cancoder.absolutePosition
     private val lowFrequencyCANCoderSignals = arrayOf(steerAbsolutePosition)
 
     /* High-frequency Odometry Signals */
-    private val drivePosition: StatusSignal<Angle> = driveMotor.position
-    private val steerPosition: StatusSignal<Angle> = steerMotor.position
+    private val drivePosition: StatusSignal<Angle> = driveTalon.position
+    private val steerPosition: StatusSignal<Angle> = steerTalon.position
     private val drivePositionQueue: Queue<Double> = odometryThread.registerSignal(drivePosition)
     private val steerPositionQueue: Queue<Double> = odometryThread.registerSignal(steerPosition)
     private val highFrequencySignals = arrayOf(drivePosition, steerPosition)
@@ -85,26 +87,10 @@ class ModuleIOKraken(private val config: ModuleConfig, private val odometryThrea
     init {
         // Configure motors and sensors, also reset the drive motor's position to zero (don't know
         // why it doesn't do this by itself)
-        PhoenixUtil.tryUntilOk(5) {
-            driveMotor.configurator.apply(driveConfig, 0.25).printOnError {
-                "${config.driveInformation} failed config: ${it.name} ${it.description}"
-            }
-        }
-        PhoenixUtil.tryUntilOk(5) {
-            steerMotor.configurator.apply(steerConfig, 0.25).printOnError {
-                "${config.steerInformation} failed config: ${it.name} ${it.description}"
-            }
-        }
-        PhoenixUtil.tryUntilOk(5) {
-            cancoder.configurator.apply(encoderConfig, 0.25).printOnError {
-                "${config.cancoderInformation} failed config: ${it.name} ${it.description}"
-            }
-        }
-        PhoenixUtil.tryUntilOk(5) {
-            driveMotor.setPosition(0.0, 0.25).printOnError {
-                "${config.cancoderInformation} failed to set position: ${it.name} ${it.description}"
-            }
-        }
+        PhoenixUtil.tryUntilOk(5) { driveTalon.configurator.apply(driveConfig, 0.25) }
+        PhoenixUtil.tryUntilOk(5) { steerTalon.configurator.apply(steerConfig, 0.25) }
+        PhoenixUtil.tryUntilOk(5) { cancoder.configurator.apply(encoderConfig, 0.25) }
+        PhoenixUtil.tryUntilOk(5) { driveTalon.setPosition(0.0, 0.25) }
 
         // Set signal update frequency
         BaseStatusSignal.setUpdateFrequencyForAll(DrivetrainConstants.ODOMETRY_FREQUENCY, *highFrequencySignals)
@@ -116,7 +102,7 @@ class ModuleIOKraken(private val config: ModuleConfig, private val odometryThrea
         )
 
         // Optimize bus utilization
-        ParentDevice.optimizeBusUtilizationForAll(driveMotor, steerMotor, cancoder)
+        ParentDevice.optimizeBusUtilizationForAll(driveTalon, steerTalon, cancoder)
     }
 
     /** Updates the inputs with the latest sensor information. */
@@ -138,6 +124,10 @@ class ModuleIOKraken(private val config: ModuleConfig, private val odometryThrea
         inputs.driveAppliedVolts = driveAppliedVolts.valueAsDouble
         inputs.driveSupplyCurrentAmps = driveSupplyCurrent.valueAsDouble
         inputs.driveTorqueCurrentAmps = driveTorqueCurrent.valueAsDouble
+        inputs.driveTempFahrenheit = (driveTemperature.valueAsDouble * (9 / 5)) + 32
+        inputs.driveClosedLoopPositionReference = driveClosedLoopPositionReference.valueAsDouble
+        inputs.driveClosedLoopVelocityReference = driveClosedLoopVelocityReference.valueAsDouble
+        inputs.driveClosedLoopOutput = driveClosedLoopOutput.valueAsDouble
 
         // Update steer inputs
         inputs.steerAbsolutePosition = Rotation2d.fromRotations(steerAbsolutePosition.valueAsDouble)
@@ -146,6 +136,10 @@ class ModuleIOKraken(private val config: ModuleConfig, private val odometryThrea
         inputs.steerAppliedVolts = steerAppliedVolts.valueAsDouble
         inputs.steerSupplyCurrentAmps = steerSupplyCurrent.valueAsDouble
         inputs.steerTorqueCurrentAmps = steerTorqueCurrent.valueAsDouble
+        inputs.steerTempFahrenheit = (steerTemperature.valueAsDouble * (9 / 5)) + 32
+        inputs.steerClosedLoopPositionReference = steerClosedLoopPositionReference.valueAsDouble
+        inputs.steerClosedLoopVelocityReference = steerClosedLoopVelocityReference.valueAsDouble
+        inputs.steerClosedLoopOutput = steerClosedLoopOutput.valueAsDouble
 
         // Update odometry inputs with cached values and reset the queue
         inputs.odometryDrivePositionsRads = drivePositionQueue.map { Units.rotationsToRadians(it) }.toDoubleArray()
@@ -154,54 +148,12 @@ class ModuleIOKraken(private val config: ModuleConfig, private val odometryThrea
         steerPositionQueue.clear()
     }
 
-    /** Runs the drive motor at the specified voltage. */
-    override fun runDriveVoltage(volts: Double) {
-        driveMotor.setControl(voltageControl.withOutput(volts))
+    override fun setDriveControl(control: ControlRequest) {
+        driveTalon.setControl(control)
     }
 
-    /** Runs the steer motor at the specified voltage. */
-    override fun runSteerVoltage(volts: Double) {
-        steerMotor.setControl(voltageControl.withOutput(volts))
-    }
-
-    /** Runs the drive motor at the specified current. */
-    override fun runDriveAmps(amps: Double) {
-        driveMotor.setControl(currentControl.withOutput(amps))
-    }
-
-    /** Runs the steer motor at the specified current. */
-    override fun runSteerAmps(amps: Double) {
-        steerMotor.setControl(currentControl.withOutput(amps))
-    }
-
-    /** Runs the drive motor at the specified velocity with the given feedforward. */
-    override fun runDriveVelocity(velocityRadPerSec: Double, feedforward: Double) {
-        driveMotor.setControl(
-            velocityTorqueCurrentFOC
-                .withVelocity(Units.radiansToRotations(velocityRadPerSec))
-                .withFeedForward(feedforward)
-        )
-    }
-
-    /** Runs the steer motor to the specified position. */
-    override fun runSteerPosition(angle: Rotation2d) {
-        steerMotor.setControl(positionTorqueCurrentFOC.withPosition(angle.rotations))
-    }
-
-    /** Sets the pid constants of the drive motor. */
-    override fun setDrivePID(p: Double, i: Double, d: Double) {
-        driveConfig.Slot0.kP = p
-        driveConfig.Slot0.kI = i
-        driveConfig.Slot0.kD = d
-        driveMotor.configurator.apply(driveConfig, 0.1)
-    }
-
-    /** Sets the pid constants of the steer motor. */
-    override fun setSteerPID(p: Double, i: Double, d: Double) {
-        steerConfig.Slot0.kP = p
-        steerConfig.Slot0.kI = i
-        steerConfig.Slot0.kD = d
-        steerMotor.configurator.apply(steerConfig, 0.1)
+    override fun setSteerControl(control: ControlRequest) {
+        steerTalon.setControl(control)
     }
 
     /** Enables or disables brake mode on the drive motor. */
@@ -209,7 +161,7 @@ class ModuleIOKraken(private val config: ModuleConfig, private val odometryThrea
         brakeModeExecutor.execute {
             synchronized(driveConfig) {
                 driveConfig.MotorOutput.NeutralMode = if (enable) NeutralModeValue.Brake else NeutralModeValue.Coast
-                driveMotor.configurator.apply(driveConfig, 0.25)
+                driveTalon.configurator.apply(driveConfig, 0.25)
             }
         }
     }
@@ -219,7 +171,7 @@ class ModuleIOKraken(private val config: ModuleConfig, private val odometryThrea
         brakeModeExecutor.execute {
             synchronized(steerConfig) {
                 steerConfig.MotorOutput.NeutralMode = if (enable) NeutralModeValue.Brake else NeutralModeValue.Coast
-                steerMotor.configurator.apply(steerConfig, 0.25)
+                steerTalon.configurator.apply(steerConfig, 0.25)
             }
         }
     }

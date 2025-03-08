@@ -3,10 +3,8 @@ package org.team9432.frc2025.robot.subsystems.drive
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
-import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj.Alert.AlertType
-import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import java.util.concurrent.locks.ReentrantLock
@@ -46,6 +44,9 @@ class Drive(
         val odometryLock = ReentrantLock()
     }
 
+    var characterizationInput: Double? = null
+    var characterizationAngle: Rotation2d? = null
+
     override fun periodic() {
         // Update odometry
         odometryLock.withLock {
@@ -55,14 +56,10 @@ class Drive(
             odometryThread.updateInputs(odometryThreadInputs)
             Logger.processInputs("Drive/OdometryThread", odometryThreadInputs)
 
-            modules.forEach(SwerveModule::updateInputs)
+            modules.forEach(SwerveModule::periodic)
         }
 
         Logger.recordOutput("SwerveStates/Measured", *getModuleStates())
-
-        if (DriverStation.isDisabled()) {
-            runVelocity(ChassisSpeeds())
-        }
 
         // On the real robot these will be the same because the module's sensor samples are recorded
         // at the same time as the timestamps
@@ -71,7 +68,7 @@ class Drive(
         val minSamples = min(odometryThreadInputs.timestamps.size, modules[0].odometrySampleSize)
 
         for (timestampIndex in 0..<minSamples) {
-            val modulePositions = Array(modules.size) { modules[it].getOdometryModulePositions()[timestampIndex] }
+            val modulePositions = Array(modules.size) { modules[it].odometryModulePositions[timestampIndex] }
 
             localizer.addOdometryObservation(
                 Localizer.OdometryObservation(
@@ -95,13 +92,13 @@ class Drive(
         gyroIO.setAngle(Rotation2d())
     }
 
-    fun controllerCommand(controller: DriveController): Command = run { runVelocity(controller.calculate()) }
+    fun controllerCommand(controller: DriveController): Command = runVelocity(controller::calculate)
 
-    private val zeroSwerveModuleState = SwerveModuleState()
+    fun runVelocity(speed: ChassisSpeeds, torqueFF: Array<Double>? = null) = runVelocity({ speed }, torqueFF)
 
-    fun runVelocity(speeds: ChassisSpeeds, torqueFF: Array<SwerveModuleState>? = null) {
+    fun runVelocity(speedSupplier: () -> ChassisSpeeds, torqueFF: Array<Double>? = null): Command = run {
         // Calculate module setpoints
-        val discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02)
+        val discreteSpeeds = ChassisSpeeds.discretize(speedSupplier.invoke(), 0.02)
         val setpointStates = DrivetrainConstants.KINEMATICS.toSwerveModuleStates(discreteSpeeds)
         SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, DrivetrainConstants.MAX_LINEAR_SPEED_MPS)
 
@@ -111,26 +108,34 @@ class Drive(
 
         // Send setpoints to modules
         for (i in modules.indices) {
-            val feedforward = torqueFF?.get(i) ?: zeroSwerveModuleState
+            val feedforward = torqueFF?.get(i) ?: 0.0
             val setpoint = setpointStates[i]
             setpoint.optimize(modules[i].angle)
             setpoint.cosineScale(modules[i].angle)
-            modules[i].runSetpoint(setpoint, feedforward)
+            modules[i].goal = setpoint
+            modules[i].torqueFF = feedforward
         }
 
         // Log modified optimized setpoints
         Logger.recordOutput("SwerveStates/SetpointsOptimized", *setpointStates)
     }
 
-    /** Stops the drivetrain. Equivalent to running `runVelocity(ChassisSpeeds())`. */
-    fun stop() = runVelocity(ChassisSpeeds())
-
     /** Sets the steer motors to the given setpoints and applies the given number of amps to the drive motors. */
-    fun runDriveCharacterizationVoltage(voltage: Double, steerSetpoints: Array<Rotation2d>) {
-        for ((index, module) in modules.withIndex()) {
-            module.runDriveCharacterizationVoltage(voltage, steerSetpoints[index])
-        }
-    }
+    fun runDriveCharacterizationVoltage(amps: () -> Double, steerSetpoints: Array<Rotation2d>) =
+        runEnd(
+            {
+                for ((index, module) in modules.withIndex()) {
+                    module.characterizationInput = amps.invoke()
+                    module.characterizationAngle = steerSetpoints[index]
+                }
+            },
+            {
+                for (module in modules) {
+                    module.characterizationInput = null
+                    module.characterizationAngle = null
+                }
+            },
+        )
 
     /** Returns the module states of the modules. */
     fun getModuleStates() = Array(modules.size) { modules[it].measuredState }
@@ -138,6 +143,6 @@ class Drive(
     /** Returns the module positions of the modules. */
     fun getModulePositions() = Array(modules.size) { modules[it].measuredPosition }
 
-    /** Returns the positions of each wheel in radians. */
-    fun getModuleCharacterizationPositionRads() = Array(modules.size) { modules[it].characterizationWheelPositionRads }
+    /** Returns the positions of each wheel in rotations. */
+    fun getModuleCharacterizationPositionRotations() = Array(modules.size) { modules[it].wheelPositionRotations }
 }

@@ -19,17 +19,16 @@ class TunableModuleGains(
     private val kSDrive = LoggedTunableNumber("$ntPath/kSDrive", kSDrive)
     private val kVDrive = LoggedTunableNumber("$ntPath/kVDrive", kVDrive)
 
-    fun ifChanged(id: Int, function: () -> Unit) {
-        val hasChanged =
-            LoggedTunableNumber.hasChanged(
-                id,
-                kPDrive,
-                kDDrive,
-                kPSteer,
-                kDSteer,
-                kSDrive,
-                kVDrive,
-            )
+    fun ifDriveChanged(id: Int, function: () -> Unit) {
+        val hasChanged = LoggedTunableNumber.hasChanged(id, kPDrive, kDDrive, kSDrive, kVDrive)
+
+        if (hasChanged) {
+            function.invoke()
+        }
+    }
+
+    fun ifSteerChanged(id: Int, function: () -> Unit) {
+        val hasChanged = LoggedTunableNumber.hasChanged(id, kPSteer, kDSteer)
 
         if (hasChanged) {
             function.invoke()
@@ -42,9 +41,8 @@ class TunableModuleGains(
             Slot0.withKS(kSDrive.get()).withKG(kVDrive.get())
         }
     }
+
     fun applyToSteerConfig(config: TalonFXConfiguration) {
-        config.apply {
-            Slot0.withKP(kPSteer.get()).withKD(kDSteer.get())
-        }
+        config.apply { Slot0.withKP(kPSteer.get()).withKD(kDSteer.get()) }
     }
 }

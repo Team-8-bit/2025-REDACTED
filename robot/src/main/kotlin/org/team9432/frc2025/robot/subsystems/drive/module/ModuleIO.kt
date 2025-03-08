@@ -8,8 +8,8 @@ import org.team9432.annotation.Logged
 interface ModuleIO {
     @Logged
     open class ModuleIOInputs {
-        var drivePositionRads: Double = 0.0
-        var driveVelocityRadPerSecond: Double = 0.0
+        var drivePositionRotations: Double = 0.0
+        var driveVelocityRotationsPerSecond: Double = 0.0
         var driveAppliedVolts: Double = 0.0
         var driveSupplyCurrentAmps: Double = 0.0
         var driveTorqueCurrentAmps: Double = 0.0
@@ -20,7 +20,7 @@ interface ModuleIO {
 
         var steerAbsolutePosition: Rotation2d = Rotation2d()
         var steerPosition: Rotation2d = Rotation2d()
-        var steerVelocityRadPerSec: Double = 0.0
+        var steerVelocityRotationsPerSec: Double = 0.0
         var steerAppliedVolts: Double = 0.0
         var steerSupplyCurrentAmps: Double = 0.0
         var steerTorqueCurrentAmps: Double = 0.0
@@ -29,7 +29,7 @@ interface ModuleIO {
         var steerClosedLoopVelocityReference: Double = 0.0
         var steerClosedLoopOutput: Double = 0.0
 
-        var odometryDrivePositionsRads: DoubleArray = doubleArrayOf()
+        var odometryDrivePositionsRotations: DoubleArray = doubleArrayOf()
         var odometrySteerPositions: Array<Rotation2d> = arrayOf()
 
         var driveConnected: Boolean = false

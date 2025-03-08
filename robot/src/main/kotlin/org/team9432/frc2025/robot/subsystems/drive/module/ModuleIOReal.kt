@@ -14,23 +14,21 @@ import com.ctre.phoenix6.signals.NeutralModeValue
 import com.ctre.phoenix6.signals.SensorDirectionValue
 import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.measure.*
+import java.util.*
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import org.team9432.frc2025.lib.util.PhoenixUtil
-import org.team9432.frc2025.lib.util.PhoenixUtil.printOnError
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO.ModuleIOInputs
-import java.util.*
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 
-class ModuleIOReal(private val config: ModuleConfig, private val odometryThread: OdometryThread): ModuleIO {
+open class ModuleIOReal(private val config: ModuleConfig, private val odometryThread: OdometryThread) : ModuleIO {
     /* Motors & Sensors */
-    private val driveTalon = TalonFX(config.driveInformation.canID, config.driveInformation.canBus)
-    private val steerTalon = TalonFX(config.steerInformation.canID, config.steerInformation.canBus)
-    private val cancoder = CANcoder(config.cancoderInformation.canID, config.cancoderInformation.canBus)
+    protected val driveTalon = TalonFX(config.driveInformation.canID, config.driveInformation.canBus)
+    protected val steerTalon = TalonFX(config.steerInformation.canID, config.steerInformation.canBus)
+    protected val cancoder = CANcoder(config.cancoderInformation.canID, config.cancoderInformation.canBus)
 
     /* Drive Signals */
     private val driveVelocity: StatusSignal<AngularVelocity> = driveTalon.velocity
@@ -42,7 +40,16 @@ class ModuleIOReal(private val config: ModuleConfig, private val odometryThread:
     private val driveClosedLoopVelocityReference: StatusSignal<Double> = driveTalon.closedLoopReferenceSlope
     private val driveClosedLoopOutput: StatusSignal<Double> = driveTalon.closedLoopOutput
     private val lowFrequencyDriveSignals =
-        arrayOf(driveVelocity, driveAppliedVolts, driveSupplyCurrent, driveTorqueCurrent, driveTemperature, driveClosedLoopPositionReference, driveClosedLoopVelocityReference, driveClosedLoopOutput)
+        arrayOf(
+            driveVelocity,
+            driveAppliedVolts,
+            driveSupplyCurrent,
+            driveTorqueCurrent,
+            driveTemperature,
+            driveClosedLoopPositionReference,
+            driveClosedLoopVelocityReference,
+            driveClosedLoopOutput,
+        )
 
     /* Steer Signals */
     private val steerVelocity: StatusSignal<AngularVelocity> = steerTalon.velocity
@@ -54,7 +61,16 @@ class ModuleIOReal(private val config: ModuleConfig, private val odometryThread:
     private val steerClosedLoopVelocityReference: StatusSignal<Double> = steerTalon.closedLoopReferenceSlope
     private val steerClosedLoopOutput: StatusSignal<Double> = steerTalon.closedLoopOutput
     private val lowFrequencySteerSignals =
-        arrayOf(steerVelocity, steerAppliedVolts, steerSupplyCurrent, steerTorqueCurrent, steerTemperature, driveClosedLoopPositionReference, driveClosedLoopVelocityReference, driveClosedLoopOutput)
+        arrayOf(
+            steerVelocity,
+            steerAppliedVolts,
+            steerSupplyCurrent,
+            steerTorqueCurrent,
+            steerTemperature,
+            driveClosedLoopPositionReference,
+            driveClosedLoopVelocityReference,
+            driveClosedLoopOutput,
+        )
 
     /* CANCoder Signals */
     private val steerAbsolutePosition: StatusSignal<Angle> = cancoder.absolutePosition
@@ -66,12 +82,6 @@ class ModuleIOReal(private val config: ModuleConfig, private val odometryThread:
     private val drivePositionQueue: Queue<Double> = odometryThread.registerSignal(drivePosition)
     private val steerPositionQueue: Queue<Double> = odometryThread.registerSignal(steerPosition)
     private val highFrequencySignals = arrayOf(drivePosition, steerPosition)
-
-    /* Control Requests */
-    private val voltageControl = VoltageOut(0.0).withUpdateFreqHz(0.0)
-    private val currentControl = TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
-    private val velocityTorqueCurrentFOC = VelocityTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
-    private val positionTorqueCurrentFOC = PositionTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0)
 
     /* Motor Configs */
     private val driveConfig = getDriveConfig()
@@ -119,8 +129,8 @@ class ModuleIOReal(private val config: ModuleConfig, private val odometryThread:
         inputs.cancoderConnected = cancoderConnectedDebounce.calculate(cancoderStatus.isOK)
 
         // Update drive inputs
-        inputs.drivePositionRads = Units.rotationsToRadians(drivePosition.valueAsDouble)
-        inputs.driveVelocityRadPerSecond = Units.rotationsToRadians(driveVelocity.valueAsDouble)
+        inputs.drivePositionRotations = drivePosition.valueAsDouble
+        inputs.driveVelocityRotationsPerSecond = driveVelocity.valueAsDouble
         inputs.driveAppliedVolts = driveAppliedVolts.valueAsDouble
         inputs.driveSupplyCurrentAmps = driveSupplyCurrent.valueAsDouble
         inputs.driveTorqueCurrentAmps = driveTorqueCurrent.valueAsDouble
@@ -132,7 +142,7 @@ class ModuleIOReal(private val config: ModuleConfig, private val odometryThread:
         // Update steer inputs
         inputs.steerAbsolutePosition = Rotation2d.fromRotations(steerAbsolutePosition.valueAsDouble)
         inputs.steerPosition = Rotation2d.fromRotations(steerPosition.valueAsDouble)
-        inputs.steerVelocityRadPerSec = Units.rotationsToRadians(steerVelocity.valueAsDouble)
+        inputs.steerVelocityRotationsPerSec = steerVelocity.valueAsDouble
         inputs.steerAppliedVolts = steerAppliedVolts.valueAsDouble
         inputs.steerSupplyCurrentAmps = steerSupplyCurrent.valueAsDouble
         inputs.steerTorqueCurrentAmps = steerTorqueCurrent.valueAsDouble
@@ -142,7 +152,7 @@ class ModuleIOReal(private val config: ModuleConfig, private val odometryThread:
         inputs.steerClosedLoopOutput = steerClosedLoopOutput.valueAsDouble
 
         // Update odometry inputs with cached values and reset the queue
-        inputs.odometryDrivePositionsRads = drivePositionQueue.map { Units.rotationsToRadians(it) }.toDoubleArray()
+        inputs.odometryDrivePositionsRotations = drivePositionQueue.map { it }.toDoubleArray()
         inputs.odometrySteerPositions = steerPositionQueue.map { Rotation2d.fromRotations(it) }.toTypedArray()
         drivePositionQueue.clear()
         steerPositionQueue.clear()

@@ -2,6 +2,7 @@ package org.team9432.frc2025.robot.subsystems.drive
 
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.system.plant.DCMotor
+import edu.wpi.first.math.util.Units
 import org.team9432.frc2025.lib.constants.MK4NSwerveConstants
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
@@ -16,7 +17,8 @@ object DrivetrainConstants {
     /** Frequency of signals recorded by drivetrain odometry. */
     const val ODOMETRY_FREQUENCY = 250.0
 
-    const val WHEEL_RADIUS_INCHES = 2.0
+    val WHEEL_RADIUS = Units.inchesToMeters(2.0)
+    val WHEEL_CIRCUMFERENCE = WHEEL_RADIUS * Math.PI * 2.0
 
     val MODULE_TRANSLATIONS = MK4NSwerveConstants.getModuleTranslationsForFrameSize(29.5)
     val KINEMATICS = SwerveDriveKinematics(*MODULE_TRANSLATIONS)

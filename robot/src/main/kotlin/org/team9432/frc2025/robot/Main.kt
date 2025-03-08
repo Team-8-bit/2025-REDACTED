@@ -4,6 +4,7 @@ import choreo.Choreo
 import com.ctre.phoenix6.SignalLogger
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.net.PortForwarder
 import edu.wpi.first.units.Units.*
@@ -31,8 +32,7 @@ import org.photonvision.simulation.VisionSystemSim
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.util.not
-import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
-import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
+import org.team9432.frc2025.robot.commands.drive.wheelRadiusCharacterization
 import org.team9432.frc2025.robot.subsystems.climber.Climber
 import org.team9432.frc2025.robot.subsystems.climber.ClimberIO
 import org.team9432.frc2025.robot.subsystems.climber.ClimberIOReal
@@ -146,7 +146,7 @@ class Robot : LoggedRobot() {
                                             /* steerFrictionVoltage = */ Volts.of(
                                                 0.2
                                             ), // Just the value used in the maplesim MK4i default
-                                            /* wheelRadius = */ Inches.of(DrivetrainConstants.WHEEL_RADIUS_INCHES),
+                                            /* wheelRadius = */ Meters.of(DrivetrainConstants.WHEEL_RADIUS),
                                             /* steerRotationalInertia = */ KilogramSquareMeters.of(
                                                 0.03
                                             ), // Just the value used in the maplesim MK4i default
@@ -366,7 +366,12 @@ class Robot : LoggedRobot() {
         driver.povDown().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.DOWN))
         driver.povRight().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.CLIMB))
 
-        drive.defaultCommand = drive.controllerCommand(joystickDriveController)
+        drive.defaultCommand =
+            Commands.either(
+                drive.controllerCommand(joystickDriveController),
+                drive.runVelocity(ChassisSpeeds()),
+                ::isTeleopEnabled,
+            )
     }
 
     private var currentAuto = Commands.none()
@@ -381,31 +386,10 @@ class Robot : LoggedRobot() {
                     var characterizationAuto = Commands.none()
                     addOption("Characterization", { characterizationAuto }) {
                         addQuestion("Which routine?", { characterizationAuto = it }) {
-                            val driveRoutines = DrivetrainSysIdCommands(drive)
                             addOption(
                                 "Drive Wheel Radius Characterization",
-                                { WheelRadiusCharacterization(drive, localizer) },
+                                { wheelRadiusCharacterization(drive, localizer) },
                             )
-                            addOption(
-                                "Drive Linear SysId (Quasistatic Forward)",
-                                { driveRoutines.linearQuasistaticForward },
-                            )
-                            addOption(
-                                "Drive Linear SysId (Quasistatic Reverse)",
-                                { driveRoutines.linearQuasistaticReverse },
-                            )
-                            addOption("Drive Linear SysId (Dynamic Forward)", { driveRoutines.linearDynamicForward })
-                            addOption("Drive Linear SysId (Dynamic Reverse)", { driveRoutines.linearDynamicReverse })
-                            addOption(
-                                "Drive Angular SysId (Quasistatic Forward)",
-                                { driveRoutines.angularQuasistaticForward },
-                            )
-                            addOption(
-                                "Drive Angular SysId (Quasistatic Reverse)",
-                                { driveRoutines.angularQuasistaticReverse },
-                            )
-                            addOption("Drive Angular SysId (Dynamic Forward)", { driveRoutines.angularDynamicForward })
-                            addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
                             addOption(
                                 "Elevator Static Characterization",
                                 { superstructure.elevatorStaticCharacterization() },

@@ -31,7 +31,7 @@ import org.photonvision.simulation.VisionSystemSim
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.util.not
-import org.team9432.frc2025.robot.commands.drive.DrivetrainSysIdCommands
+import org.team9432.frc2025.robot.commands.drive.DrivetrainSimpleFeedforward
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.subsystems.climber.Climber
 import org.team9432.frc2025.robot.subsystems.climber.ClimberIO
@@ -46,7 +46,7 @@ import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIO
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOPigeon2
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOSim
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
-import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOKraken
+import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOReal
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIOSim
 import org.team9432.frc2025.robot.subsystems.rollers.Rollers
 import org.team9432.frc2025.robot.subsystems.rollers.dispenser.Manipulator
@@ -102,10 +102,10 @@ class Robot : LoggedRobot() {
                     drive =
                         Drive(
                             GyroIOPigeon2(odometryThread),
-                            ModuleIOKraken(ModuleConfig.FRONT_LEFT, odometryThread),
-                            ModuleIOKraken(ModuleConfig.FRONT_RIGHT, odometryThread),
-                            ModuleIOKraken(ModuleConfig.BACK_LEFT, odometryThread),
-                            ModuleIOKraken(ModuleConfig.BACK_RIGHT, odometryThread),
+                            ModuleIOReal(ModuleConfig.FRONT_LEFT, odometryThread),
+                            ModuleIOReal(ModuleConfig.FRONT_RIGHT, odometryThread),
+                            ModuleIOReal(ModuleConfig.BACK_LEFT, odometryThread),
+                            ModuleIOReal(ModuleConfig.BACK_RIGHT, odometryThread),
                             odometryThread,
                             localizer,
                         )
@@ -146,7 +146,7 @@ class Robot : LoggedRobot() {
                                             /* steerFrictionVoltage = */ Volts.of(
                                                 0.2
                                             ), // Just the value used in the maplesim MK4i default
-                                            /* wheelRadius = */ Inches.of(DrivetrainConstants.WHEEL_RADIUS_INCHES),
+                                            /* wheelRadius = */ Meters.of(DrivetrainConstants.WHEEL_RADIUS),
                                             /* steerRotationalInertia = */ KilogramSquareMeters.of(
                                                 0.03
                                             ), // Just the value used in the maplesim MK4i default
@@ -366,7 +366,12 @@ class Robot : LoggedRobot() {
         driver.povDown().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.DOWN))
         driver.povRight().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.CLIMB))
 
-        drive.defaultCommand = drive.controllerCommand(joystickDriveController)
+        drive.defaultCommand =
+            //            Commands.either(
+            drive.controllerCommand(joystickDriveController) // ,
+        //                drive.runVelocity(ChassisSpeeds()),
+        //                ::isTeleopEnabled,
+        //            )
     }
 
     private var currentAuto = Commands.none()
@@ -381,31 +386,14 @@ class Robot : LoggedRobot() {
                     var characterizationAuto = Commands.none()
                     addOption("Characterization", { characterizationAuto }) {
                         addQuestion("Which routine?", { characterizationAuto = it }) {
-                            val driveRoutines = DrivetrainSysIdCommands(drive)
+                            addOption(
+                                "Drive Simple Feedforward Characterization",
+                                { DrivetrainSimpleFeedforward(drive) },
+                            )
                             addOption(
                                 "Drive Wheel Radius Characterization",
                                 { WheelRadiusCharacterization(drive, localizer) },
                             )
-                            addOption(
-                                "Drive Linear SysId (Quasistatic Forward)",
-                                { driveRoutines.linearQuasistaticForward },
-                            )
-                            addOption(
-                                "Drive Linear SysId (Quasistatic Reverse)",
-                                { driveRoutines.linearQuasistaticReverse },
-                            )
-                            addOption("Drive Linear SysId (Dynamic Forward)", { driveRoutines.linearDynamicForward })
-                            addOption("Drive Linear SysId (Dynamic Reverse)", { driveRoutines.linearDynamicReverse })
-                            addOption(
-                                "Drive Angular SysId (Quasistatic Forward)",
-                                { driveRoutines.angularQuasistaticForward },
-                            )
-                            addOption(
-                                "Drive Angular SysId (Quasistatic Reverse)",
-                                { driveRoutines.angularQuasistaticReverse },
-                            )
-                            addOption("Drive Angular SysId (Dynamic Forward)", { driveRoutines.angularDynamicForward })
-                            addOption("Drive Angular SysId (Dynamic Reverse)", { driveRoutines.angularDynamicReverse })
                             addOption(
                                 "Elevator Static Characterization",
                                 { superstructure.elevatorStaticCharacterization() },
@@ -497,6 +485,7 @@ class Robot : LoggedRobot() {
         robotPosition.outputTelemetry()
 
         autoChooser.update()
+        LEDs.update()
     }
 
     override fun simulationPeriodic() {

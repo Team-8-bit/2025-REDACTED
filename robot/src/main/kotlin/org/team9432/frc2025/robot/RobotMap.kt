@@ -5,6 +5,8 @@ import org.team9432.frc2025.lib.util.CANSensorInformation
 import org.team9432.frc2025.lib.util.MotorInformation
 
 object RobotMap {
+    const val LED_PORT = 8 // PWM
+
     /* ******* Drivetrain ******* */
     const val DRIVETRAIN_CANBUS_NAME = "*"
     val drivetrainCanbus = CANBus(DRIVETRAIN_CANBUS_NAME)

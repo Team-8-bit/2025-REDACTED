@@ -481,6 +481,7 @@ class Robot : LoggedRobot() {
         robotPosition.outputTelemetry()
 
         autoChooser.update()
+        LEDs.update()
     }
 
     override fun simulationPeriodic() {

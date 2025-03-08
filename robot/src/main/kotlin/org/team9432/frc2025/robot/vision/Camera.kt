@@ -27,8 +27,8 @@ class Camera(
         alert.set(!inputs.connected)
 
         for (observation in inputs.poseObservations) {
-            val robotPose = observation.cameraPose.plus(cameraConstants.robotToCamera.inverse())
             val tagPoses = observation.tagList.tags.mapNotNull { aprilTagLayout.getTagPose(it).getOrNull() }
+            val robotPose = observation.robotPose
 
             // If the robot pose is invalid, continue
             if (
@@ -58,6 +58,9 @@ class Camera(
             // Account for per-camera trust
             linearStdDev *= cameraConstants.stdDevFactor
             angularStdDev *= cameraConstants.stdDevFactor
+
+            Logger.recordOutput("Vision/${cameraConstants.cameraName}/XYStdDev", linearStdDev)
+            Logger.recordOutput("Vision/${cameraConstants.cameraName}/RStdDev", angularStdDev)
 
             localizer.addVisionObservation(
                 Localizer.VisionObservation(

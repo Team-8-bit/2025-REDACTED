@@ -2,11 +2,11 @@ package org.team9432.frc2025.robot.vision
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout
 import edu.wpi.first.apriltag.AprilTagFields
-import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.geometry.Transform3d
 import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
+import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 
 object VisionConstants {
     // AprilTag layout
@@ -29,12 +29,14 @@ object VisionConstants {
         /** Camera name, must match name configured on the coprocessor. */
         val cameraName: String,
         /** Robot to camera transform. */
-        val robotToCamera: Transform3d,
+        private val initialRobotToCamera: Transform3d,
+        /** Pitch offset to apply. */
+        private val initialPitchOffset: Double,
     ) {
-        FRONT(
+        FRONT_LEFT(
             stdDevFactor = 1.0,
-            cameraName = "FrontCamera",
-            robotToCamera =
+            cameraName = "FrontLeft",
+            initialRobotToCamera =
                 Transform3d(
                     Translation3d(Units.inchesToMeters(13.0), Units.inchesToMeters(11.5), Units.inchesToMeters(8.5)),
                     Rotation3d(
@@ -43,8 +45,41 @@ object VisionConstants {
                         Units.degreesToRadians(-39.901730),
                     ),
                 ),
+            initialPitchOffset = -3.0,
+        ),
+        FRONT_RIGHT(
+            stdDevFactor = 1.0,
+            cameraName = "FrontRight",
+            initialRobotToCamera =
+                Transform3d(
+                    Translation3d(Units.inchesToMeters(13.0), Units.inchesToMeters(-11.5), Units.inchesToMeters(8.5)),
+                    Rotation3d(
+                        Units.degreesToRadians(0.0),
+                        Units.degreesToRadians(-20.0),
+                        Units.degreesToRadians(39.901730),
+                    ),
+                ),
+            initialPitchOffset = 0.0,
         );
 
-        val pose = Pose3d(robotToCamera.x, robotToCamera.y, robotToCamera.z, robotToCamera.rotation)
+        private val pitchOffset = LoggedTunableNumber("Vision/Constants/${cameraName}PitchOffset", initialPitchOffset)
+        private var lastPitchOffset = initialPitchOffset
+
+        private var currentRobotToCamera = initialRobotToCamera
+
+        val robotToCamera: Transform3d
+            get() {
+                val pitchOffset = pitchOffset.get()
+                if (pitchOffset != lastPitchOffset) {
+                    currentRobotToCamera =
+                        initialRobotToCamera.plus(
+                            Transform3d(Translation3d.kZero, Rotation3d(0.0, Units.degreesToRadians(pitchOffset), 0.0))
+                        )
+                    lastPitchOffset = pitchOffset
+                    return currentRobotToCamera
+                } else {
+                    return currentRobotToCamera
+                }
+            }
     }
 }

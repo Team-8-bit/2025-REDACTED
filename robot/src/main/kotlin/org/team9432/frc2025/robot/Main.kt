@@ -117,13 +117,15 @@ class Robot : LoggedRobot() {
                     cameras =
                         setOf(
                             Camera(
-                                CameraIOPhotonVision(
-                                    VisionConstants.CameraConstants.FRONT.cameraName,
-                                    localizer::rotation,
-                                ),
-                                VisionConstants.CameraConstants.FRONT,
+                                CameraIOPhotonVision(VisionConstants.CameraConstants.FRONT_LEFT, localizer::rotation),
+                                VisionConstants.CameraConstants.FRONT_LEFT,
                                 localizer,
-                            )
+                            ),
+                            Camera(
+                                CameraIOPhotonVision(VisionConstants.CameraConstants.FRONT_RIGHT, localizer::rotation),
+                                VisionConstants.CameraConstants.FRONT_RIGHT,
+                                localizer,
+                            ),
                         )
                 }
 
@@ -184,13 +186,22 @@ class Robot : LoggedRobot() {
                         setOf(
                             Camera(
                                 CameraIOPhotonVisionSim(
-                                    VisionConstants.CameraConstants.FRONT,
+                                    VisionConstants.CameraConstants.FRONT_LEFT,
                                     visionSim,
                                     localizer::rotation,
                                 ),
-                                VisionConstants.CameraConstants.FRONT,
+                                VisionConstants.CameraConstants.FRONT_LEFT,
                                 localizer,
-                            )
+                            ),
+                            Camera(
+                                CameraIOPhotonVisionSim(
+                                    VisionConstants.CameraConstants.FRONT_RIGHT,
+                                    visionSim,
+                                    localizer::rotation,
+                                ),
+                                VisionConstants.CameraConstants.FRONT_RIGHT,
+                                localizer,
+                            ),
                         )
 
                     simUpdateCall = { visionSim.update(swerveSim.simulatedDriveTrainPose) }
@@ -217,7 +228,11 @@ class Robot : LoggedRobot() {
             rollers = Rollers(Funnel(object : FunnelIO {}), Manipulator(object : ManipulatorIO {}))
             climber = Climber(object : ClimberIO {})
 
-            cameras = setOf(Camera(object : CameraIO {}, VisionConstants.CameraConstants.FRONT, localizer))
+            cameras =
+                setOf(
+                    Camera(object : CameraIO {}, VisionConstants.CameraConstants.FRONT_LEFT, localizer),
+                    Camera(object : CameraIO {}, VisionConstants.CameraConstants.FRONT_RIGHT, localizer),
+                )
         }
 
         if (Constants.mode != Constants.Mode.REPLAY) {

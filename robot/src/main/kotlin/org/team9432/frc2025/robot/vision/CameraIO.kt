@@ -13,7 +13,13 @@ interface CameraIO {
 
     fun updateInputs(inputs: CameraIOInputs) {}
 
-    @JvmRecord data class VisionData(val cameraPose: Pose3d, val tagList: AprilTagList, val timestamp: Double)
+    @JvmRecord
+    data class VisionData(
+        val cameraPose: Pose3d,
+        val robotPose: Pose3d,
+        val tagList: AprilTagList,
+        val timestamp: Double,
+    )
 
     @JvmRecord
     data class TxTyData(val tagId: Int, val tx: Double, val ty: Double, val distance: Double, val timestamp: Double)

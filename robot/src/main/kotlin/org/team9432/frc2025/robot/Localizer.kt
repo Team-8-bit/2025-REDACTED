@@ -148,24 +148,25 @@ class Localizer {
 
         val robotRotation = estimatedPose.transformBy(Transform2d(odometryPose, sample)).rotation
 
-        val cameraPose = observation.camera.pose
+        val cameraPose2d = observation.camera.robotToCamera.let { Pose2d(it.x, it.y, it.rotation.toRotation2d()) }
 
         // Use 3D distance and tag angles to find robot pose
         val camToTagTranslation =
             Pose3d(Translation3d.kZero, Rotation3d(0.0, observation.ty, -observation.tx))
                 .transformBy(Transform3d(Translation3d(observation.distance, 0.0, 0.0), Rotation3d.kZero))
                 .translation
-                .rotateBy(Rotation3d(0.0, cameraPose.rotation.y, 0.0))
+                .rotateBy(Rotation3d(0.0, observation.camera.robotToCamera.rotation.y, 0.0))
                 .toTranslation2d()
-        val camToTagRotation = robotRotation.plus(cameraPose.toPose2d().rotation.plus(camToTagTranslation.angle))
+
+        val camToTagRotation = robotRotation.plus(cameraPose2d.rotation.plus(camToTagTranslation.angle))
         val tagPose2d = tagPoses2d[observation.tagId] ?: return
         val fieldToCameraTranslation =
             Pose2d(tagPose2d.translation, camToTagRotation.plus(Rotation2d.kPi))
                 .transformBy(Transform2d(camToTagTranslation.norm, 0.0, Rotation2d.kZero))
                 .translation
         var robotPose =
-            Pose2d(fieldToCameraTranslation, robotRotation.plus(cameraPose.toPose2d().rotation))
-                .transformBy(Transform2d(cameraPose.toPose2d(), Pose2d.kZero))
+            Pose2d(fieldToCameraTranslation, robotRotation.plus(cameraPose2d.rotation))
+                .transformBy(Transform2d(cameraPose2d, Pose2d.kZero))
         // Use gyro angle at time for robot rotation
         robotPose = Pose2d(robotPose.translation, robotRotation)
 

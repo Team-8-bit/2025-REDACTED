@@ -2,16 +2,18 @@ package org.team9432.frc2025.robot.vision
 
 import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.math.geometry.Transform3d
+import edu.wpi.first.math.util.Units
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import org.photonvision.PhotonCamera
 import org.photonvision.targeting.PhotonPipelineResult
 import org.team9432.frc2025.robot.vision.CameraIO.CameraIOInputs
-import org.team9432.frc2025.robot.vision.VisionConstants.aprilTagLayout
 
-open class CameraIOPhotonVision(name: String, private val rotationSupplier: () -> Rotation2d) : CameraIO {
-    val camera = PhotonCamera(name)
+open class CameraIOPhotonVision(
+    private val config: VisionConstants.CameraConstants,
+    private val rotationSupplier: () -> Rotation2d,
+) : CameraIO {
+    val camera = PhotonCamera(config.cameraName)
 
     override fun updateInputs(inputs: CameraIOInputs) {
         inputs.connected = camera.isConnected
@@ -22,11 +24,12 @@ open class CameraIOPhotonVision(name: String, private val rotationSupplier: () -
         val visionObservations = mutableListOf<CameraIO.VisionData>()
         val txtyObservations = mutableListOf<CameraIO.TxTyData>()
         for (result in results) {
-            val cameraPose = estimateCameraPose(result)
-            if (cameraPose != null) {
+            val (cameraPose, robotPose) = estimateCameraPose(result)
+            if (cameraPose != null && robotPose != null) {
                 visionObservations.add(
                     CameraIO.VisionData(
                         cameraPose = cameraPose,
+                        robotPose = robotPose,
                         tagList = AprilTagList(result.targets.map { it.fiducialId }),
                         timestamp = result.timestampSeconds,
                     )
@@ -37,8 +40,8 @@ open class CameraIOPhotonVision(name: String, private val rotationSupplier: () -
                 txtyObservations.add(
                     CameraIO.TxTyData(
                         tagId = target.fiducialId,
-                        tx = target.yaw,
-                        ty = target.pitch,
+                        tx = Units.degreesToRadians(target.yaw),
+                        ty = Units.degreesToRadians(target.pitch),
                         distance = target.bestCameraToTarget.translation.norm,
                         timestamp = result.timestampSeconds,
                     )
@@ -55,53 +58,62 @@ open class CameraIOPhotonVision(name: String, private val rotationSupplier: () -
      *
      * @return An estimated pose and a set of standard deviations, or null if no valid pose was found.
      */
-    private fun estimateCameraPose(result: PhotonPipelineResult): Pose3d? {
+    private fun estimateCameraPose(result: PhotonPipelineResult): Pair<Pose3d?, Pose3d?> {
         // First thing is to find the where the camera is
         val multitagResult = result.multitagResult.getOrNull()
-        val cameraToTarget: Transform3d? =
-            when {
-                // If we got a multitag result, use that
-                multitagResult != null -> multitagResult.estimatedPose.best
+        val cameraPose: Pose3d?
+        val robotPose: Pose3d?
+        when {
+            // If we got a multitag result, use that
+            multitagResult != null -> {
+                cameraPose =
+                    Pose3d().plus(multitagResult.estimatedPose.best).relativeTo(VisionConstants.aprilTagLayout.origin)
+                robotPose = cameraPose.plus(config.robotToCamera.inverse())
+            }
 
-                // Else take single tag and try to disambiguate
-                result.targets.size == 1 -> {
-                    val target = result.targets.first()
+            // Else take single tag and try to disambiguate
+            result.targets.size == 1 -> {
+                val target = result.targets.first()
 
-                    // If the pose is too ambiguous, return null
-                    if (target.poseAmbiguity >= VisionConstants.MAX_AMBIGUITY) return null
-
-                    // Else disambiguate by which is closest to the robot's rotation
-                    val currentRotation = rotationSupplier()
-                    val bestRotation = target.bestCameraToTarget.rotation.toRotation2d()
-                    val altRotation = target.alternateCameraToTarget.rotation.toRotation2d()
-                    if (
-                        abs(currentRotation.minus(bestRotation).radians) <
-                            abs(currentRotation.minus(altRotation).radians)
-                    ) {
-                        target.bestCameraToTarget
-                    } else {
-                        target.alternateCameraToTarget
-                    }
+                // If the pose is too ambiguous, return null
+                if (target.poseAmbiguity >= VisionConstants.MAX_AMBIGUITY) {
+                    return null to null
                 }
 
-                result.targets.size == 0 -> {
-                    return null
-                }
+                val tagPose =
+                    VisionConstants.aprilTagLayout.getTagPose(target.fiducialId).getOrNull() ?: return null to null
 
-                else -> {
-                    println(result.targets.size)
-                    throw Exception("I don't think this should happen") // TODO: Replace with continue before comp
+                // Else disambiguate by which is closest to the robot's rotation
+                val currentRotation = rotationSupplier()
+                val bestCameraPose = tagPose.transformBy(target.bestCameraToTarget.inverse())
+                val bestRobotPose = bestCameraPose.plus(config.robotToCamera.inverse())
+
+                val altCameraPose = tagPose.transformBy(target.alternateCameraToTarget.inverse())
+                val altRobotPose = altCameraPose.plus(config.robotToCamera.inverse())
+
+                if (
+                    abs(currentRotation.minus(bestRobotPose.rotation.toRotation2d()).radians) <
+                        abs(currentRotation.minus(altRobotPose.rotation.toRotation2d()).radians)
+                ) {
+                    robotPose = bestRobotPose
+                    cameraPose = bestCameraPose
+                } else {
+                    // altPose
+                    robotPose = bestRobotPose
+                    cameraPose = bestCameraPose
                 }
             }
 
-        // Make sure we got a valid camera transform
-        if (cameraToTarget == null) return null
+            result.targets.size == 0 -> {
+                return null to null
+            }
 
-        // Calculate camera pose
-        val cameraPose = Pose3d().plus(cameraToTarget).relativeTo(aprilTagLayout.origin)
+            else -> {
+                println(result.targets.size)
+                throw Exception("I don't think this should happen") // TODO: Replace with continue before comp
+            }
+        }
 
-        println(cameraPose)
-
-        return cameraPose
+        return cameraPose to robotPose
     }
 }

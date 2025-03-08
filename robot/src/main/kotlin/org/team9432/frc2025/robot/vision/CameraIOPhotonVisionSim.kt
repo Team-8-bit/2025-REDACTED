@@ -10,7 +10,7 @@ class CameraIOPhotonVisionSim(
     cameraConstants: VisionConstants.CameraConstants,
     private val visionSim: VisionSystemSim,
     rotationSupplier: () -> Rotation2d,
-) : CameraIOPhotonVision(cameraConstants.cameraName, rotationSupplier) {
+) : CameraIOPhotonVision(cameraConstants, rotationSupplier) {
     private val simCameraProperties =
         SimCameraProperties().apply {
             setCalibration(1280, 800, Rotation2d.fromDegrees(78.61))

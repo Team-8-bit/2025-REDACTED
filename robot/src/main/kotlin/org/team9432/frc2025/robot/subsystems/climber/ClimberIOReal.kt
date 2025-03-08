@@ -26,9 +26,9 @@ open class ClimberIOReal : ClimberIO {
             MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
             MotorOutput.NeutralMode = NeutralModeValue.Brake
 
-            TorqueCurrent.PeakForwardTorqueCurrent = 60.0
-            TorqueCurrent.PeakReverseTorqueCurrent = -60.0
-            CurrentLimits.StatorCurrentLimit = 60.0
+            TorqueCurrent.PeakForwardTorqueCurrent = 40.0
+            TorqueCurrent.PeakReverseTorqueCurrent = -40.0
+            CurrentLimits.StatorCurrentLimit = 40.0
             CurrentLimits.StatorCurrentLimitEnable = true
         }
 

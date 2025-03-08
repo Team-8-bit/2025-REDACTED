@@ -135,6 +135,9 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
     val wheelPositionRotations
         get() = inputs.drivePositionRotations
 
+    val wheelVelocityRotationsPerSecond
+        get() = inputs.driveVelocityRotationsPerSecond
+
     /** The number of cached odometry readings. */
     val odometrySampleSize
         get() = minOf(inputs.odometryDrivePositionsRotations.size, inputs.odometrySteerPositions.size)

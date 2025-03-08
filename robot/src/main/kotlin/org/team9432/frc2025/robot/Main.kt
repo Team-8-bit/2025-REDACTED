@@ -31,7 +31,8 @@ import org.photonvision.simulation.VisionSystemSim
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.util.not
-import org.team9432.frc2025.robot.commands.drive.wheelRadiusCharacterization
+import org.team9432.frc2025.robot.commands.drive.DrivetrainSimpleFeedforward
+import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.subsystems.climber.Climber
 import org.team9432.frc2025.robot.subsystems.climber.ClimberIO
 import org.team9432.frc2025.robot.subsystems.climber.ClimberIOReal
@@ -386,8 +387,12 @@ class Robot : LoggedRobot() {
                     addOption("Characterization", { characterizationAuto }) {
                         addQuestion("Which routine?", { characterizationAuto = it }) {
                             addOption(
+                                "Drive Simple Feedforward Characterization",
+                                { DrivetrainSimpleFeedforward(drive) },
+                            )
+                            addOption(
                                 "Drive Wheel Radius Characterization",
-                                { wheelRadiusCharacterization(drive, localizer) },
+                                { WheelRadiusCharacterization(drive, localizer) },
                             )
                             addOption(
                                 "Elevator Static Characterization",

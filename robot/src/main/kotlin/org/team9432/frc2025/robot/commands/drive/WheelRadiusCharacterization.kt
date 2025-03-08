@@ -14,7 +14,7 @@ import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
-fun wheelRadiusCharacterization(drive: Drive, localizer: Localizer): Command {
+fun WheelRadiusCharacterization(drive: Drive, localizer: Localizer): Command {
     val maxAccelDegreesPerSecPerSec = 3.0
     val maxVelocityDegreesPerSec = 15.0
 

@@ -122,7 +122,7 @@ class Drive(
     }
 
     /** Sets the steer motors to the given setpoints and applies the given number of amps to the drive motors. */
-    fun runDriveCharacterizationVoltage(amps: () -> Double, steerSetpoints: Array<Rotation2d>) =
+    fun runDriveCharacterizationAmperage(amps: () -> Double, steerSetpoints: Array<Rotation2d>) =
         runEnd(
             {
                 for ((index, module) in modules.withIndex()) {
@@ -146,4 +146,7 @@ class Drive(
 
     /** Returns the positions of each wheel in rotations. */
     fun getModuleCharacterizationPositionRotations() = Array(modules.size) { modules[it].wheelPositionRotations }
+
+    fun getModuleCharacterizationVelocityRotationsPerSecond() =
+        Array(modules.size) { modules[it].wheelPositionRotations }
 }

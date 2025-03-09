@@ -44,8 +44,11 @@ class Drive(
         val odometryLock = ReentrantLock()
     }
 
-    var characterizationInput: Double? = null
-    var characterizationAngle: Rotation2d? = null
+    var coastOverride = { false }
+        set(value) {
+            modules.forEach { it.coastOverride = value }
+            field = value
+        }
 
     override fun periodic() {
         // Update odometry

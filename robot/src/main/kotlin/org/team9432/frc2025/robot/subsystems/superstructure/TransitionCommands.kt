@@ -33,10 +33,6 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
             transitions[scoringGoal to PREPARE_TALL_SCORE] = arm.runToGoal(Arm.Goal.PREPARE_SCORE).andThen(elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT))
         }
 
-        for (scoringGoal in setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4)) {
-            transitions[scoringGoal to STOW] = arm.runToGoal(Arm.Goal.STOW).andThen(elevator.runToGoal(Elevator.Goal.STOW))
-        }
-
         transitions[ARM_ABOVE_BUMPER to INTAKE_ALGAE_LOW] =
             parallel(
                 elevator.runToGoal(Elevator.Goal.INTAKE_ALGAE_REEF_LOW),
@@ -61,6 +57,8 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
 
         transitions[ALGAE_STOW to PREPARE_PROCESSOR] = parallel(arm.runToGoal(Arm.Goal.PREPARE_PROCESSOR), elevator.runToGoal(Elevator.Goal.PREPARE_PROCESSOR))
         transitions[ALGAE_STOW to PREPARE_NET] = parallel(arm.runToGoal(Arm.Goal.PREPARE_NET), elevator.runToGoal(Elevator.Goal.PREPARE_NET))
+
+        transitions[ALGAE_STOW to ARM_ABOVE_BUMPER] = elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT).andThen(arm.runToGoal(Arm.Goal.STOW))
 
         transitions[PREPARE_PROCESSOR to ALGAE_STOW] = parallel(arm.runToGoal(Arm.Goal.HOLD_ALGAE_LOW), elevator.runToGoal(Elevator.Goal.HOLD_ALGAE_LOW))
         transitions[PREPARE_NET to ALGAE_STOW] = parallel(arm.runToGoal(Arm.Goal.HOLD_ALGAE_LOW), elevator.runToGoal(Elevator.Goal.HOLD_ALGAE_LOW))
@@ -90,6 +88,26 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
 
         for (algaeIntakeGoal in setOf(INTAKE_ALGAE_HIGH, INTAKE_ALGAE_LOW)) {
             transitions[algaeIntakeGoal to ARM_ABOVE_BUMPER] = arm.runToGoal(Arm.Goal.STOW).alongWith(elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT))
+        }
+
+        transitions[INTAKE_ALGAE_LOW to INTAKE_ALGAE_HIGH] = parallel(arm.runToGoal(Arm.Goal.INTAKE_ALGAE_REEF), elevator.runToGoal(Elevator.Goal.INTAKE_ALGAE_REEF_HIGH))
+        transitions[INTAKE_ALGAE_HIGH to INTAKE_ALGAE_LOW] = parallel(arm.runToGoal(Arm.Goal.INTAKE_ALGAE_REEF), elevator.runToGoal(Elevator.Goal.INTAKE_ALGAE_REEF_LOW))
+
+        for (scoringGoal in setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4)) {
+            for (other in setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4)) {
+                if (scoringGoal == other) continue
+
+                transitions[scoringGoal to other] = when (other) {
+                    PREPARE_L2 -> arm.runToGoal(Arm.Goal.L2).alongWith(elevator.runToGoal(Elevator.Goal.L2))
+                    PREPARE_L3 -> arm.runToGoal(Arm.Goal.L3).alongWith(elevator.runToGoal(Elevator.Goal.L3))
+                    PREPARE_L4 -> arm.runToGoal(Arm.Goal.L4).alongWith(elevator.runToGoal(Elevator.Goal.L4))
+                    else -> throw IllegalArgumentException()
+                }
+            }
+        }
+
+        for (scoringGoal in setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4)) {
+            transitions[scoringGoal to ARM_ABOVE_BUMPER] = arm.runToGoal(Arm.Goal.STOW).alongWith(elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT))
         }
 
         // yay for spotless in all the other places though. spotless:on

@@ -45,6 +45,9 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
     var goal: State = STOW
         private set
 
+    val isHomed
+        get() = elevator.hasHomed && arm.hasHomed
+
     /** The current command running between states. */
     private var currentMovementCommand: Command = Commands.none()
 

@@ -4,17 +4,18 @@ import choreo.Choreo
 import com.ctre.phoenix6.SignalLogger
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.net.PortForwarder
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.PowerDistribution
 import edu.wpi.first.wpilibj.RobotBase
-import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
+import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.ironmaple.simulation.SimulatedArena
 import org.ironmaple.simulation.drivesims.COTS
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation
@@ -31,6 +32,8 @@ import org.photonvision.simulation.VisionSystemSim
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
 import org.team9432.frc2025.lib.util.not
+import org.team9432.frc2025.lib.util.transformBySpeeds
+import org.team9432.frc2025.robot.commands.drive.DriveToPose
 import org.team9432.frc2025.robot.commands.drive.DrivetrainSimpleFeedforward
 import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.subsystems.climber.Climber
@@ -40,7 +43,6 @@ import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
-import org.team9432.frc2025.robot.subsystems.drive.controllers.JoystickAimAtAngleController
 import org.team9432.frc2025.robot.subsystems.drive.controllers.JoystickDriveController
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIO
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOPigeon2
@@ -250,6 +252,7 @@ class Robot : LoggedRobot() {
 
     private fun bindButtons() {
         superstructure.coastOverride = { switches.one.asBoolean }
+        drive.coastOverride = { switches.one.asBoolean }
 
         val joystickDriveController =
             JoystickDriveController(
@@ -259,34 +262,56 @@ class Robot : LoggedRobot() {
                 localizer,
             )
 
-        val alignStraightController =
-            JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero }, localizer)
+        val controllerHasDriveInput = Trigger {
+            joystickDriveController.hasInput(xyDeadband = 0.1, rotationalDeadband = 0.1)
+        }
 
         val prepareScoreButton = driver.rightBumper()
 
-        val doublePressIntakeTimer = Timer()
+        //        val doublePressIntakeTimer = Timer()
+
+        //        driver
+        //            .leftBumper()
+        //            .negate()
+        //            .and { !doublePressIntakeTimer.hasElapsed(0.15) }
+        //            .onTrue(rollers.runGoal(Rollers.State.UNJAM_CORAL).withTimeout(0.5))
 
         driver
-            .leftBumper()
-            .negate()
-            .and { !doublePressIntakeTimer.hasElapsed(0.15) }
-            .onTrue(rollers.runGoal(Rollers.State.UNJAM_CORAL).withTimeout(0.5))
+            .x()
+            //            .leftBumper()
+            //            .and(!prepareScoreButton)
+            //            .and(!rollers.hasAlgaeTrigger)
+            //            //            .onTrue(Commands.runOnce({ doublePressIntakeTimer.restart()
+            // }))
+            //            .whileTrue(
+            //                superstructure
+            //                    .runGoal(Superstructure.State.INTAKE_CORAL)
+            //                    .alongWith(rollers.runGoal(Rollers.State.INTAKE_CORAL))
+            //                    .until(rollers.hasCoralTrigger)
+            //            )
+            .onTrue(Commands.runOnce({ rollers.clearCoral() }))
+        //        //            .onFalse(Commands.runOnce({ doublePressIntakeTimer.stop() }))
 
-        driver
-            .leftBumper()
-            .and(!prepareScoreButton)
+        prepareScoreButton
+            .and(!controllerHasDriveInput)
             .and(!rollers.hasAlgaeTrigger)
-            .onTrue(Commands.runOnce({ doublePressIntakeTimer.restart() }))
+            .and(!driver.leftBumper())
+            .and(rollers.hasCoralTrigger)
             .whileTrue(
-                superstructure
-                    .runGoal(Superstructure.State.INTAKE_CORAL)
-                    .alongWith(rollers.runGoal(Rollers.State.INTAKE_CORAL))
+                DriveToPose(
+                    drive,
+                    localizer,
+                    {
+                        robotPosition.getCurrentReefTargetPose(
+                            localizer.estimatedPose.transformBySpeeds(localizer.robotVelocity, 0.4)
+                        )
+                    },
+                    {
+                        localizer.getTxTyPose(robotPosition.nearestReefAlignBranch().getTag())
+                            ?: localizer.estimatedPose
+                    },
+                )
             )
-            .onFalse(Commands.runOnce({ doublePressIntakeTimer.stop() }))
-
-        rollers.hasCoralTrigger
-            .and(!prepareScoreButton)
-            .whileTrue(superstructure.runGoal(Superstructure.State.PREPARE_TALL_SCORE))
 
         prepareScoreButton.whileTrue(
             superstructure
@@ -310,17 +335,34 @@ class Robot : LoggedRobot() {
                 )
         )
 
+        rollers.defaultCommand =
+            rollers.runGoal {
+                if (!superstructure.isHomed) {
+                    Rollers.State.IDLE
+                } else {
+                    if (rollers.hasAlgae) {
+                        Rollers.State.INTAKE_ALGAE
+                    } else if (!rollers.hasCoral && superstructure.currentState == Superstructure.State.INTAKE_CORAL) {
+                        Rollers.State.INTAKE_CORAL
+                    } else {
+                        Rollers.State.IDLE
+                    }
+                }
+            }
+
         superstructure.defaultCommand =
             superstructure.runGoal {
-                if (
-                    robotPosition.isSafeToStowArm.asBoolean ||
-                        superstructure.currentState == Superstructure.State.STOW ||
-                        superstructure.currentState == Superstructure.State.ALGAE_STOW
-                ) {
+                if (robotPosition.isSafeToUseArm.asBoolean) {
                     if (rollers.hasAlgae) {
                         Superstructure.State.ALGAE_STOW
+                    } else if (rollers.hasCoral) {
+                        when (scoringState.target) {
+                            ScoringState.ScoringTarget.L2 -> Superstructure.State.PREPARE_L2
+                            ScoringState.ScoringTarget.L3 -> Superstructure.State.PREPARE_L3
+                            else -> Superstructure.State.PREPARE_TALL_SCORE
+                        }
                     } else {
-                        Superstructure.State.STOW
+                        Superstructure.State.INTAKE_CORAL
                     }
                 } else {
                     superstructure.goal
@@ -367,11 +409,11 @@ class Robot : LoggedRobot() {
         driver.povRight().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.CLIMB))
 
         drive.defaultCommand =
-            //            Commands.either(
-            drive.controllerCommand(joystickDriveController) // ,
-        //                drive.runVelocity(ChassisSpeeds()),
-        //                ::isTeleopEnabled,
-        //            )
+            Commands.either(
+                drive.controllerCommand(joystickDriveController),
+                drive.runVelocity(ChassisSpeeds()),
+                ::isTeleopEnabled,
+            )
     }
 
     private var currentAuto = Commands.none()

@@ -41,7 +41,7 @@ open class CameraIOPhotonVision(
                     CameraIO.TxTyData(
                         tagId = target.fiducialId,
                         tx = Units.degreesToRadians(target.yaw),
-                        ty = Units.degreesToRadians(target.pitch),
+                        ty = Units.degreesToRadians(target.pitch) - config.robotToCamera.rotation.y,
                         distance = target.bestCameraToTarget.translation.norm,
                         timestamp = result.timestampSeconds,
                     )

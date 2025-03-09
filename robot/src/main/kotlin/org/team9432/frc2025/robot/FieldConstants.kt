@@ -11,6 +11,8 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.util.Units
+import org.team9432.frc2025.lib.AllianceTracker
+import org.team9432.frc2025.lib.util.distanceTo
 import org.team9432.frc2025.robot.vision.VisionConstants
 
 /**
@@ -61,8 +63,11 @@ object FieldConstants {
         val center: Translation2d = Translation2d(Units.inchesToMeters(176.746), fieldWidth / 2.0)
         val faceToZoneLine: Double = Units.inchesToMeters(12.0) // Side of the reef to the inside of the reef zone line
 
-        val centerFaces: Array<Pose2d?> = arrayOfNulls(6) // Starting facing the driver station in clockwise order
-        val branchPositions2d: MutableList<Pose2d> = mutableListOf()
+        val maxRadius: Double = Units.inchesToMeters(76.0 / 2)
+
+        val centerFaces: Array<Pose2d?> =
+            arrayOfNulls(6) // Starting facing the driver station in counterclockwise order
+        private val branchPositions2d: MutableList<Pose2d> = mutableListOf()
 
         init {
             // Initialize faces
@@ -76,18 +81,10 @@ object FieldConstants {
 
             // Initialize branch positions
             for (face in 0..5) {
-                val poseDirection = Pose2d(center, Rotation2d.fromDegrees((180 - (60 * face)).toDouble()))
-                val adjustX = Units.inchesToMeters(30.738)
+                val poseDirection = Pose2d(center, Rotation2d.fromDegrees((180 + (60 * face)).toDouble()))
+                val adjustX = Units.inchesToMeters(65.491090 / 2)
                 val adjustY = Units.inchesToMeters(6.469)
 
-                val rightBranchPose =
-                    Pose2d(
-                        Translation2d(
-                            poseDirection.transformBy(Transform2d(adjustX, adjustY, Rotation2d())).x,
-                            poseDirection.transformBy(Transform2d(adjustX, adjustY, Rotation2d())).y,
-                        ),
-                        poseDirection.rotation,
-                    )
                 val leftBranchPose =
                     Pose2d(
                         Translation2d(
@@ -96,9 +93,57 @@ object FieldConstants {
                         ),
                         poseDirection.rotation,
                     )
+                val rightBranchPose =
+                    Pose2d(
+                        Translation2d(
+                            poseDirection.transformBy(Transform2d(adjustX, adjustY, Rotation2d())).x,
+                            poseDirection.transformBy(Transform2d(adjustX, adjustY, Rotation2d())).y,
+                        ),
+                        poseDirection.rotation,
+                    )
 
-                branchPositions2d.add(rightBranchPose)
                 branchPositions2d.add(leftBranchPose)
+                branchPositions2d.add(rightBranchPose)
+            }
+        }
+
+        enum class Branch {
+            A,
+            B,
+            C,
+            D,
+            E,
+            F,
+            G,
+            H,
+            I,
+            J,
+            K,
+            L;
+
+            fun getTag(): Int {
+                return when (this) {
+                    A,
+                    B -> AllianceTracker.switch(blue = 18, red = 7)
+                    C,
+                    D -> AllianceTracker.switch(blue = 17, red = 8)
+                    E,
+                    F -> AllianceTracker.switch(blue = 22, red = 9)
+                    G,
+                    H -> AllianceTracker.switch(blue = 21, red = 10)
+                    I,
+                    J -> AllianceTracker.switch(blue = 20, red = 11)
+                    K,
+                    L -> AllianceTracker.switch(blue = 19, red = 6)
+                }
+            }
+
+            fun getPose() = branchPositions2d[entries.indexOf(this)]
+
+            companion object {
+                fun nearestTo(pose2d: Pose2d): Branch {
+                    return entries.minBy { it.getPose().distanceTo(pose2d) }
+                }
             }
         }
     }

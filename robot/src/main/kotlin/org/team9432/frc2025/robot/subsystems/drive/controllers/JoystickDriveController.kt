@@ -7,6 +7,7 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.pow
 import kotlin.math.withSign
@@ -69,5 +70,11 @@ class JoystickDriveController(
                 .translation
 
         return linearVelocity to angularVelocity
+    }
+
+    fun hasInput(xyDeadband: Double = linearDeadband, rotationalDeadband: Double = rotationDeadband): Boolean {
+        return abs(controllerX()) >= xyDeadband ||
+            abs(controllerY()) >= xyDeadband ||
+            abs(controllerR()) >= rotationalDeadband
     }
 }

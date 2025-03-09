@@ -49,8 +49,6 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     private var algaeDroppedDebouncer = Debouncer(algaeDroppedDebounceTime.get())
 
     init {
-        defaultCommand = runGoal { if (hasAlgae) State.INTAKE_ALGAE else State.IDLE }
-
         LoggedTunableNumber.ifChanged(hashCode(), coralAlignedDebounceTime) { (dt) ->
             coralAlignedDebouncer = Debouncer(dt)
         }
@@ -118,19 +116,22 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             println("Collected Algae!")
         }
 
-        //        val algaeDropped =
-        //            algaeDroppedDebouncer.calculate(
-        //                hasAlgae && state == State.INTAKE_ALGAE && abs(manipulator.velocityRPS) >
-        // algaeDroppedThresholdRPS.get()
-        //            )
-        //        if (algaeDropped && !Constants.robot.isSim) {
-        //            hasAlgae = false
-        //            println("Dropped Algae!")
-        //        }
+        val algaeDropped =
+            algaeDroppedDebouncer.calculate(
+                hasAlgae && state == State.INTAKE_ALGAE && abs(manipulator.velocityRPS) > algaeDroppedThresholdRPS.get()
+            )
+        if (algaeDropped && !Constants.robot.isSim) {
+            hasAlgae = false
+            println("Dropped Algae!")
+        }
 
         Logger.recordOutput("Rollers/State", state)
         SmartDashboard.putBoolean("Rollers/HasAlgae", hasAlgae)
         SmartDashboard.putBoolean("Rollers/HasCoral", hasCoral)
+    }
+
+    fun clearCoral() {
+        hasCoral = false
     }
 
     fun runGoal(state: State) = runGoal { state }

@@ -36,12 +36,10 @@ class JoystickDriveController(
     override fun calculate(): ChassisSpeeds {
         val (linearSpeed, rotationSpeed) = getSpeeds()
 
-        val invert = AllianceTracker.switch(blue = 1, red = -1)
-
         return ChassisSpeeds.fromFieldRelativeSpeeds(
-            ratelimitX.calculate(linearSpeed.x * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
-            ratelimitY.calculate(linearSpeed.y * DrivetrainConstants.MAX_LINEAR_SPEED_MPS) * invert,
-            rotationSpeed * DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
+            ratelimitX.calculate(linearSpeed.x),
+            ratelimitY.calculate(linearSpeed.y),
+            rotationSpeed,
             localizer.rotation,
         )
     }
@@ -69,12 +67,19 @@ class JoystickDriveController(
                 .transformBy(Transform2d(linearMagnitude, 0.0, Rotation2d.kZero))
                 .translation
 
-        return linearVelocity to angularVelocity
+        val invert = AllianceTracker.switch(blue = 1, red = -1)
+
+        return linearVelocity.times(DrivetrainConstants.MAX_LINEAR_SPEED_MPS * invert) to
+            angularVelocity * DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC
     }
 
     fun hasInput(xyDeadband: Double = linearDeadband, rotationalDeadband: Double = rotationDeadband): Boolean {
         return abs(controllerX()) >= xyDeadband ||
             abs(controllerY()) >= xyDeadband ||
             abs(controllerR()) >= rotationalDeadband
+    }
+
+    fun hasRotationInput(deadband: Double = rotationDeadband): Boolean {
+        return abs(controllerR()) >= deadband
     }
 }

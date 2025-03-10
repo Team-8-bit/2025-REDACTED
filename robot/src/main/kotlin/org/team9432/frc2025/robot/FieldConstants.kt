@@ -12,7 +12,6 @@ import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.util.Units
 import org.team9432.frc2025.lib.AllianceTracker
-import org.team9432.frc2025.lib.util.distanceTo
 import org.team9432.frc2025.robot.vision.VisionConstants
 
 /**
@@ -65,7 +64,7 @@ object FieldConstants {
 
         val maxRadius: Double = Units.inchesToMeters(76.0 / 2)
 
-        val centerFaces: Array<Pose2d?> =
+        private val centerFaces: Array<Pose2d?> =
             arrayOfNulls(6) // Starting facing the driver station in counterclockwise order
         private val branchPositions2d: MutableList<Pose2d> = mutableListOf()
 
@@ -144,21 +143,15 @@ object FieldConstants {
             }
 
             fun getPose() = branchPositions2d[entries.indexOf(this)]
-
-            companion object {
-                fun nearestTo(pose2d: Pose2d): Branch {
-                    return entries.minBy { it.getPose().distanceTo(pose2d) }
-                }
-            }
         }
 
-        enum class StagedAlgae(private val high: Boolean) {
-            AB(high = true),
-            CD(high = false),
-            EF(high = true),
-            GH(high = false),
-            IJ(high = true),
-            KL(high = false);
+        enum class StagedAlgae(private val high: Boolean, val centerFace: Int) {
+            AB(high = true, 0),
+            CD(high = false, 5),
+            EF(high = true, 4),
+            GH(high = false, 3),
+            IJ(high = true, 2),
+            KL(high = false, 1);
 
             val isHigh
                 get() = high
@@ -176,7 +169,7 @@ object FieldConstants {
                     KL -> AllianceTracker.switch(blue = 19, red = 6)
                 }
 
-            fun getPose() = VisionConstants.aprilTagLayout.getTagPose(getTag()).get().toPose2d()
+            fun getPose() = centerFaces[centerFace]!!
         }
     }
 
@@ -187,15 +180,4 @@ object FieldConstants {
         val leftIceCream: Pose2d = Pose2d(Units.inchesToMeters(48.0), middleIceCream.y + separation, Rotation2d())
         val rightIceCream: Pose2d = Pose2d(Units.inchesToMeters(48.0), middleIceCream.y - separation, Rotation2d())
     }
-
-    enum class ReefLevel {
-        L1,
-        L2,
-        L3,
-        L4,
-    }
-
-    @JvmRecord data class CoralObjective(val branchId: Int, val reefLevel: ReefLevel)
-
-    @JvmRecord data class AlgaeObjective(val id: Int)
 }

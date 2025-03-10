@@ -10,8 +10,10 @@ import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.sign
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
+import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.distanceTo
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
@@ -29,16 +31,31 @@ class RobotPosition(private val localizer: Localizer) {
 
     val isSafeToUseArm = Trigger {
         val estimatedPose = localizer.estimatedPose
-        val distanceGood =
-            estimatedPose.distanceTo(FieldConstants.Reef.center) >
+        val reefDistanceGood =
+            estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) >
                 FieldConstants.Reef.maxRadius + (DrivetrainConstants.BUMPER_LENGTH / 2) + Units.inchesToMeters(12.0)
-        val rotationGood = angleFromReef() > 90
-        distanceGood || rotationGood
+        val reefRotationGood = angleFromReef() > 90
+
+        val bargeDistanceGood =
+            abs(estimatedPose.x - FieldConstants.fieldLength / 2) >
+                (FieldConstants.Barge.netWidth / 2) + DrivetrainConstants.BUMPER_LENGTH + 0.25
+
+        val onBlueSide = (estimatedPose.x - FieldConstants.fieldLength / 2).sign == -1.0
+        val bargeRotationGood =
+            if (onBlueSide) {
+                abs(MathUtil.angleModulus(estimatedPose.rotation.radians) - 0.0) > Units.degreesToRadians(80.0)
+            } else {
+                abs(MathUtil.angleModulus(estimatedPose.rotation.radians) - Math.PI) > Units.degreesToRadians(80.0)
+            }
+        (reefDistanceGood || reefRotationGood) && (bargeDistanceGood || bargeRotationGood)
     }
 
     private fun angleFromReef(estimatedPose: Pose2d = localizer.estimatedPose): Double {
         val angleToPointAtReef =
-            atan2(FieldConstants.Reef.center.y - estimatedPose.y, FieldConstants.Reef.center.x - estimatedPose.x)
+            atan2(
+                FieldConstants.Reef.center.applyFlip().y - estimatedPose.y,
+                FieldConstants.Reef.center.applyFlip().x - estimatedPose.x,
+            )
         return abs(Math.toDegrees(MathUtil.angleModulus(angleToPointAtReef - estimatedPose.rotation.radians)))
     }
 
@@ -52,7 +69,7 @@ class RobotPosition(private val localizer: Localizer) {
     private val reefAlignTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)
 
     fun getActiveBranchAlignPose(branch: FieldConstants.Reef.Branch): Pose2d {
-        val alignPose = branch.getPose().transformBy(reefAlignTransform)
+        val alignPose = branch.getPose().applyFlip().transformBy(reefAlignTransform)
         val txTyRobotPose = localizer.getReefPose(branch.getTag(), alignPose)
 
         val yDistance = abs(txTyRobotPose.relativeTo(alignPose).y)
@@ -65,7 +82,7 @@ class RobotPosition(private val localizer: Localizer) {
     }
 
     fun getBaseBranchAlignPose(branch: FieldConstants.Reef.Branch): Pose2d {
-        return branch.getPose().transformBy(reefAlignTransform)
+        return branch.getPose().applyFlip().transformBy(reefAlignTransform)
     }
 
     fun nearestReefAlignBranch(robotPose: Pose2d = localizer.estimatedPose): FieldConstants.Reef.Branch {
@@ -87,24 +104,20 @@ class RobotPosition(private val localizer: Localizer) {
         Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2 + Units.inchesToMeters(2.0), 0.0, Rotation2d.k180deg)
 
     fun getActiveAlgaeAlignPose(stagedAlgae: FieldConstants.Reef.StagedAlgae): Pose2d {
-        val alignPose = stagedAlgae.getPose().transformBy(algaeAlignTransform)
+        val alignPose = stagedAlgae.getPose().applyFlip().transformBy(algaeAlignTransform)
         val txTyRobotPose = localizer.getReefPose(stagedAlgae.getTag(), alignPose)
 
         val yDistance = abs(txTyRobotPose.relativeTo(alignPose).y)
 
-        var xOffset = -(yDistance * 1.5)
+        var xOffset = -(yDistance * 2)
         if (angleFromReef(txTyRobotPose) > 40) {
             xOffset -= 0.5
         }
         return alignPose.transformBy(Transform2d(xOffset, 0.0, Rotation2d.kZero))
     }
 
-    fun getBaseAlgaeAlignPose(branch: FieldConstants.Reef.StagedAlgae): Pose2d {
-        return branch.getPose().transformBy(algaeAlignTransform)
-    }
-
     fun nearestAlgaePickup(robotPose: Pose2d = localizer.estimatedPose): FieldConstants.Reef.StagedAlgae {
-        return FieldConstants.Reef.StagedAlgae.entries.minBy { robotPose.distanceTo(it.getPose()) }
+        return FieldConstants.Reef.StagedAlgae.entries.minBy { robotPose.distanceTo(it.getPose().applyFlip()) }
     }
 
     companion object {

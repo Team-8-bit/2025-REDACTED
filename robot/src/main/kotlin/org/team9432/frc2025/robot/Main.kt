@@ -157,23 +157,26 @@ class Robot : LoggedRobot() {
                                     )
                                 }
                                 .withGyro(COTS.ofPigeon2())
-                                .withTrackLengthTrackWidth(Inches.of(24.0), Inches.of(24.0))
-                                .withBumperSize(Inches.of(30.0), Inches.of(30.0))
-                                .withRobotMass(Pounds.of(120.0)),
+                                .withTrackLengthTrackWidth(Inches.of(24.25), Inches.of(24.25))
+                                .withBumperSize(
+                                    Meters.of(DrivetrainConstants.BUMPER_LENGTH),
+                                    Meters.of(DrivetrainConstants.BUMPER_LENGTH),
+                                )
+                                .withRobotMass(Pounds.of(135.0)),
                             /* initialPoseOnField = */ Pose2d(3.0, 3.0, Rotation2d()),
                         )
 
-                    val gyroIO = GyroIOSim(swerveSim.gyroSimulation)
+                    val gyroIO = GyroIOSim(swerveSim.gyroSimulation, odometryThread)
 
                     val (frontLeft, frontRight, backLeft, backRight) = swerveSim.modules
 
                     drive =
                         Drive(
                             gyroIO,
-                            ModuleIOSim(frontLeft),
-                            ModuleIOSim(frontRight),
-                            ModuleIOSim(backLeft),
-                            ModuleIOSim(backRight),
+                            ModuleIOSim(frontLeft, ModuleConfig.FRONT_LEFT, odometryThread),
+                            ModuleIOSim(frontRight, ModuleConfig.FRONT_RIGHT, odometryThread),
+                            ModuleIOSim(backLeft, ModuleConfig.BACK_LEFT, odometryThread),
+                            ModuleIOSim(backRight, ModuleConfig.BACK_RIGHT, odometryThread),
                             odometryThread,
                             localizer,
                         )

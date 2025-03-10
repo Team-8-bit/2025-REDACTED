@@ -41,7 +41,7 @@ class DriveToPose(
 
     init {
         // Enable continuous input for theta controller
-        thetaController.enableContinuousInput(-1.0, 1.0)
+        thetaController.enableContinuousInput(-0.5, 0.5)
 
         addRequirements(drive)
     }
@@ -134,13 +134,18 @@ class DriveToPose(
 
         // Command speeds
         drive.setVelocity(
-            ChassisSpeeds.fromFieldRelativeSpeeds(driveVelocity.x, driveVelocity.y, thetaVelocity, currentPose.rotation)
+            ChassisSpeeds.fromFieldRelativeSpeeds(
+                driveVelocity.x,
+                driveVelocity.y,
+                Units.rotationsToRadians(thetaVelocity),
+                currentPose.rotation,
+            )
         )
 
         // Log data
         Logger.recordOutput("DriveToPose/DistanceMeasured", currentDistance)
         Logger.recordOutput("DriveToPose/DistanceSetpoint", driveController.setpoint.position)
-        Logger.recordOutput("DriveToPose/ThetaMeasured", currentPose.rotation.radians)
+        Logger.recordOutput("DriveToPose/ThetaMeasured", currentPose.rotation.rotations)
         Logger.recordOutput("DriveToPose/ThetaSetpoint", thetaController.setpoint.position)
         Logger.recordOutput(
             "DriveToPose/Setpoint",

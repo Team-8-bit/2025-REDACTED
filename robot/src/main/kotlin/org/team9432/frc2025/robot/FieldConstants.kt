@@ -125,14 +125,19 @@ object FieldConstants {
                 return when (this) {
                     A,
                     B -> AllianceTracker.switch(blue = 18, red = 7)
+
                     C,
                     D -> AllianceTracker.switch(blue = 17, red = 8)
+
                     E,
                     F -> AllianceTracker.switch(blue = 22, red = 9)
+
                     G,
                     H -> AllianceTracker.switch(blue = 21, red = 10)
+
                     I,
                     J -> AllianceTracker.switch(blue = 20, red = 11)
+
                     K,
                     L -> AllianceTracker.switch(blue = 19, red = 6)
                 }
@@ -145,6 +150,33 @@ object FieldConstants {
                     return entries.minBy { it.getPose().distanceTo(pose2d) }
                 }
             }
+        }
+
+        enum class StagedAlgae(private val high: Boolean) {
+            AB(high = true),
+            CD(high = false),
+            EF(high = true),
+            GH(high = false),
+            IJ(high = true),
+            KL(high = false);
+
+            val isHigh
+                get() = high
+
+            val isLow
+                get() = !high
+
+            fun getTag() =
+                when (this) {
+                    AB -> AllianceTracker.switch(blue = 18, red = 7)
+                    CD -> AllianceTracker.switch(blue = 17, red = 8)
+                    EF -> AllianceTracker.switch(blue = 22, red = 9)
+                    GH -> AllianceTracker.switch(blue = 21, red = 10)
+                    IJ -> AllianceTracker.switch(blue = 20, red = 11)
+                    KL -> AllianceTracker.switch(blue = 19, red = 6)
+                }
+
+            fun getPose() = VisionConstants.aprilTagLayout.getTagPose(getTag()).get().toPose2d()
         }
     }
 

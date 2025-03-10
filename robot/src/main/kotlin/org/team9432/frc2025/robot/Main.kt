@@ -292,47 +292,74 @@ class Robot : LoggedRobot() {
             .onTrue(Commands.runOnce({ rollers.clearCoral() }))
         //        //            .onFalse(Commands.runOnce({ doublePressIntakeTimer.stop() }))
 
+        val autoAlignForCollectingAlgae =
+            DriveToPose(
+                drive,
+                localizer,
+                {
+                    val branch = robotPosition.nearestAlgaePickup(localizer.estimatedPose)
+                    robotPosition.getActiveAlgaeAlignPose(branch)
+                },
+                { localizer.getTxTyPose(robotPosition.nearestAlgaePickup().getTag()) ?: localizer.estimatedPose },
+            )
+
+        val autoAlignForScoringCoral =
+            DriveToPose(
+                drive,
+                localizer,
+                {
+                    val branch =
+                        robotPosition.nearestReefAlignBranch(
+                            localizer.estimatedPose.transformBySpeeds(localizer.robotVelocity, 0.1)
+                        )
+                    robotPosition.getActiveBranchAlignPose(branch)
+                },
+                { localizer.getTxTyPose(robotPosition.nearestReefAlignBranch().getTag()) ?: localizer.estimatedPose },
+            )
+
         prepareScoreButton
             .and(!controllerHasDriveInput)
             .and(!rollers.hasAlgaeTrigger)
             .and(!driver.leftBumper())
             .and(rollers.hasCoralTrigger)
-            .whileTrue(
-                DriveToPose(
-                    drive,
-                    localizer,
-                    {
-                        robotPosition.getCurrentReefTargetPose(
-                            localizer.estimatedPose.transformBySpeeds(localizer.robotVelocity, 0.4)
-                        )
-                    },
-                    {
-                        localizer.getTxTyPose(robotPosition.nearestReefAlignBranch().getTag())
-                            ?: localizer.estimatedPose
-                    },
-                )
-            )
+            .whileTrue(autoAlignForScoringCoral)
+
+        val readyToScoreLowCoral = Trigger {
+            (scoringState.coralTarget == ScoringState.CoralScoringTarget.L3 ||
+                scoringState.coralTarget == ScoringState.CoralScoringTarget.L2) && autoAlignForScoringCoral.atGoal()
+        }
 
         prepareScoreButton.whileTrue(
-            superstructure
-                .runGoal {
-                    when (scoringState.target) {
-                        ScoringState.ScoringTarget.L2 -> Superstructure.State.PREPARE_L2
-                        ScoringState.ScoringTarget.L3 -> Superstructure.State.PREPARE_L3
-                        ScoringState.ScoringTarget.L4 -> Superstructure.State.PREPARE_L4
-                        ScoringState.ScoringTarget.PROCESSOR -> Superstructure.State.PREPARE_PROCESSOR
-                        ScoringState.ScoringTarget.NET -> Superstructure.State.PREPARE_NET
+            Commands.either(
+                superstructure
+                    .runGoal {
+                        when (scoringState.algaeTarget) {
+                            ScoringState.AlgaeScoringTarget.PROCESSOR -> Superstructure.State.PREPARE_PROCESSOR
+                            ScoringState.AlgaeScoringTarget.NET -> Superstructure.State.PREPARE_NET
+                        }
                     }
-                }
-                .alongWith(
-                    Commands.sequence(
-                        Commands.waitUntil(driver.a().and(superstructure::atGoal)),
-                        Commands.runOnce(robotPosition::resetLastScorePoseToCurrent),
-                        rollers.runGoal {
-                            if (scoringState.target.isAlgae) Rollers.State.SCORE_ALGAE else Rollers.State.SCORE_CORAL
-                        },
-                    )
-                )
+                    .alongWith(
+                        Commands.sequence(
+                            Commands.waitUntil((driver.a()).and(superstructure::atGoal)),
+                            rollers.runGoal(Rollers.State.SCORE_ALGAE),
+                        )
+                    ),
+                superstructure
+                    .runGoal {
+                        when (scoringState.coralTarget) {
+                            ScoringState.CoralScoringTarget.L2 -> Superstructure.State.PREPARE_L2
+                            ScoringState.CoralScoringTarget.L3 -> Superstructure.State.PREPARE_L3
+                            ScoringState.CoralScoringTarget.L4 -> Superstructure.State.PREPARE_L4
+                        }
+                    }
+                    .alongWith(
+                        Commands.sequence(
+                            Commands.waitUntil((driver.a().or(readyToScoreLowCoral)).and(superstructure::atGoal)),
+                            rollers.runGoal(Rollers.State.SCORE_CORAL),
+                        )
+                    ),
+                rollers.hasAlgaeTrigger,
+            )
         )
 
         rollers.defaultCommand =
@@ -356,10 +383,10 @@ class Robot : LoggedRobot() {
                     if (rollers.hasAlgae) {
                         Superstructure.State.ALGAE_STOW
                     } else if (rollers.hasCoral) {
-                        when (scoringState.target) {
-                            ScoringState.ScoringTarget.L2 -> Superstructure.State.PREPARE_L2
-                            ScoringState.ScoringTarget.L3 -> Superstructure.State.PREPARE_L3
-                            else -> Superstructure.State.PREPARE_TALL_SCORE
+                        when (scoringState.coralTarget) {
+                            ScoringState.CoralScoringTarget.L2 -> Superstructure.State.PREPARE_L2
+                            ScoringState.CoralScoringTarget.L3 -> Superstructure.State.PREPARE_L3
+                            ScoringState.CoralScoringTarget.L4 -> Superstructure.State.PREPARE_L3
                         }
                     } else {
                         Superstructure.State.INTAKE_CORAL
@@ -369,17 +396,14 @@ class Robot : LoggedRobot() {
                 }
             }
 
-        operator.a().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L2 }))
-        operator.b().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L3 }))
-        operator.y().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.L4 }))
-        operator.x().onTrue(Commands.runOnce({ scoringState.target = ScoringState.ScoringTarget.NET }))
+        operator.a().onTrue(Commands.runOnce({ scoringState.coralTarget = ScoringState.CoralScoringTarget.L2 }))
+        operator.b().onTrue(Commands.runOnce({ scoringState.coralTarget = ScoringState.CoralScoringTarget.L3 }))
+        operator.y().onTrue(Commands.runOnce({ scoringState.coralTarget = ScoringState.CoralScoringTarget.L4 }))
 
-        operator
-            .povUp()
-            .onTrue(Commands.runOnce({ scoringState.algaeIntakeTarget = ScoringState.AlgaeIntakeTarget.HIGH }))
+        operator.povUp().onTrue(Commands.runOnce({ scoringState.algaeTarget = ScoringState.AlgaeScoringTarget.NET }))
         operator
             .povDown()
-            .onTrue(Commands.runOnce({ scoringState.algaeIntakeTarget = ScoringState.AlgaeIntakeTarget.LOW }))
+            .onTrue(Commands.runOnce({ scoringState.algaeTarget = ScoringState.AlgaeScoringTarget.PROCESSOR }))
 
         driver
             .leftBumper()
@@ -388,9 +412,10 @@ class Robot : LoggedRobot() {
             .whileTrue(
                 superstructure
                     .runGoal {
-                        when (scoringState.algaeIntakeTarget) {
-                            ScoringState.AlgaeIntakeTarget.LOW -> Superstructure.State.INTAKE_ALGAE_LOW
-                            ScoringState.AlgaeIntakeTarget.HIGH -> Superstructure.State.INTAKE_ALGAE_HIGH
+                        if (robotPosition.nearestAlgaePickup().isHigh) {
+                            Superstructure.State.INTAKE_ALGAE_HIGH
+                        } else {
+                            Superstructure.State.INTAKE_ALGAE_LOW
                         }
                     }
                     .alongWith(rollers.runGoal(Rollers.State.INTAKE_ALGAE))

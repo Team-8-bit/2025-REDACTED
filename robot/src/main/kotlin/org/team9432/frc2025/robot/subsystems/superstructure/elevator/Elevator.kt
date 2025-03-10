@@ -181,6 +181,10 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
             .andThen(runOnce { this.goal = Goal.STOW })
             .onlyWhile { !motorOutputDisabled() }
 
+    fun fakeAutoHome(): Command = runOnce {
+        hasHomed = true
+    }
+
     /** Runs the elevator to the given [goal] and ends when the position is reached. */
     fun runToGoal(goal: Goal) = run { this.goal = goal }.until(::atGoal)
 

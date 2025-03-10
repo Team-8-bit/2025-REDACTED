@@ -2,6 +2,7 @@ package org.team9432.frc2025.robot.subsystems.rollers
 
 import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import kotlin.math.abs
@@ -133,6 +134,10 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     fun clearCoral() {
         hasCoral = false
     }
+
+    fun preloadCoral() = Commands.runOnce({
+        hasCoral = true
+    })
 
     fun runGoal(state: State) = runGoal { state }
 

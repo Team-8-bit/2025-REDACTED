@@ -190,6 +190,11 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
             .withRequirements(this)
             .withName("Home Superstructure")
 
+    fun fakeAutoHome(): Command = Commands.parallel(
+        elevator.fakeAutoHome(),
+        arm.fakeAutoHome()
+    )
+
     fun elevatorStaticCharacterization() =
         elevator
             .staticCharacterization()

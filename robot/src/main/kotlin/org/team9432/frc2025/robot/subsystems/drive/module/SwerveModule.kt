@@ -63,7 +63,7 @@ class SwerveModule(private val io: ModuleIO, private val name: String) {
                         kDDrive = 0.0,
                         kSDrive = 12.0,
                         kVDrive = 1.4,
-                        kPSteer = 2500.0,
+                        kPSteer = 500.0,
                         kDSteer = 70.0,
                         mmCruiseSteer = 8.0,
                         mmAccelSteer = 28.0,

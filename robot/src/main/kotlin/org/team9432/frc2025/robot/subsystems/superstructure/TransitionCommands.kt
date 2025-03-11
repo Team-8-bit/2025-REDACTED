@@ -31,6 +31,9 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
         addElevatorFirst(STOW to ARM_ABOVE_BUMPER)
         addElevatorFirst(ARM_ABOVE_BUMPER to STOW)
 
+        addArmFirst(ARM_ABOVE_BUMPER to PREPARE_L1)
+        addElevatorFirst(PREPARE_L1 to ARM_ABOVE_BUMPER)
+
         val tallCoralGoals = setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4)
         for (tallCoralGoal in tallCoralGoals) {
             addSymmetricParallel(ARM_ABOVE_BUMPER, tallCoralGoal)
@@ -54,13 +57,19 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
 
         addSymmetricParallel(SCORE_NET, ARM_ABOVE_BUMPER)
 
-
         for (algaeIntakeGoal in setOf(INTAKE_ALGAE_HIGH, INTAKE_ALGAE_LOW)) {
             addSymmetricParallel(algaeIntakeGoal, ARM_ABOVE_BUMPER)
             addSymmetricParallel(algaeIntakeGoal, ALGAE_STOW)
         }
 
         addSymmetricParallel(INTAKE_ALGAE_LOW, INTAKE_ALGAE_HIGH)
+
+        addParallel(PREPARE_NET to ARM_ABOVE_BUMPER)
+
+        addArmFirst(ARM_ABOVE_BUMPER to ALGAE_FLOOR)
+        addElevatorFirst(ALGAE_FLOOR to ARM_ABOVE_BUMPER)
+        addParallel(ALGAE_FLOOR to ALGAE_STOW)
+        addParallel(ALGAE_STOW to ALGAE_FLOOR)
 
         // yay for spotless in all the other places though. spotless:on
 

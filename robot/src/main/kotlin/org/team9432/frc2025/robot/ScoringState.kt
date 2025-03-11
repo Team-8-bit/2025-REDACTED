@@ -5,6 +5,7 @@ class ScoringState {
     var algaeTarget = AlgaeScoringTarget.NET
 
     enum class CoralScoringTarget {
+        L1,
         L2,
         L3,
         L4,

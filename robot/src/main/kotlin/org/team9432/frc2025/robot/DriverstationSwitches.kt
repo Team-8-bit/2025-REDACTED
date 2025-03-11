@@ -6,8 +6,8 @@ class DriverstationSwitches(port: Int) : CommandGenericHID(port) {
     val one
         get() = super.button(6)
 
-    val two
-        get() = super.button(9)
+    //    val two
+    //        get() = super.button(9) // :(
 
     val three
         get() = super.button(5)

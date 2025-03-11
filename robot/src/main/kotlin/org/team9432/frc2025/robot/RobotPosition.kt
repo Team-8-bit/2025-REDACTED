@@ -10,11 +10,13 @@ import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.hypot
 import kotlin.math.sign
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.distanceTo
+import org.team9432.frc2025.lib.util.velocityLessThan
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
 class RobotPosition(private val localizer: Localizer) {
@@ -33,7 +35,7 @@ class RobotPosition(private val localizer: Localizer) {
         val estimatedPose = localizer.estimatedPose
         val reefDistanceGood =
             estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) >
-                FieldConstants.Reef.maxRadius + (DrivetrainConstants.BUMPER_LENGTH / 2) + Units.inchesToMeters(12.0)
+                FieldConstants.Reef.maxRadius + (DrivetrainConstants.BUMPER_LENGTH / 2) + Units.inchesToMeters(8.0)
         val reefRotationGood = angleFromReef() > 90
 
         val bargeDistanceGood =
@@ -109,7 +111,7 @@ class RobotPosition(private val localizer: Localizer) {
 
         val yDistance = abs(txTyRobotPose.relativeTo(alignPose).y)
 
-        var xOffset = -(yDistance * 2)
+        var xOffset = -(yDistance * 1.5)
         if (angleFromReef(txTyRobotPose) > 40) {
             xOffset -= 0.5
         }
@@ -120,7 +122,25 @@ class RobotPosition(private val localizer: Localizer) {
         return FieldConstants.Reef.StagedAlgae.entries.minBy { robotPose.distanceTo(it.getPose().applyFlip()) }
     }
 
+    val withinCoralScoringTolerance = Trigger {
+        val branch = nearestReefAlignBranch()
+        val robotPose = localizer.getTxTyPose(branch.getTag()) ?: localizer.estimatedPose
+        val scorePose = getBaseBranchAlignPose(branch)
+
+        val difference = robotPose.relativeTo(scorePose)
+
+        val velocityLow = localizer.robotVelocity.velocityLessThan(0.25, Units.degreesToRadians(5.0))
+
+        return@Trigger Units.metersToInches(abs(hypot(difference.x, difference.x))) <
+            coralScoringToleranceInches.get() &&
+            abs(difference.rotation.degrees) < coralScoringToleranceDegrees.get() &&
+            velocityLow
+    }
+
     companion object {
+        val coralScoringToleranceInches = LoggedTunableNumber("RobotPosition/CoralToleranceInches", 1.5)
+        val coralScoringToleranceDegrees = LoggedTunableNumber("RobotPosition/CoralToleranceDegrees", 1.0)
+
         val reefGuessDistanceWeight = LoggedTunableNumber("RobotPosition/ReefGuessDistanceWeight", 1.0)
         val reefGuessAngleWeight = LoggedTunableNumber("RobotPosition/ReefGuessAngleWeight", 1.0)
     }

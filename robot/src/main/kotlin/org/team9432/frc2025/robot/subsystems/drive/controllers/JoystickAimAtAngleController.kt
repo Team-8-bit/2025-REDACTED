@@ -14,7 +14,6 @@ class JoystickAimAtAngleController(
     private val joystickController: JoystickDriveController,
     private val goal: () -> Rotation2d,
     private val localizer: Localizer,
-    var toleranceDegrees: Double = 1.0,
 ) : DriveController {
     private val controller =
         ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0)).apply {
@@ -30,6 +29,7 @@ class JoystickAimAtAngleController(
         private val kD by LoggedTunableNumber("$TABLE_KEY/kD", 0.3)
         private val maxVelocity by LoggedTunableNumber("$TABLE_KEY/MaxVelocityRotationsPerSec", 1.0)
         private val maxAcceleration by LoggedTunableNumber("$TABLE_KEY/MaxAccelerationRotationsPerSecPerSec", 2.0)
+        private val toleranceDegrees by LoggedTunableNumber("$TABLE_KEY/ToleranceDegrees", 2.0)
     }
 
     override fun calculate(): ChassisSpeeds {
@@ -40,7 +40,9 @@ class JoystickAimAtAngleController(
         val maxAngularAcceleration = maxAcceleration
         controller.constraints = TrapezoidProfile.Constraints(maxAngularVelocity, maxAngularAcceleration)
 
-        val controllerOutput = controller.calculate(localizer.rotation.rotations, goal.invoke().rotations)
+        var controllerOutput = controller.calculate(localizer.rotation.rotations, goal.invoke().rotations)
+
+        if (atGoal(toleranceDegrees)) controllerOutput = 0.0
 
         Logger.recordOutput("$TABLE_KEY/PositionErrorDegrees", Units.rotationsToDegrees(controller.positionError))
 
@@ -48,7 +50,7 @@ class JoystickAimAtAngleController(
         return ChassisSpeeds.fromFieldRelativeSpeeds(
             joystickSpeeds.x,
             joystickSpeeds.y,
-            controllerOutput,
+            Units.rotationsToRadians(controllerOutput),
             localizer.rotation,
         )
     }

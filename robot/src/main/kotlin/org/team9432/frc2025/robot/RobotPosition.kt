@@ -65,7 +65,7 @@ class RobotPosition(private val localizer: Localizer) {
         Logger.recordOutput("RobotPosition/isSafeToUseArm", isSafeToUseArm)
         Logger.recordOutput("RobotPosition/ReefTargetBranch", nearestReefAlignBranch())
         Logger.recordOutput("RobotPosition/AngleFromReef", angleFromReef())
-        Logger.recordOutput("RobotPosition/BranchAlignPose", getActiveBranchAlignPose(nearestReefAlignBranch()))
+        Logger.recordOutput("RobotPosition/WithinCoralTolerance", withinCoralScoringTolerance)
     }
 
     private val reefAlignTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)
@@ -80,7 +80,9 @@ class RobotPosition(private val localizer: Localizer) {
         if (angleFromReef(txTyRobotPose) > 40) {
             xOffset -= 0.5
         }
-        return alignPose.transformBy(Transform2d(xOffset, 0.0, Rotation2d.kZero))
+        val activeAlignPose = alignPose.transformBy(Transform2d(xOffset, 0.0, Rotation2d.kZero))
+        Logger.recordOutput("RobotPosition/BranchAlignPose", activeAlignPose)
+        return activeAlignPose
     }
 
     fun getBaseBranchAlignPose(branch: FieldConstants.Reef.Branch): Pose2d {
@@ -129,7 +131,7 @@ class RobotPosition(private val localizer: Localizer) {
 
         val difference = robotPose.relativeTo(scorePose)
 
-        val velocityLow = localizer.robotVelocity.velocityLessThan(0.25, Units.degreesToRadians(5.0))
+        val velocityLow = localizer.robotVelocity.velocityLessThan(0.2, Units.degreesToRadians(4.0))
 
         return@Trigger Units.metersToInches(abs(hypot(difference.x, difference.x))) <
             coralScoringToleranceInches.get() &&

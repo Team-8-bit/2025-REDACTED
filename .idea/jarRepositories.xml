@@ -221,5 +221,10 @@
       <option name="name" value="WPId820cc26-74e3-11ec-90d6-0242ac120003_0Release" />
       <option name="url" value="https://frcmaven.wpi.edu/artifactory/littletonrobotics-mvn-release/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="WPILocal" />
+      <option name="name" value="WPILocal" />
+      <option name="url" value="file:/C:/Users/Public/wpilib/2025/maven/" />
+    </remote-repository>
   </component>
 </project>

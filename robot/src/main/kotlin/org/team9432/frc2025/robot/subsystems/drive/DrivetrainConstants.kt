@@ -29,5 +29,8 @@ object DrivetrainConstants {
     const val DRIVE_RATIO = MK4NSwerveConstants.L1PLUS_DRIVE_REDUCTION
     const val STEER_RATIO = MK4NSwerveConstants.STEER_REDUCTION
 
+    val BUMPER_LENGTH = Units.inchesToMeters(37.25)
+    val BUMPER_MAX_RADIUS = Units.inchesToMeters(52.25) / 2
+
     val ffkT: Double = 1.0 / DCMotor.getKrakenX60Foc(1).KtNMPerAmp // A/(N*m)
 }

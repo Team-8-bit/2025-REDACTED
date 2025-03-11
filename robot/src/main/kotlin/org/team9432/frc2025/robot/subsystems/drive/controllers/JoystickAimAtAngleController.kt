@@ -9,19 +9,17 @@ import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Localizer
-import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
 class JoystickAimAtAngleController(
     private val joystickController: JoystickDriveController,
     private val goal: () -> Rotation2d,
     private val localizer: Localizer,
-    var toleranceDegrees: Double = 1.0,
 ) : DriveController {
     private val controller =
         ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0)).apply {
-            enableContinuousInput(-Math.PI, Math.PI)
+            enableContinuousInput(-0.5, 0.5)
 
-            reset(localizer.rotation.radians, localizer.robotVelocity.omegaRadiansPerSecond)
+            reset(localizer.rotation.rotations, Units.radiansToRotations(localizer.robotVelocity.omegaRadiansPerSecond))
         }
 
     private companion object {
@@ -29,26 +27,33 @@ class JoystickAimAtAngleController(
 
         private val kP by LoggedTunableNumber("$TABLE_KEY/kP", 6.0)
         private val kD by LoggedTunableNumber("$TABLE_KEY/kD", 0.3)
-        private val maxVelocityMultiplier by LoggedTunableNumber("$TABLE_KEY/MaxVelocityPercent", 0.8)
-        private val maxAccelerationMultiplier by LoggedTunableNumber("$TABLE_KEY/MaxAccelerationPercent", 0.7)
+        private val maxVelocity by LoggedTunableNumber("$TABLE_KEY/MaxVelocityRotationsPerSec", 1.0)
+        private val maxAcceleration by LoggedTunableNumber("$TABLE_KEY/MaxAccelerationRotationsPerSecPerSec", 2.0)
+        private val toleranceDegrees by LoggedTunableNumber("$TABLE_KEY/ToleranceDegrees", 2.0)
     }
 
     override fun calculate(): ChassisSpeeds {
         controller.setPID(kP, 0.0, kD)
-        controller.setTolerance(Units.degreesToRadians(toleranceDegrees))
+        controller.setTolerance(Units.degreesToRotations(toleranceDegrees))
 
-        val maxAngularVelocity = DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC * maxVelocityMultiplier
-        val maxAngularAcceleration = DrivetrainConstants.MAX_LINEAR_ACCEL_MPSPS * maxAccelerationMultiplier
+        val maxAngularVelocity = maxVelocity
+        val maxAngularAcceleration = maxAcceleration
         controller.constraints = TrapezoidProfile.Constraints(maxAngularVelocity, maxAngularAcceleration)
 
-        val controllerOutput = controller.calculate(localizer.rotation.radians, goal.invoke().radians)
+        var controllerOutput = controller.calculate(localizer.rotation.rotations, goal.invoke().rotations)
 
-        Logger.recordOutput("$TABLE_KEY/PositionErrorDegrees", Units.radiansToDegrees(controller.positionError))
+        if (atGoal(toleranceDegrees)) controllerOutput = 0.0
+
+        Logger.recordOutput("$TABLE_KEY/PositionErrorDegrees", Units.rotationsToDegrees(controller.positionError))
 
         val joystickSpeeds = joystickController.getSpeeds().first
-
-        return ChassisSpeeds(joystickSpeeds.x, joystickSpeeds.y, controllerOutput)
+        return ChassisSpeeds.fromFieldRelativeSpeeds(
+            joystickSpeeds.x,
+            joystickSpeeds.y,
+            Units.rotationsToRadians(controllerOutput),
+            localizer.rotation,
+        )
     }
 
-    fun atGoal(toleranceDegrees: Double) = abs(Units.radiansToDegrees(controller.positionError)) < toleranceDegrees
+    fun atGoal(toleranceDegrees: Double) = abs(Units.rotationsToDegrees(controller.positionError)) < toleranceDegrees
 }

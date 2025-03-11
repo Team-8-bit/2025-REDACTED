@@ -15,7 +15,8 @@ class Manipulator(private val io: ManipulatorIO) {
     enum class Goal {
         IDLE,
         INTAKE_CORAL,
-        OUTTAKE_CORAL,
+        OUTTAKE_CORAL_TALL,
+        OUTTAKE_CORAL_LOW,
         INTAKE_ALGAE,
         HOLD_ALGAE,
         SCORE_ALGAE,
@@ -30,7 +31,8 @@ class Manipulator(private val io: ManipulatorIO) {
         when (goal) {
             Goal.IDLE -> io.setControl(neutralOut)
             Goal.INTAKE_CORAL -> io.setControl(voltageControl.withOutput(5.0))
-            Goal.OUTTAKE_CORAL -> io.setControl(voltageControl.withOutput(-6.0))
+            Goal.OUTTAKE_CORAL_TALL -> io.setControl(voltageControl.withOutput(-6.0))
+            Goal.OUTTAKE_CORAL_LOW -> io.setControl(voltageControl.withOutput(6.0))
             Goal.INTAKE_ALGAE -> io.setControl(voltageControl.withOutput(-10.0))
             Goal.HOLD_ALGAE -> io.setControl(currentControl.withOutput(-30.0))
             Goal.SCORE_ALGAE -> io.setControl(voltageControl.withOutput(12.0))

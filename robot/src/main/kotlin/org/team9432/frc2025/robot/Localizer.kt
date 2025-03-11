@@ -11,13 +11,11 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.Timer
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.pow
 import kotlin.math.sqrt
 import org.littletonrobotics.junction.Logger
-import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants.KINEMATICS
 import org.team9432.frc2025.robot.vision.VisionConstants
@@ -194,21 +192,9 @@ class Localizer {
      * Get estimated pose using txty data given tagId on reef and aligned pose on reef. Used for algae intaking and
      * coral scoring.
      */
-    fun getReefPose(face: Int, finalPose: Pose2d): Pose2d {
-        val isRed: Boolean = AllianceTracker.currentAlliance == DriverStation.Alliance.Red
-        val tagPose =
-            getTxTyPose(
-                when (face) {
-                    1 -> if (isRed) 6 else 19
-                    2 -> if (isRed) 11 else 20
-                    3 -> if (isRed) 10 else 21
-                    4 -> if (isRed) 9 else 22
-                    5 -> if (isRed) 8 else 17
-                    else -> if (isRed) 7 else 18
-                }
-            )
-        // Use estimated pose if tag pose is not present
-        if (tagPose == null) return estimatedPose
+    fun getReefPose(tag: Int, finalPose: Pose2d): Pose2d {
+        val tagRelativePose = getTxTyPose(tag) ?: return estimatedPose
+
         // Use distance from estimated pose to final pose to get t value
         val t =
             MathUtil.clamp(
@@ -217,7 +203,7 @@ class Localizer {
                 0.0,
                 1.0,
             )
-        return estimatedPose.interpolate(tagPose, 1.0 - t)
+        return estimatedPose.interpolate(tagRelativePose, 1.0 - t)
     }
 
     private var simulatedPoseSupplier: (() -> Pose2d)? = null

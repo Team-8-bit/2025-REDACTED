@@ -12,7 +12,6 @@ import kotlin.concurrent.withLock
 import kotlin.math.min
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.Localizer
-import org.team9432.frc2025.robot.subsystems.drive.controllers.DriveController
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIO
 import org.team9432.frc2025.robot.subsystems.drive.gyro.LoggedGyroIOInputs
 import org.team9432.frc2025.robot.subsystems.drive.module.ModuleIO
@@ -44,8 +43,11 @@ class Drive(
         val odometryLock = ReentrantLock()
     }
 
-    var characterizationInput: Double? = null
-    var characterizationAngle: Rotation2d? = null
+    var coastOverride = { false }
+        set(value) {
+            modules.forEach { it.coastOverride = value }
+            field = value
+        }
 
     override fun periodic() {
         // Update odometry
@@ -91,8 +93,6 @@ class Drive(
     fun resetGyro() {
         gyroIO.setAngle(Rotation2d())
     }
-
-    fun controllerCommand(controller: DriveController): Command = runVelocity(controller::calculate)
 
     fun runVelocity(speed: ChassisSpeeds, torqueFF: Array<Double>? = null) =
         runVelocity({ speed }, torqueFF?.let { { it } })

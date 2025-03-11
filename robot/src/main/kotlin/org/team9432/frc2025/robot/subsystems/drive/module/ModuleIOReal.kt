@@ -19,6 +19,7 @@ import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import org.team9432.frc2025.lib.util.PhoenixUtil
+import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
@@ -235,7 +236,9 @@ open class ModuleIOReal(private val config: ModuleConfig, odometryThread: Odomet
     /** Get the cancoder configuration. */
     private fun getEncoderConfig() =
         CANcoderConfiguration().apply {
-            MagnetSensor.MagnetOffset = config.moduleSensorOffset.rotations
+            if (!Constants.robot.isSim) {
+                MagnetSensor.MagnetOffset = config.moduleSensorOffset.rotations
+            }
             MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive
         }
 }

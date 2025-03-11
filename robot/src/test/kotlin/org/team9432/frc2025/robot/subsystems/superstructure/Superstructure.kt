@@ -2,7 +2,6 @@ package org.team9432.frc2025.robot.subsystems.superstructure
 
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.ArmIO
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
@@ -14,9 +13,9 @@ internal class SuperstructureSequencerTest {
         val superstructure = Superstructure(Elevator(object : ElevatorIO {}), Arm(object : ArmIO {}))
 
         // Build a list of all possible movements
-        val allPossibleMovements = mutableListOf<Pair<State, State>>()
+        val allPossibleMovements = mutableListOf<Pair<SuperstructureState, SuperstructureState>>()
 
-        val currentList = State.entries.toMutableList()
+        val currentList = SuperstructureState.entries.toMutableList()
         while (currentList.isNotEmpty()) {
             val firstItem = currentList.first()
             currentList.removeFirst()
@@ -34,7 +33,8 @@ internal class SuperstructureSequencerTest {
 
             // Commented out stuff is just to print the list of steps from each state to each other
             // state which I thought was cool
-            //            val path = mutableListOf<State>()
+            //            val path =
+            // mutableListOf<org.team9432.frc2025.robot.subsystems.superstructure.State>()
             //            path.add(initialState)
 
             while (currentState != targetState) {

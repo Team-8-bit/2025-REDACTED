@@ -4,9 +4,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file at
 // the root directory of this project.
-package org.littletonrobotics.frc2025.commands
+package org.team9432.frc2025.robot.commands.drive
 
-import edu.wpi.first.math.MathUtil
 import edu.wpi.first.math.controller.ProfiledPIDController
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
@@ -22,6 +21,8 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.subsystems.drive.Drive
+import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
+import org.team9432.frc2025.robot.subsystems.drive.controllers.JoystickDriveController
 
 // By 6328:
 // https://github.com/Mechanical-Advantage/RobotCode2025Public/blob/63e5db66eee847360567ef24c3d5807280b300e1/src/main/java/org/littletonrobotics/frc2025/commands/DriveToPose.java
@@ -30,6 +31,7 @@ class DriveToPose(
     private val localizer: Localizer,
     private val targetPose: () -> Pose2d,
     private val robotPose: () -> Pose2d = { localizer.estimatedPose },
+    private val driverInput: JoystickDriveController? = null,
 ) : Command() {
     private val driveController = ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0))
     private val thetaController = ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0))
@@ -42,7 +44,7 @@ class DriveToPose(
 
     init {
         // Enable continuous input for theta controller
-        thetaController.enableContinuousInput(-Math.PI, Math.PI)
+        thetaController.enableContinuousInput(-0.5, 0.5)
 
         addRequirements(drive)
     }
@@ -60,7 +62,10 @@ class DriveToPose(
                     .x,
             ),
         )
-        thetaController.reset(currentPose.rotation.radians, fieldVelocity.omegaRadiansPerSecond)
+        thetaController.reset(
+            currentPose.rotation.rotations,
+            Units.radiansToRotations(fieldVelocity.omegaRadiansPerSecond),
+        )
         lastSetpointTranslation = currentPose.translation
     }
 
@@ -72,10 +77,10 @@ class DriveToPose(
             driveMaxVelocity.hasChanged(hashCode()) ||
                 driveMaxVelocitySlow.hasChanged(hashCode()) ||
                 driveMaxAcceleration.hasChanged(hashCode()) ||
-                driveTolerance.hasChanged(hashCode()) ||
+                driveToleranceInches.hasChanged(hashCode()) ||
                 thetaMaxVelocity.hasChanged(hashCode()) ||
                 thetaMaxAcceleration.hasChanged(hashCode()) ||
-                thetaTolerance.hasChanged(hashCode()) ||
+                thetaToleranceDegrees.hasChanged(hashCode()) ||
                 drivekP.hasChanged(hashCode()) ||
                 drivekD.hasChanged(hashCode()) ||
                 thetakP.hasChanged(hashCode()) ||
@@ -85,12 +90,12 @@ class DriveToPose(
             driveController.d = drivekD.get()
             driveController.constraints =
                 TrapezoidProfile.Constraints(driveMaxVelocity.get(), driveMaxAcceleration.get())
-            driveController.setTolerance(driveTolerance.get())
+            driveController.setTolerance(Units.inchesToMeters(driveToleranceInches.get()))
             thetaController.p = thetakP.get()
             thetaController.d = thetakD.get()
             thetaController.constraints =
                 TrapezoidProfile.Constraints(thetaMaxVelocity.get(), thetaMaxAcceleration.get())
-            thetaController.setTolerance(thetaTolerance.get())
+            thetaController.setTolerance(Units.degreesToRotations(thetaToleranceDegrees.get()))
         }
 
         // Get current pose and target pose
@@ -99,15 +104,18 @@ class DriveToPose(
 
         // Calculate drive speed
         val currentDistance = currentPose.translation.getDistance(targetPose.translation)
-        val ffScaler =
-            MathUtil.clamp((currentDistance - ffMinRadius.get()) / (ffMaxRadius.get() - ffMinRadius.get()), 0.0, 1.0)
+        //        val ffScaler =
+        //            MathUtil.clamp((currentDistance - ffMinRadius.get()) / (ffMaxRadius.get() -
+        // ffMinRadius.get()), 0.0, 1.0)
         driveErrorAbs = currentDistance
         driveController.reset(
             lastSetpointTranslation.getDistance(targetPose.translation),
             driveController.setpoint.velocity,
         )
         var driveVelocityScalar =
-            (driveController.setpoint.velocity * ffScaler + driveController.calculate(driveErrorAbs, 0.0))
+            (driveController.setpoint.velocity
+            /** ffScaler */
+            + driveController.calculate(driveErrorAbs, 0.0))
         if (currentDistance < driveController.positionTolerance) driveVelocityScalar = 0.0
         lastSetpointTranslation =
             Pose2d(targetPose.translation, currentPose.translation.minus(targetPose.translation).angle)
@@ -116,9 +124,10 @@ class DriveToPose(
 
         // Calculate theta speed
         var thetaVelocity =
-            (thetaController.setpoint.velocity * ffScaler +
-                thetaController.calculate(currentPose.rotation.radians, targetPose.rotation.radians))
-        thetaErrorAbs = abs(currentPose.rotation.minus(targetPose.rotation).radians)
+            (thetaController.setpoint.velocity
+            /** ffScaler */
+            + thetaController.calculate(currentPose.rotation.rotations, targetPose.rotation.rotations))
+        thetaErrorAbs = abs(currentPose.rotation.minus(targetPose.rotation).rotations)
         if (thetaErrorAbs < thetaController.positionTolerance) thetaVelocity = 0.0
 
         val driveVelocity =
@@ -126,19 +135,29 @@ class DriveToPose(
                 .transformBy(Transform2d(driveVelocityScalar, 0.0, Rotation2d.kZero))
                 .translation
 
+        val driverInput = driverInput?.getSpeeds()
+
         // Command speeds
         drive.setVelocity(
-            ChassisSpeeds.fromFieldRelativeSpeeds(driveVelocity.x, driveVelocity.y, thetaVelocity, currentPose.rotation)
+            ChassisSpeeds.fromFieldRelativeSpeeds(
+                min(driveVelocity.x + ((driverInput?.first?.x ?: 0.0) / 2.5), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
+                min(driveVelocity.y + ((driverInput?.first?.y ?: 0.0) / 2.5), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
+                min(
+                    Units.rotationsToRadians(thetaVelocity) + (driverInput?.second ?: 0.0),
+                    DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
+                ),
+                currentPose.rotation,
+            )
         )
 
         // Log data
         Logger.recordOutput("DriveToPose/DistanceMeasured", currentDistance)
         Logger.recordOutput("DriveToPose/DistanceSetpoint", driveController.setpoint.position)
-        Logger.recordOutput("DriveToPose/ThetaMeasured", currentPose.rotation.radians)
+        Logger.recordOutput("DriveToPose/ThetaMeasured", currentPose.rotation.rotations)
         Logger.recordOutput("DriveToPose/ThetaSetpoint", thetaController.setpoint.position)
         Logger.recordOutput(
             "DriveToPose/Setpoint",
-            *arrayOf(Pose2d(lastSetpointTranslation, Rotation2d.fromRadians(thetaController.setpoint.position))),
+            *arrayOf(Pose2d(lastSetpointTranslation, Rotation2d.fromRotations(thetaController.setpoint.position))),
         )
         Logger.recordOutput("DriveToPose/Goal", *arrayOf(targetPose))
     }
@@ -158,7 +177,7 @@ class DriveToPose(
 
     /** Checks if the robot pose is within the allowed drive and theta tolerances. */
     fun withinTolerance(driveTolerance: Double, thetaTolerance: Rotation2d): Boolean {
-        return running && abs(driveErrorAbs) < driveTolerance && abs(thetaErrorAbs) < thetaTolerance.radians
+        return running && abs(driveErrorAbs) < driveTolerance && abs(thetaErrorAbs) < thetaTolerance.rotations
     }
 
     companion object {
@@ -171,24 +190,21 @@ class DriveToPose(
         private val driveMaxAcceleration: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/DriveMaxAcceleration")
         private val thetaMaxVelocity: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/ThetaMaxVelocity")
         private val thetaMaxAcceleration: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/ThetaMaxAcceleration")
-        private val driveTolerance: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/DriveTolerance")
-        private val thetaTolerance: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/ThetaTolerance")
-        private val ffMinRadius: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/FFMinRadius")
-        private val ffMaxRadius: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/FFMaxRadius")
+        private val driveToleranceInches: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/DriveToleranceInches")
+        private val thetaToleranceDegrees: LoggedTunableNumber =
+            LoggedTunableNumber("DriveToPose/ThetaToleranceDegrees")
 
         init {
-            drivekP.initDefault(0.8)
+            drivekP.initDefault(1.0)
             drivekD.initDefault(0.0)
             thetakP.initDefault(4.0)
             thetakD.initDefault(0.0)
-            driveMaxVelocity.initDefault(3.8)
+            driveMaxVelocity.initDefault(3.0)
             driveMaxAcceleration.initDefault(3.0)
-            thetaMaxVelocity.initDefault(Units.degreesToRadians(360.0))
-            thetaMaxAcceleration.initDefault(8.0)
-            driveTolerance.initDefault(0.01)
-            thetaTolerance.initDefault(Units.degreesToRadians(1.0))
-            ffMinRadius.initDefault(0.05)
-            ffMaxRadius.initDefault(0.1)
+            thetaMaxVelocity.initDefault(1.0)
+            thetaMaxAcceleration.initDefault(2.0)
+            driveToleranceInches.initDefault(1.5)
+            thetaToleranceDegrees.initDefault(1.5)
         }
     }
 }

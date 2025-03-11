@@ -7,43 +7,29 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase
 import kotlin.collections.set
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.util.withRequirements
-import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure.State.STOW
+import org.team9432.frc2025.robot.subsystems.superstructure.SuperstructureState.*
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 
 // Inspired by 6328 <3
 // https://www.chiefdelphi.com/t/frc-6328-mechanical-advantage-2025-build-thread/477314/244#p-3503708-implementation-part-one-structure-4
 class Superstructure(private val elevator: Elevator, private val arm: Arm) : SubsystemBase() {
-    enum class State {
-        STOW,
-        ARM_ABOVE_BUMPER,
-        INTAKE_CORAL,
-        PREPARE_TALL_SCORE,
-        PREPARE_L2,
-        PREPARE_L3,
-        PREPARE_L4,
-        ALGAE_STOW,
-        INTAKE_ALGAE_LOW,
-        INTAKE_ALGAE_HIGH,
-        PREPARE_NET,
-        SCORE_NET,
-        PREPARE_PROCESSOR,
-        SCORE_PROCESSOR,
-    }
-
     private val transitions = TransitionCommands(elevator, arm)
     private val visualizer = SuperstructureVisualizer("Superstructure/Poses")
 
     /** The latest complete state of the system. */
-    var currentState: State = STOW
+    var currentState: SuperstructureState = STOW
         private set
 
     /** The current state being moved towards on a path to [goal]. */
-    private var step: State? = null
+    private var step: SuperstructureState? = null
 
     /** The current targeted state of the system. */
-    var goal: State = STOW
+    var goal: SuperstructureState = STOW
         private set
+
+    val isHomed
+        get() = elevator.hasHomed && arm.hasHomed
 
     /** The current command running between states. */
     private var currentMovementCommand: Command = Commands.none()
@@ -71,9 +57,9 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
         Logger.recordOutput("Superstructure/GoalState", goal)
     }
 
-    fun runGoal(goal: () -> State) = run { updateGoal(goal()) }
+    fun runGoal(goal: () -> SuperstructureState) = run { updateGoal(goal()) }
 
-    fun runGoal(goal: State) = runGoal { goal }
+    fun runGoal(goal: SuperstructureState) = runGoal { goal }
 
     fun atGoal() = currentState == goal
 
@@ -96,7 +82,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
         }
     }
 
-    private fun updateGoal(newGoal: State) {
+    private fun updateGoal(newGoal: SuperstructureState) {
         // Don't bother if it's already the target
         if (newGoal == goal) return
 
@@ -127,9 +113,9 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
         }
     }
 
-    fun getStepBetween(start: State, goal: State): State? {
-        val visited = mutableMapOf<State, State?>()
-        val queue = ArrayDeque<State>()
+    fun getStepBetween(start: SuperstructureState, goal: SuperstructureState): SuperstructureState? {
+        val visited = mutableMapOf<SuperstructureState, SuperstructureState?>()
+        val queue = ArrayDeque<SuperstructureState>()
         queue.add(start)
         visited[start] = null
         while (queue.isNotEmpty()) {
@@ -152,7 +138,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
         }
 
         // Trace back the path from goal to start
-        var nextState: State = goal
+        var nextState: SuperstructureState = goal
         while (nextState != start) {
             val parent = visited[nextState]
 
@@ -186,6 +172,8 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
             .finallyDo { _ -> stateTrackingDisabled = false }
             .withRequirements(this)
             .withName("Home Superstructure")
+
+    fun fakeAutoHome(): Command = Commands.parallel(elevator.fakeAutoHome(), arm.fakeAutoHome())
 
     fun elevatorStaticCharacterization() =
         elevator

@@ -2,6 +2,7 @@ package org.team9432.frc2025.robot.subsystems.rollers
 
 import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import kotlin.math.abs
@@ -15,25 +16,27 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     companion object {
         val coralAlignedTorqueCurrentThreshold =
             LoggedTunableNumber("Rollers/CoralCollectedThresholdTorqueCurrent", 13.0)
-        val coralAlignedDebounceTime = LoggedTunableNumber("Rollers/CoralCollectedDebounce", 0.3)
+        val coralAlignedDebounceTime = LoggedTunableNumber("Rollers/CoralCollectedDebounce", 0.25)
 
-        val algaeCollectionThresholdRPS = LoggedTunableNumber("Rollers/AlgaeCollectionThresholdRPS", 5.0)
-        val algaeCollectionDebounceTime = LoggedTunableNumber("Rollers/AlgaeCollectionDebounce", 0.5)
+        val algaeCollectionThresholdRPS = LoggedTunableNumber("Rollers/AlgaeCollectionThresholdRPS", 30.0)
+        val algaeCollectionDebounceTime = LoggedTunableNumber("Rollers/AlgaeCollectionDebounce", 0.1)
 
         val algaeDroppedThresholdRPS = LoggedTunableNumber("Rollers/AlgaeDroppedThresholdRPS", 10.0)
-        val algaeDroppedDebounceTime = LoggedTunableNumber("Rollers/AlgaeDroppedDebounce", 1.2)
+        val algaeDroppedDebounceTime = LoggedTunableNumber("Rollers/AlgaeDroppedDebounce", 0.5)
     }
 
     enum class State {
         IDLE,
         INTAKE_CORAL,
-        SCORE_CORAL,
+        SCORE_CORAL_TALL,
+        SCORE_CORAL_LOW,
         UNJAM_CORAL,
         INTAKE_ALGAE,
         SCORE_ALGAE,
     }
 
-    private var state: State = State.IDLE
+    var state: State = State.IDLE
+        private set
 
     var hasCoral = false
         private set
@@ -49,8 +52,6 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     private var algaeDroppedDebouncer = Debouncer(algaeDroppedDebounceTime.get())
 
     init {
-        defaultCommand = runGoal { if (hasAlgae) State.INTAKE_ALGAE else State.IDLE }
-
         LoggedTunableNumber.ifChanged(hashCode(), coralAlignedDebounceTime) { (dt) ->
             coralAlignedDebouncer = Debouncer(dt)
         }
@@ -76,8 +77,13 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
                 manipulator.goal = Manipulator.Goal.INTAKE_CORAL
             }
 
-            State.SCORE_CORAL -> {
-                manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL
+            State.SCORE_CORAL_TALL -> {
+                manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_TALL
+                hasCoral = false
+            }
+
+            State.SCORE_CORAL_LOW -> {
+                manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_LOW
                 hasCoral = false
             }
 
@@ -115,23 +121,26 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             )
         if (algaeCollected && !Constants.robot.isSim) {
             hasAlgae = true
-            println("Collected Algae!")
         }
 
-        //        val algaeDropped =
-        //            algaeDroppedDebouncer.calculate(
-        //                hasAlgae && state == State.INTAKE_ALGAE && abs(manipulator.velocityRPS) >
-        // algaeDroppedThresholdRPS.get()
-        //            )
-        //        if (algaeDropped && !Constants.robot.isSim) {
-        //            hasAlgae = false
-        //            println("Dropped Algae!")
-        //        }
+        val algaeDropped =
+            algaeDroppedDebouncer.calculate(
+                hasAlgae && state == State.INTAKE_ALGAE && abs(manipulator.velocityRPS) > algaeDroppedThresholdRPS.get()
+            )
+        if (algaeDropped && !Constants.robot.isSim) {
+            hasAlgae = false
+        }
 
         Logger.recordOutput("Rollers/State", state)
         SmartDashboard.putBoolean("Rollers/HasAlgae", hasAlgae)
         SmartDashboard.putBoolean("Rollers/HasCoral", hasCoral)
     }
+
+    fun clearCoral() {
+        hasCoral = false
+    }
+
+    fun preloadCoral() = Commands.runOnce({ hasCoral = true })
 
     fun runGoal(state: State) = runGoal { state }
 

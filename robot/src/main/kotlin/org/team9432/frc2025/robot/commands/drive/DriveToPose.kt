@@ -113,7 +113,9 @@ class DriveToPose(
             driveController.setpoint.velocity,
         )
         var driveVelocityScalar =
-            (driveController.setpoint.velocity * ffScaler + driveController.calculate(driveErrorAbs, 0.0))
+            (driveController.setpoint.velocity
+            /** ffScaler */
+            + driveController.calculate(driveErrorAbs, 0.0))
         if (currentDistance < driveController.positionTolerance) driveVelocityScalar = 0.0
         lastSetpointTranslation =
             Pose2d(targetPose.translation, currentPose.translation.minus(targetPose.translation).angle)
@@ -173,8 +175,10 @@ class DriveToPose(
     }
 
     /** Checks if the robot pose is within the allowed drive and theta tolerances. */
-    fun withinTolerance(driveTolerance: Double, thetaTolerance: Rotation2d): Boolean {
-        return running && abs(driveErrorAbs) < driveTolerance && abs(thetaErrorAbs) < thetaTolerance.rotations
+    fun withinTolerance(driveToleranceInches: Double, thetaToleranceRotations: Double): Boolean {
+        return running &&
+            abs(driveErrorAbs) < Units.inchesToMeters(driveToleranceInches) &&
+            abs(thetaErrorAbs) < thetaToleranceRotations
     }
 
     companion object {

@@ -2,6 +2,7 @@ package org.team9432.frc2025.robot
 
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
 import org.team9432.frc2025.lib.util.applyFlip
@@ -81,7 +82,7 @@ class Auto(
                 scoringState.autoBranchTarget = branch
             }),
             Commands.waitUntil((!rollers.hasCoralTrigger)),
-            Commands.waitSeconds(0.25),
+            Commands.waitSeconds(0.3),
         )
 
     private fun pickupAndScore(branch: Branch, level: CoralScoringTarget, coralStation: CoralStation) =
@@ -91,10 +92,14 @@ class Auto(
                 scoringState.autoBranchTarget = branch
                 scoringState.autoCoralStationPose = coralStation.centerPose.transformBy(coralStationTransform)
             }),
-            Commands.waitUntil(rollers.hasCoralTrigger.or(autoAlignForStationPickup::atGoal)),
+            Commands.waitUntil(
+                rollers.hasCoralTrigger.or {
+                    autoAlignForStationPickup.withinTolerance(6.0, Units.degreesToRotations(15.0))
+                }
+            ),
             Commands.runOnce({ scoringState.autoCoralStationPose = null }),
             Commands.waitUntil(rollers.hasCoralTrigger).withTimeout(2.0),
             Commands.waitUntil((!rollers.hasCoralTrigger)),
-            Commands.waitSeconds(0.25),
+            Commands.waitSeconds(0.3),
         )
 }

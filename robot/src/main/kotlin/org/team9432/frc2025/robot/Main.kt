@@ -422,11 +422,15 @@ class Robot : LoggedRobot() {
             .whileTrue(
                 superstructure
                     .runGoal {
-                        when (scoringState.coralTarget) {
-                            CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
-                            CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
-                            CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
-                            CoralScoringTarget.L4 -> SuperstructureState.PREPARE_L4
+                        if (robotPosition.isSafeToUseArm.asBoolean) {
+                            when (scoringState.coralTarget) {
+                                CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
+                                CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
+                                CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
+                                CoralScoringTarget.L4 -> SuperstructureState.PREPARE_L4
+                            }
+                        } else {
+                            superstructure.goal
                         }
                     }
                     .alongWith(Commands.sequence())

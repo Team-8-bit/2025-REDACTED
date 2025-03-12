@@ -96,6 +96,8 @@ class Robot : LoggedRobot() {
     private var simUpdateCall: (() -> Unit)? = null
     private val robotPosition = RobotPosition(localizer)
 
+    private val autoCommands: Auto
+
     init {
         SignalLogger.start()
 
@@ -256,6 +258,8 @@ class Robot : LoggedRobot() {
             odometryThread.start()
         }
 
+        autoCommands = Auto(robotPosition, localizer, drive, superstructure, rollers, scoringState)
+
         bindButtons()
 
         PortForwarder.add(5800, "10.94.32.11", 5800)
@@ -318,7 +322,7 @@ class Robot : LoggedRobot() {
                     val branch =
                         scoringState.autoBranchTarget
                             ?: robotPosition.nearestReefAlignBranch(
-                                localizer.estimatedPose.transformBySpeeds(localizer.robotVelocity, 0.15)
+                                localizer.estimatedPose.transformBySpeeds(localizer.robotVelocity, 0.1)
                             )
                     val target = robotPosition.getActiveBranchAlignPose(branch)
 
@@ -342,21 +346,13 @@ class Robot : LoggedRobot() {
                 joystickDriveController,
             )
 
-        val autoAlignForStationPickup =
-            DriveToPose(
-                drive,
-                localizer,
-                { scoringState.autoCoralStationPose ?: localizer.estimatedPose },
-                { localizer.estimatedPose },
-            )
-
         RobotModeTriggers.autonomous()
             .and((!rollers.hasCoralTrigger))
             .and { scoringState.autoCoralStationPose != null }
-            .whileTrue(autoAlignForStationPickup)
+            .whileTrue(autoCommands.autoAlignForStationPickup)
 
         (driver.rightBumper().or(RobotModeTriggers.autonomous()))
-            .and(rollers.hasCoralTrigger.or { scoringState.autoCoralStationPose == null })
+            .and(rollers.hasCoralTrigger.or { isAutonomousEnabled && scoringState.autoCoralStationPose == null })
             .and(!driver.leftBumper())
             .and(!disableAutoAlign)
             .and { scoringState.teleCoralTarget != CoralScoringTarget.L1 }
@@ -436,9 +432,11 @@ class Robot : LoggedRobot() {
                     .alongWith(Commands.sequence())
             )
 
-        (driver.a().or(readyToScoreCoral))
-            .and(superstructure::atGoal)
-            .and({ superstructure.currentState.isCoralScoring })
+        ((driver.a().or(readyToScoreCoral)).and(superstructure::atGoal).and {
+                superstructure.currentState.isCoralScoring
+            })
+            //            .let { it.or { isAutonomousEnabled && it.debounce(.5,
+            // Debouncer.DebounceType.kFalling).asBoolean } }
             .whileTrue(rollers.runGoal { rollers.getScoringStateForTarget(scoringState.coralTarget) })
 
         driver
@@ -571,8 +569,8 @@ class Robot : LoggedRobot() {
                 joystickDriveController,
                 {
                     if (localizer.estimatedPose.applyFlip().y > FieldConstants.fieldWidth / 2)
-                        FieldConstants.CoralStation.leftCenterFace.rotation.applyFlip()
-                    else FieldConstants.CoralStation.rightCenterFace.rotation.applyFlip()
+                        FieldConstants.CoralStation.LEFT.centerPose.rotation.applyFlip()
+                    else FieldConstants.CoralStation.RIGHT.centerPose.rotation.applyFlip()
                 },
                 localizer,
             )
@@ -586,9 +584,10 @@ class Robot : LoggedRobot() {
                         if (
                             superstructure.currentState == SuperstructureState.STOW &&
                                 localizer.estimatedPose.applyFlip().x < FieldConstants.fieldLength / 2 &&
-                                localizer.estimatedPose.applyFlip().let {
-                                    it.distanceTo(FieldConstants.CoralStation.leftCenterFace) < 2.0 ||
-                                        it.distanceTo(FieldConstants.CoralStation.rightCenterFace) < 2.0
+                                localizer.estimatedPose.applyFlip().let { robotPose ->
+                                    FieldConstants.CoralStation.entries.any {
+                                        robotPose.distanceTo(it.centerPose) < 2.0
+                                    }
                                 } &&
                                 !controllerHasRotationInput.asBoolean &&
                                 !disableAutoAlign.asBoolean &&
@@ -630,32 +629,23 @@ class Robot : LoggedRobot() {
     private val autoChoosers =
         List(5) { AutoSelector.DashboardQuestion("Option $it Chooser", "Option $it Question") }.toSet()
 
-    private val autoCommands = Auto(robotPosition, localizer, drive, superstructure, rollers, scoringState)
-
     private val autoChooser =
         AutoSelector(autoChoosers) {
                 addQuestion("Which Auto?", { currentAuto = it }) {
-                    addOption("Do Nothing", Commands::none)
+                    addOption("Do Nothing (Broken)", Commands::none)
 
-                    var auto = Commands.none()
-                    addOption("Not Scary", { auto }) {
-                        addQuestion("Which Routine?", { auto = it }) {
-                            addOption("Sit Still :(", { autoCommands.initializeAuto() })
+                    addOption("Max L4 Left", { autoCommands.maxL4Left() })
 
-                            addOption("Simple L2") {
-                                addQuestion("Starting Side", { auto = it }) {
-                                    addOption("Left", { autoCommands.simpleL2(Branch.J) })
-                                    addOption("Right", { autoCommands.simpleL2(Branch.E) })
-                                    addOption("Center", { autoCommands.simpleL2(Branch.H) })
-                                    var branch: Branch? = null
-                                    addOption("Custom", { branch?.let { autoCommands.simpleL2(it) } }) {
-                                        addQuestion("Which Branch?", { branch = it }) {
-                                            Branch.entries.forEach { addOption(it.name, { it }) }
-                                        }
-                                    }
+                    addOption("Only L2") {
+                        addQuestion("Side", { currentAuto = it }) {
+                            addOption("Left", { autoCommands.onlyL2(Branch.J) })
+                            addOption("Right", { autoCommands.onlyL2(Branch.E) })
+                            var branch: Branch? = null
+                            addOption("Custom", { branch?.let { autoCommands.onlyL2(it) } }) {
+                                addQuestion("Which Branch?", { branch = it }) {
+                                    Branch.entries.forEach { addOption(it.name, { it }) }
                                 }
                             }
-                            addOption("Simple L2, L4", { autoCommands.simpleL2L4(Branch.J, Branch.L) })
                         }
                     }
 
@@ -690,7 +680,6 @@ class Robot : LoggedRobot() {
 
     override fun autonomousExit() {
         currentAuto.cancel()
-        scoringState.clearAutoState()
     }
 
     private fun loggerInit() {
@@ -746,6 +735,10 @@ class Robot : LoggedRobot() {
         }
     }
 
+    override fun teleopPeriodic() {
+        scoringState.clearAutoState()
+    }
+
     override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
         DriverStation.getAlliance().ifPresent { AllianceTracker.currentAlliance = it }
@@ -764,6 +757,7 @@ class Robot : LoggedRobot() {
         // Log robot state
         localizer.log()
         robotPosition.outputTelemetry()
+        scoringState.log()
 
         autoChooser.update()
 

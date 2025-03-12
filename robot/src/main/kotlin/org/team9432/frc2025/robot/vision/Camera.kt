@@ -3,6 +3,7 @@ package org.team9432.frc2025.robot.vision
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Alert
+import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
@@ -58,6 +59,10 @@ class Camera(
             // Account for per-camera trust
             linearStdDev *= cameraConstants.stdDevFactor
             angularStdDev *= cameraConstants.stdDevFactor
+
+            if (DriverStation.isDisabled()) {
+                angularStdDev /= 3
+            }
 
             Logger.recordOutput("Vision/${cameraConstants.cameraName}/XYStdDev", linearStdDev)
             Logger.recordOutput("Vision/${cameraConstants.cameraName}/RStdDev", angularStdDev)

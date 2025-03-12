@@ -45,16 +45,19 @@ object FieldConstants {
         val shallowHeight: Double = Units.inchesToMeters(30.125)
     }
 
-    object CoralStation {
-        val stationLength: Double = Units.inchesToMeters(79.750)
-        val rightCenterFace: Pose2d =
-            Pose2d(Units.inchesToMeters(33.526), Units.inchesToMeters(25.824), Rotation2d.fromDegrees(144.011 - 90))
-        val leftCenterFace: Pose2d =
+    enum class CoralStation(val centerPose: Pose2d) {
+        RIGHT(Pose2d(Units.inchesToMeters(33.526), Units.inchesToMeters(25.824), Rotation2d.fromDegrees(144.011 - 90))),
+        LEFT(
             Pose2d(
-                rightCenterFace.x,
-                fieldWidth - rightCenterFace.y,
-                Rotation2d.fromRadians(-rightCenterFace.rotation.radians),
+                RIGHT.centerPose.x,
+                fieldWidth - RIGHT.centerPose.y,
+                Rotation2d.fromRadians(-RIGHT.centerPose.rotation.radians),
             )
+        );
+
+        companion object {
+            val stationLength: Double = Units.inchesToMeters(79.750)
+        }
     }
 
     object Reef {
@@ -143,6 +146,23 @@ object FieldConstants {
             }
 
             fun getPose() = branchPositions2d[entries.indexOf(this)]
+
+            val mirror
+                get() =
+                    when (this) {
+                        A -> B
+                        B -> A
+                        L -> C
+                        C -> L
+                        K -> D
+                        D -> K
+                        J -> E
+                        E -> J
+                        I -> F
+                        F -> I
+                        H -> G
+                        G -> H
+                    }
         }
 
         enum class StagedAlgae(private val high: Boolean, val centerFace: Int) {

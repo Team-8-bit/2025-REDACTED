@@ -35,7 +35,7 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
         L1(LoggedTunableNumber("Arm/Setpoints/L1", -0.1)),
         L2(LoggedTunableNumber("Arm/Setpoints/L2", -0.2)),
         L3(LoggedTunableNumber("Arm/Setpoints/L3", -0.2)),
-        L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.17)),
+        L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.13)),
         INTAKE_ALGAE_REEF(LoggedTunableNumber("Arm/Setpoints/IntakeAlgaeReef", -0.15)),
         HOLD_ALGAE_LOW(LoggedTunableNumber("Arm/Setpoints/HoldAlgaeLow", -0.2)),
         PREPARE_PROCESSOR(LoggedTunableNumber("Arm/Setpoints/PrepareProcessor", -0.2)),
@@ -72,11 +72,11 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
                 Constants.RobotType.COMP ->
                     TunableArmGains(
                         "Arm/Gains",
-                        kP = 2000.0,
-                        kD = 20.0,
+                        kP = 5000.0,
+                        kD = 400.0,
                         kS = 4.440481,
                         kG = 7.537810 - 4.440481,
-                        velocity = 1.5,
+                        velocity = 3.0,
                         acceleration = 3.0,
                         jerk = 0.0,
                     )

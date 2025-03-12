@@ -140,8 +140,8 @@ class DriveToPose(
         // Command speeds
         drive.setVelocity(
             ChassisSpeeds.fromFieldRelativeSpeeds(
-                min(driveVelocity.x + ((driverInput?.first?.x ?: 0.0) / 2.5), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
-                min(driveVelocity.y + ((driverInput?.first?.y ?: 0.0) / 2.5), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
+                min(driveVelocity.x + ((driverInput?.first?.x ?: 0.0)), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
+                min(driveVelocity.y + ((driverInput?.first?.y ?: 0.0)), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
                 min(
                     Units.rotationsToRadians(thetaVelocity) + (driverInput?.second ?: 0.0),
                     DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
@@ -195,16 +195,16 @@ class DriveToPose(
             LoggedTunableNumber("DriveToPose/ThetaToleranceDegrees")
 
         init {
-            drivekP.initDefault(1.0)
-            drivekD.initDefault(0.0)
+            drivekP.initDefault(2.0)
+            drivekD.initDefault(0.2)
             thetakP.initDefault(4.0)
-            thetakD.initDefault(0.0)
+            thetakD.initDefault(0.4)
             driveMaxVelocity.initDefault(3.0)
-            driveMaxAcceleration.initDefault(3.0)
+            driveMaxAcceleration.initDefault(2.5)
             thetaMaxVelocity.initDefault(1.0)
-            thetaMaxAcceleration.initDefault(2.0)
-            driveToleranceInches.initDefault(1.5)
-            thetaToleranceDegrees.initDefault(1.5)
+            thetaMaxAcceleration.initDefault(1.5)
+            driveToleranceInches.initDefault(1.0)
+            thetaToleranceDegrees.initDefault(1.0)
         }
     }
 }

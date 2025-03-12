@@ -8,10 +8,7 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.Trigger
-import kotlin.math.abs
-import kotlin.math.atan2
-import kotlin.math.hypot
-import kotlin.math.sign
+import kotlin.math.*
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.lib.util.applyFlip
@@ -74,13 +71,18 @@ class RobotPosition(private val localizer: Localizer) {
         val alignPose = branch.getPose().applyFlip().transformBy(reefAlignTransform)
         val txTyRobotPose = localizer.getReefPose(branch.getTag(), alignPose)
 
-        val yDistance = abs(txTyRobotPose.relativeTo(alignPose).y)
+        val distance = txTyRobotPose.relativeTo(alignPose)
+        val yDistance = abs(distance.y)
+        val xDistance = abs(distance.x)
 
-        var xOffset = -yDistance
-        if (angleFromReef(txTyRobotPose) > 40) {
-            xOffset -= 0.5
+        var xOffset = yDistance
+        if (angleFromReef(txTyRobotPose) > 40 && xDistance < 1) {
+            xOffset += 0.5
         }
-        val activeAlignPose = alignPose.transformBy(Transform2d(xOffset, 0.0, Rotation2d.kZero))
+
+        xOffset = min(xOffset, 1.0)
+
+        val activeAlignPose = alignPose.transformBy(Transform2d(-xOffset, 0.0, Rotation2d.kZero))
         Logger.recordOutput("RobotPosition/BranchAlignPose", activeAlignPose)
         return activeAlignPose
     }
@@ -98,8 +100,10 @@ class RobotPosition(private val localizer: Localizer) {
             }
         val target =
             map.minBy {
+                val degMult = 15 // 15 Degrees is equivalent to one meter of distance when choosing poles
+
                 val (distanceMeters, distanceDegrees) = it.value
-                distanceMeters
+                (distanceDegrees / degMult) + distanceMeters
             }
         return target.key
     }
@@ -133,7 +137,7 @@ class RobotPosition(private val localizer: Localizer) {
 
         val velocityLow = localizer.robotVelocity.velocityLessThan(0.2, Units.degreesToRadians(4.0))
 
-        return@Trigger Units.metersToInches(abs(hypot(difference.x, difference.x))) <
+        return@Trigger Units.metersToInches(abs(hypot(difference.x, difference.y))) <
             coralScoringToleranceInches.get() &&
             abs(difference.rotation.degrees) < coralScoringToleranceDegrees.get() &&
             velocityLow

@@ -81,14 +81,14 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
                 Constants.RobotType.COMP -> {
                     TunableElevatorGains(
                         "Elevator/Gains",
-                        kP = 1200.0,
-                        kD = 50.0,
-                        kSStage1 = 10.8,
-                        kGStage1 = 0.0,
+                        kP = 6000.0,
+                        kD = 200.0,
+                        kSStage1 = 12.0,
+                        kGStage1 = 1.0,
                         kSStage2 = 11.2 - 4.5,
                         kGStage2 = 4.5, // 11.2 to go up, 4.5 to go down
-                        velocity = 2.0,
-                        acceleration = 6.0,
+                        velocity = 3.0,
+                        acceleration = 8.0,
                         jerk = 0.0,
                     )
                 }

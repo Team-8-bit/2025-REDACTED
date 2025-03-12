@@ -4,6 +4,7 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
+import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.not
 import org.team9432.frc2025.robot.FieldConstants.CoralStation
 import org.team9432.frc2025.robot.FieldConstants.Reef.Branch
@@ -30,7 +31,7 @@ class Auto(
         DriveToPose(
             drive,
             localizer,
-            { scoringState.autoCoralStationPose ?: localizer.estimatedPose },
+            { scoringState.autoCoralStationPose?.applyFlip() ?: localizer.estimatedPose },
             { localizer.estimatedPose },
         )
 
@@ -90,7 +91,7 @@ class Auto(
                 scoringState.autoBranchTarget = branch
                 scoringState.autoCoralStationPose = coralStation.centerPose.transformBy(coralStationTransform)
             }),
-            Commands.waitUntil(/*rollers.hasCoralTrigger*/ autoAlignForStationPickup::atGoal),
+            Commands.waitUntil(rollers.hasCoralTrigger.or(autoAlignForStationPickup::atGoal)),
             Commands.runOnce({ scoringState.autoCoralStationPose = null }),
             Commands.waitUntil(rollers.hasCoralTrigger).withTimeout(2.0),
             Commands.waitUntil((!rollers.hasCoralTrigger)),

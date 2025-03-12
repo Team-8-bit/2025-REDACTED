@@ -177,7 +177,7 @@ class Robot : LoggedRobot() {
                                     Meters.of(DrivetrainConstants.BUMPER_LENGTH),
                                 )
                                 .withRobotMass(Pounds.of(135.0)),
-                            /* initialPoseOnField = */ Pose2d(7.0, 6.175, Rotation2d.fromDegrees(225.0)),
+                            /* initialPoseOnField = */ Pose2d(7.0, 6.175, Rotation2d.fromDegrees(225.0)).applyFlip(),
                         )
 
                     val gyroIO = GyroIOSim(swerveSim.gyroSimulation, odometryThread)

@@ -16,15 +16,14 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj2.command.Command
+import kotlin.math.abs
+import kotlin.math.min
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Localizer
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.controllers.JoystickDriveController
-import kotlin.math.abs
-import kotlin.math.min
-
 
 // By 6328:
 // https://github.com/Mechanical-Advantage/RobotCode2025Public/blob/63e5db66eee847360567ef24c3d5807280b300e1/src/main/java/org/littletonrobotics/frc2025/commands/DriveToPose.java
@@ -34,7 +33,7 @@ class DriveToPose(
     private val targetPose: () -> Pose2d,
     private val robotPose: () -> Pose2d = { localizer.estimatedPose },
     private val driverInput: JoystickDriveController? = null,
-): Command() {
+) : Command() {
     private val driveController = ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0))
     private val thetaController = ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0))
 
@@ -77,16 +76,16 @@ class DriveToPose(
         // Update from tunable numbers
         if (
             driveMaxVelocity.hasChanged(hashCode()) ||
-            driveMaxVelocitySlow.hasChanged(hashCode()) ||
-            driveMaxAcceleration.hasChanged(hashCode()) ||
-            driveToleranceInches.hasChanged(hashCode()) ||
-            thetaMaxVelocity.hasChanged(hashCode()) ||
-            thetaMaxAcceleration.hasChanged(hashCode()) ||
-            thetaToleranceDegrees.hasChanged(hashCode()) ||
-            drivekP.hasChanged(hashCode()) ||
-            drivekD.hasChanged(hashCode()) ||
-            thetakP.hasChanged(hashCode()) ||
-            thetakD.hasChanged(hashCode())
+                driveMaxVelocitySlow.hasChanged(hashCode()) ||
+                driveMaxAcceleration.hasChanged(hashCode()) ||
+                driveToleranceInches.hasChanged(hashCode()) ||
+                thetaMaxVelocity.hasChanged(hashCode()) ||
+                thetaMaxAcceleration.hasChanged(hashCode()) ||
+                thetaToleranceDegrees.hasChanged(hashCode()) ||
+                drivekP.hasChanged(hashCode()) ||
+                drivekD.hasChanged(hashCode()) ||
+                thetakP.hasChanged(hashCode()) ||
+                thetakD.hasChanged(hashCode())
         ) {
             driveController.p = drivekP.get()
             driveController.d = drivekD.get()
@@ -107,19 +106,14 @@ class DriveToPose(
         // Calculate drive speed
         val currentDistance = currentPose.translation.getDistance(targetPose.translation)
         val ffScaler =
-            MathUtil.clamp(
-                (currentDistance - ffMinRadius.get()) / (ffMaxRadius.get() -
-                        ffMinRadius.get()), 0.0, 1.0
-            )
+            MathUtil.clamp((currentDistance - ffMinRadius.get()) / (ffMaxRadius.get() - ffMinRadius.get()), 0.0, 1.0)
         driveErrorAbs = currentDistance
         driveController.reset(
             lastSetpointTranslation.getDistance(targetPose.translation),
             driveController.setpoint.velocity,
         )
         var driveVelocityScalar =
-            (driveController.setpoint.velocity
-                    * ffScaler
-                    + driveController.calculate(driveErrorAbs, 0.0))
+            (driveController.setpoint.velocity * ffScaler + driveController.calculate(driveErrorAbs, 0.0))
         if (currentDistance < driveController.positionTolerance) driveVelocityScalar = 0.0
         lastSetpointTranslation =
             Pose2d(targetPose.translation, currentPose.translation.minus(targetPose.translation).angle)
@@ -128,8 +122,8 @@ class DriveToPose(
 
         // Calculate theta speed
         var thetaVelocity =
-            (thetaController.setpoint.velocity
-                    + thetaController.calculate(currentPose.rotation.rotations, targetPose.rotation.rotations))
+            (thetaController.setpoint.velocity +
+                thetaController.calculate(currentPose.rotation.rotations, targetPose.rotation.rotations))
         thetaErrorAbs = abs(currentPose.rotation.minus(targetPose.rotation).rotations)
         if (thetaErrorAbs < thetaController.positionTolerance) thetaVelocity = 0.0
 

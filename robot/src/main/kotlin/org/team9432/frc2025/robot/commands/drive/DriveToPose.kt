@@ -6,6 +6,7 @@
 // the root directory of this project.
 package org.team9432.frc2025.robot.commands.drive
 
+import edu.wpi.first.math.MathUtil
 import edu.wpi.first.math.controller.ProfiledPIDController
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
@@ -40,7 +41,8 @@ class DriveToPose(
     private var driveErrorAbs = 0.0
     private var thetaErrorAbs = 0.0
 
-    private var running = false
+    var running = false
+        private set
 
     init {
         // Enable continuous input for theta controller
@@ -104,9 +106,8 @@ class DriveToPose(
 
         // Calculate drive speed
         val currentDistance = currentPose.translation.getDistance(targetPose.translation)
-        //        val ffScaler =
-        //            MathUtil.clamp((currentDistance - ffMinRadius.get()) / (ffMaxRadius.get() -
-        // ffMinRadius.get()), 0.0, 1.0)
+        val ffScaler =
+            MathUtil.clamp((currentDistance - ffMinRadius.get()) / (ffMaxRadius.get() - ffMinRadius.get()), 0.0, 1.0)
         driveErrorAbs = currentDistance
         driveController.reset(
             lastSetpointTranslation.getDistance(targetPose.translation),
@@ -124,9 +125,8 @@ class DriveToPose(
 
         // Calculate theta speed
         var thetaVelocity =
-            (thetaController.setpoint.velocity
-            /** ffScaler */
-            + thetaController.calculate(currentPose.rotation.rotations, targetPose.rotation.rotations))
+            (thetaController.setpoint.velocity +
+                thetaController.calculate(currentPose.rotation.rotations, targetPose.rotation.rotations))
         thetaErrorAbs = abs(currentPose.rotation.minus(targetPose.rotation).rotations)
         if (thetaErrorAbs < thetaController.positionTolerance) thetaVelocity = 0.0
 
@@ -140,8 +140,8 @@ class DriveToPose(
         // Command speeds
         drive.setVelocity(
             ChassisSpeeds.fromFieldRelativeSpeeds(
-                min(driveVelocity.x + ((driverInput?.first?.x ?: 0.0) / 2.5), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
-                min(driveVelocity.y + ((driverInput?.first?.y ?: 0.0) / 2.5), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
+                min(driveVelocity.x + ((driverInput?.first?.x ?: 0.0)), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
+                min(driveVelocity.y + ((driverInput?.first?.y ?: 0.0)), DrivetrainConstants.MAX_LINEAR_SPEED_MPS),
                 min(
                     Units.rotationsToRadians(thetaVelocity) + (driverInput?.second ?: 0.0),
                     DrivetrainConstants.MAX_ANGULAR_SPEED_RAD_PER_SEC,
@@ -176,8 +176,10 @@ class DriveToPose(
     }
 
     /** Checks if the robot pose is within the allowed drive and theta tolerances. */
-    fun withinTolerance(driveTolerance: Double, thetaTolerance: Rotation2d): Boolean {
-        return running && abs(driveErrorAbs) < driveTolerance && abs(thetaErrorAbs) < thetaTolerance.rotations
+    fun withinTolerance(driveToleranceInches: Double, thetaToleranceRotations: Double): Boolean {
+        return running &&
+            abs(driveErrorAbs) < Units.inchesToMeters(driveToleranceInches) &&
+            abs(thetaErrorAbs) < thetaToleranceRotations
     }
 
     companion object {
@@ -194,17 +196,20 @@ class DriveToPose(
         private val thetaToleranceDegrees: LoggedTunableNumber =
             LoggedTunableNumber("DriveToPose/ThetaToleranceDegrees")
 
+        private val ffMinRadius: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/FFMinRadius")
+        private val ffMaxRadius: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/FFMaxRadius")
+
         init {
-            drivekP.initDefault(1.0)
-            drivekD.initDefault(0.0)
+            drivekP.initDefault(2.0)
+            drivekD.initDefault(0.2)
             thetakP.initDefault(4.0)
-            thetakD.initDefault(0.0)
+            thetakD.initDefault(0.4)
             driveMaxVelocity.initDefault(3.0)
-            driveMaxAcceleration.initDefault(3.0)
+            driveMaxAcceleration.initDefault(2.5)
             thetaMaxVelocity.initDefault(1.0)
-            thetaMaxAcceleration.initDefault(2.0)
-            driveToleranceInches.initDefault(1.5)
-            thetaToleranceDegrees.initDefault(1.5)
+            thetaMaxAcceleration.initDefault(1.5)
+            driveToleranceInches.initDefault(1.0)
+            thetaToleranceDegrees.initDefault(1.0)
         }
     }
 }

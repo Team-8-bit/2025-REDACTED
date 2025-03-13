@@ -9,6 +9,7 @@ import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
+import org.team9432.frc2025.robot.ScoringState
 import org.team9432.frc2025.robot.subsystems.rollers.dispenser.Manipulator
 import org.team9432.frc2025.robot.subsystems.rollers.funnel.Funnel
 
@@ -145,6 +146,20 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     fun runGoal(state: State) = runGoal { state }
 
     fun runGoal(state: () -> State) = run { this.state = state() }
+
+    fun getScoringStateForTarget(target: ScoringState.CoralScoringTarget) =
+        if (
+            target in
+                setOf(
+                    ScoringState.CoralScoringTarget.L1,
+                    ScoringState.CoralScoringTarget.L2,
+                    ScoringState.CoralScoringTarget.L3,
+                )
+        ) {
+            State.SCORE_CORAL_LOW
+        } else {
+            State.SCORE_CORAL_TALL
+        }
 
     fun simSetHasAlgae(hasAlgae: Boolean) {
         if (Constants.robot.isSim) this.hasAlgae = hasAlgae

@@ -21,6 +21,8 @@ class Camera(
 ) : SubsystemBase() {
     private val inputs = LoggedCameraIOInputs()
     private val alert = Alert("${cameraConstants.cameraName} is disconnected!", Alert.AlertType.kError)
+    val connected
+        get() = inputs.connected
 
     override fun periodic() {
         io.updateInputs(inputs)

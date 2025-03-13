@@ -1,10 +1,11 @@
 package org.team9432.frc2025.robot.led
 
-import edu.wpi.first.units.Units.Meters
-import edu.wpi.first.units.Units.MetersPerSecond
+import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.AddressableLEDBuffer
+import edu.wpi.first.wpilibj.DriverStation.Alliance
 import edu.wpi.first.wpilibj.LEDPattern
 import edu.wpi.first.wpilibj.util.Color
+import org.team9432.frc2025.lib.AllianceTracker
 
 object LEDState {
     private val spacing = Meters.of(1.0 / 20.0)
@@ -12,7 +13,51 @@ object LEDState {
         LEDPattern.gradient(LEDPattern.GradientType.kContinuous, Color.kBisque, Color.kPurple)
             .scrollAtAbsoluteSpeed(MetersPerSecond.of(1.0), spacing)
 
+    private const val INIT_LOOP_COUNT = 200
+    private var initLoops = 0
+
+    private val codeLoadingPattern = LEDPattern.solid(Color.kBisque)
+    private val climbModePattern = LEDPattern.solid(Color.kRed).blink(Seconds.of(0.25), Seconds.of(0.25))
+    private val autoAlignPattern = LEDPattern.solid(Color.kPurple).blink(Seconds.of(0.5), Seconds.of(0.5))
+    private val visionDisconnectedPattern = LEDPattern.solid(Color.kRed)
+
+    private val redPattern =
+        LEDPattern.steps(mutableMapOf(0.0 to Color.kRed, 5.0 / 46.0 to Color.kBlack))
+            .scrollAtAbsoluteSpeed(MetersPerSecond.of(6.0), spacing)
+    private val bluePattern =
+        LEDPattern.steps(mutableMapOf(0.0 to Color.kBlue, 5.0 / 46.0 to Color.kBlack))
+            .scrollAtAbsoluteSpeed(MetersPerSecond.of(6.0), spacing)
+
+    var codeLoading = false
+    var climbMode = false
+    var isAutoAligning = { false }
+
+    var visionDisconnected = { false }
+
     fun updateBuffer(buffer: AddressableLEDBuffer) {
-        idlePattern.applyTo(buffer)
+        if (initLoops < INIT_LOOP_COUNT) {
+            initLoops++
+            climbModePattern.applyTo(buffer)
+            autoAlignPattern.applyTo(buffer)
+            redPattern.applyTo(buffer)
+            bluePattern.applyTo(buffer)
+            codeLoadingPattern.applyTo(buffer)
+        }
+
+        if (codeLoading) {
+            codeLoadingPattern.applyTo(buffer)
+        } else if (climbMode) {
+            climbModePattern.applyTo(buffer)
+        } else if (visionDisconnected()) {
+            visionDisconnectedPattern.applyTo(buffer)
+        } else if (isAutoAligning()) {
+            autoAlignPattern.applyTo(buffer)
+        } else {
+            when (AllianceTracker.currentAlliance) {
+                null -> idlePattern.applyTo(buffer)
+                Alliance.Red -> redPattern.applyTo(buffer)
+                Alliance.Blue -> bluePattern.applyTo(buffer)
+            }
+        }
     }
 }

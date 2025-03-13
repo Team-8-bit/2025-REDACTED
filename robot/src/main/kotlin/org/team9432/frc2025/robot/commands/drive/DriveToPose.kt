@@ -41,7 +41,8 @@ class DriveToPose(
     private var driveErrorAbs = 0.0
     private var thetaErrorAbs = 0.0
 
-    private var running = false
+    var running = false
+        private set
 
     init {
         // Enable continuous input for theta controller

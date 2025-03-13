@@ -10,6 +10,7 @@ class ScoringState {
     var autoCoralTarget: CoralScoringTarget? = null
     var autoBranchTarget: FieldConstants.Reef.Branch? = null
     var autoCoralStationPose: Pose2d? = null
+    var climbMode = false
 
     fun clearAutoState() {
         autoCoralTarget = null

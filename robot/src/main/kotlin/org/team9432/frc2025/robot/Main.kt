@@ -99,6 +99,9 @@ class Robot : LoggedRobot() {
     private val autoCommands: Auto
 
     init {
+        LEDState.codeLoading = true
+        LEDState.updateBuffer(leds.buffer)
+
         SignalLogger.start()
 
         loggerInit()
@@ -267,6 +270,9 @@ class Robot : LoggedRobot() {
         PortForwarder.add(5800, "photonvision.local", 5800)
 
         DriverStation.silenceJoystickConnectionWarning(true)
+
+        LEDState.visionDisconnected = { cameras.any { !it.connected } }
+        LEDState.codeLoading = false
     }
 
     private fun bindButtons() {
@@ -562,11 +568,10 @@ class Robot : LoggedRobot() {
         driver.rightStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasAlgae(true) }))
         driver.leftStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasCoral(true) }))
 
-        var climbMode = false
-        driver.rightStick().onTrue(Commands.runOnce({ climbMode = !climbMode }))
-        driver.povUp().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.UP))
-        driver.povDown().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.DOWN))
-        driver.povRight().and { climbMode }.whileTrue(climber.runGoal(Climber.Goal.CLIMB))
+        driver.rightStick().onTrue(Commands.runOnce({ scoringState.climbMode = !scoringState.climbMode }))
+        driver.povUp().and { scoringState.climbMode }.whileTrue(climber.runGoal(Climber.Goal.UP))
+        driver.povDown().and { scoringState.climbMode }.whileTrue(climber.runGoal(Climber.Goal.DOWN))
+        driver.povRight().and { scoringState.climbMode }.whileTrue(climber.runGoal(Climber.Goal.CLIMB))
 
         val coralStationRotationAlign =
             JoystickAimAtAngleController(
@@ -604,6 +609,8 @@ class Robot : LoggedRobot() {
                     }
                 })
                 .withName("Drive Default")
+
+        LEDState.isAutoAligning = { autoAlignForScoringCoral.running || autoAlignForCollectingAlgae.running }
     }
 
     private fun CommandGenericHID.rumbleCommand() =
@@ -764,6 +771,8 @@ class Robot : LoggedRobot() {
         scoringState.log()
 
         autoChooser.update()
+
+        LEDState.climbMode = scoringState.climbMode
 
         LEDState.updateBuffer(leds.buffer)
         leds.displayBuffer()

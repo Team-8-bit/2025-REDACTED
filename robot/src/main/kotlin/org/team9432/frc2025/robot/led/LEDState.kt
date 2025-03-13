@@ -30,12 +30,18 @@ object LEDState {
 
     private val seesDisabledTagPattern = LEDPattern.solid(Color.kForestGreen).breathe(Seconds.of(3.0))
 
+    private val elevatorHeightPattern =
+        LEDPattern.solid(Color.kBisque).mask(LEDPattern.progressMaskLayer { elevatorHeight() })
+
     var codeLoading = false
     var climbMode = false
     var isAutoAligning = { false }
 
     var visionDisconnected = { false }
     var seesDisabledTag = { false }
+
+    var displayElevatorHeight = { false }
+    var elevatorHeight = { 0.0 }
 
     fun updateBuffer(buffer: AddressableLEDBuffer) {
         if (initLoops < INIT_LOOP_COUNT) {
@@ -49,6 +55,9 @@ object LEDState {
 
         if (codeLoading) {
             codeLoadingPattern.applyTo(buffer)
+        } else if (displayElevatorHeight()) {
+            elevatorHeightPattern.applyTo(LEDStrip.leftSection)
+            elevatorHeightPattern.reversed().applyTo(LEDStrip.rightSection)
         } else if (seesDisabledTag()) {
             seesDisabledTagPattern.applyTo(buffer)
         } else if (climbMode) {

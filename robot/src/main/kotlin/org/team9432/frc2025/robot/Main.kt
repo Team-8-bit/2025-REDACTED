@@ -91,8 +91,6 @@ class Robot : LoggedRobot() {
     private val climber: Climber
     private val scoringState = ScoringState()
 
-    private val leds = LEDStrip(RobotMap.LED_PORT, length = 46)
-
     private val cameras: Set<Camera>
     private val localizer = Localizer()
     private var simUpdateCall: (() -> Unit)? = null
@@ -104,7 +102,7 @@ class Robot : LoggedRobot() {
 
     init {
         LEDState.codeLoading = true
-        LEDState.updateBuffer(leds.buffer)
+        LEDState.updateBuffer(LEDStrip.buffer)
 
         SignalLogger.start()
 
@@ -276,6 +274,9 @@ class Robot : LoggedRobot() {
         DriverStation.silenceJoystickConnectionWarning(true)
 
         LEDState.visionDisconnected = { cameras.any { !it.connected } }
+        LEDState.seesDisabledTag = { seesDisabledTagDebouncer.calculate(isDisabled && cameras.any { it.seesAnyTag }) }
+        LEDState.displayElevatorHeight = { true /*switches.eight.asBoolean*/ }
+
         LEDState.codeLoading = false
     }
 
@@ -799,10 +800,9 @@ class Robot : LoggedRobot() {
         autoChooser.update()
 
         LEDState.climbMode = scoringState.climbMode
-        LEDState.seesDisabledTag = { seesDisabledTagDebouncer.calculate(isDisabled && cameras.any { it.seesAnyTag }) }
 
-        LEDState.updateBuffer(leds.buffer)
-        leds.displayBuffer()
+        LEDState.updateBuffer(LEDStrip.buffer)
+        LEDStrip.displayBuffer()
     }
 
     override fun simulationPeriodic() {

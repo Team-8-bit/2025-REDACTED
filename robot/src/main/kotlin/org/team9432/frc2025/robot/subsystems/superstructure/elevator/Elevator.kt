@@ -16,6 +16,7 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
+import org.team9432.frc2025.robot.led.LEDState
 import org.team9432.frc2025.robot.subsystems.superstructure.SuperstructureConstants
 
 class Elevator(private val io: ElevatorIO) : SubsystemBase() {
@@ -108,6 +109,8 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
                     )
                 }
             }
+
+        LEDState.elevatorHeight = { inputs.positionMeters / ElevatorConstants.MAX_POSITION }
     }
 
     override fun periodic() {

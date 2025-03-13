@@ -28,11 +28,14 @@ object LEDState {
         LEDPattern.steps(mutableMapOf(0.0 to Color.kBlue, 5.0 / 46.0 to Color.kBlack))
             .scrollAtAbsoluteSpeed(MetersPerSecond.of(6.0), spacing)
 
+    private val seesDisabledTagPattern = LEDPattern.solid(Color.kForestGreen).breathe(Seconds.of(3.0))
+
     var codeLoading = false
     var climbMode = false
     var isAutoAligning = { false }
 
     var visionDisconnected = { false }
+    var seesDisabledTag = { false }
 
     fun updateBuffer(buffer: AddressableLEDBuffer) {
         if (initLoops < INIT_LOOP_COUNT) {
@@ -46,6 +49,8 @@ object LEDState {
 
         if (codeLoading) {
             codeLoadingPattern.applyTo(buffer)
+        } else if (seesDisabledTag()) {
+            seesDisabledTagPattern.applyTo(buffer)
         } else if (climbMode) {
             climbModePattern.applyTo(buffer)
         } else if (visionDisconnected()) {

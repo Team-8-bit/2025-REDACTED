@@ -3,6 +3,7 @@ package org.team9432.frc2025.robot
 import choreo.Choreo
 import com.ctre.phoenix6.SignalLogger
 import edu.wpi.first.math.MathUtil
+import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
@@ -98,6 +99,8 @@ class Robot : LoggedRobot() {
     private val robotPosition = RobotPosition(localizer)
 
     private val autoCommands: Auto
+
+    private val seesDisabledTagDebouncer = Debouncer(0.5, Debouncer.DebounceType.kFalling)
 
     init {
         LEDState.codeLoading = true
@@ -796,6 +799,7 @@ class Robot : LoggedRobot() {
         autoChooser.update()
 
         LEDState.climbMode = scoringState.climbMode
+        LEDState.seesDisabledTag = { seesDisabledTagDebouncer.calculate(isDisabled && cameras.any { it.seesAnyTag }) }
 
         LEDState.updateBuffer(leds.buffer)
         leds.displayBuffer()

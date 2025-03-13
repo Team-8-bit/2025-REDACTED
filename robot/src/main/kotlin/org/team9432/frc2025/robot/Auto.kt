@@ -40,6 +40,9 @@ class Auto(
     fun onlyL2(branch: Branch): Command =
         Commands.defer({ initializeAuto().andThen(preloadAndScore(branch, CoralScoringTarget.L2)) }, emptySet())
 
+    fun onlyL4(branch: Branch): Command =
+        Commands.defer({ initializeAuto().andThen(preloadAndScore(branch, CoralScoringTarget.L4)) }, emptySet())
+
     fun auto(moves: List<Pair<Branch, CoralScoringTarget>>, coralStation: CoralStation): Command =
         Commands.defer(
             {

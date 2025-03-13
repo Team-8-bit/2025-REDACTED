@@ -670,6 +670,18 @@ class Robot : LoggedRobot() {
                             }
                         }
                     }
+                    addOption("Only L4") {
+                        addQuestion("Side", { currentAuto = it }) {
+                            addOption("Left", { autoCommands.onlyL4(Branch.J) })
+                            addOption("Right", { autoCommands.onlyL4(Branch.E) })
+                            var branch: Branch? = null
+                            addOption("Custom", { branch?.let { autoCommands.onlyL4(it) } }) {
+                                addQuestion("Which Branch?", { branch = it }) {
+                                    Branch.entries.forEach { addOption(it.name, { it }) }
+                                }
+                            }
+                        }
+                    }
 
                     var characterizationAuto = Commands.none()
                     addOption("Characterization", { characterizationAuto }) {

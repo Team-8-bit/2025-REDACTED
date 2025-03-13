@@ -646,6 +646,7 @@ class Robot : LoggedRobot() {
                     addOption("Do Nothing (Broken)", Commands::none)
 
                     addOption("Max L4 Left", { autoCommands.maxL4Left() })
+                    addOption("Max L4 Right", { autoCommands.maxL4Right() })
 
                     addOption("Only L2") {
                         addQuestion("Side", { currentAuto = it }) {

@@ -26,7 +26,7 @@ class Auto(
 ) {
     fun initializeAuto(): Command = superstructure.fakeAutoHome().alongWith(rollers.preloadCoral().asProxy())
 
-    private val coralStationTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, -1.0, Rotation2d.kZero)
+    private val coralStationTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.kZero)
 
     val autoAlignForStationPickup =
         DriveToPose(
@@ -70,6 +70,22 @@ class Auto(
                         Pair(Branch.A, CoralScoringTarget.L4),
                     ),
                     CoralStation.LEFT,
+                )
+            },
+            emptySet(),
+        )
+
+    fun maxL4Right(): Command =
+        Commands.defer(
+            {
+                auto(
+                    listOf(
+                        Pair(Branch.E, CoralScoringTarget.L4),
+                        Pair(Branch.D, CoralScoringTarget.L4),
+                        Pair(Branch.C, CoralScoringTarget.L4),
+                        Pair(Branch.B, CoralScoringTarget.L4),
+                    ),
+                    CoralStation.RIGHT,
                 )
             },
             emptySet(),

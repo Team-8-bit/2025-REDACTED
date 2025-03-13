@@ -95,12 +95,15 @@ class RobotPosition(private val localizer: Localizer) {
         val map =
             FieldConstants.Reef.Branch.entries.associateWith { branch ->
                 getBaseBranchAlignPose(branch).let { branchPose ->
-                    robotPose.distanceTo(branchPose) to abs(robotPose.rotation.degrees - branchPose.rotation.degrees)
+                    robotPose.distanceTo(branchPose) to
+                        Units.radiansToDegrees(
+                            abs(MathUtil.angleModulus(robotPose.rotation.radians - branchPose.rotation.radians))
+                        )
                 }
             }
         val target =
             map.minBy {
-                val degMult = 15 // 15 Degrees is equivalent to one meter of distance when choosing poles
+                val degMult = 45 // degrees equivalent to one meter of distance when choosing poles
 
                 val (distanceMeters, distanceDegrees) = it.value
                 (distanceDegrees / degMult) + distanceMeters

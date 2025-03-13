@@ -25,7 +25,7 @@ class CameraIOPhotonVisionSim(
         PhotonCameraSim(super.camera, simCameraProperties).apply {
             enableRawStream(true)
             enableProcessedStream(true)
-            enableDrawWireframe(true)
+            //            enableDrawWireframe(true)
         }
 
     init {

@@ -146,6 +146,19 @@ class RobotPosition(private val localizer: Localizer) {
             velocityLow
     }
 
+    private val processorTransform =
+        Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2 + Units.inchesToMeters(2.0), 0.0, Rotation2d.k180deg)
+
+    fun getActiveProcessorAlignPose(): Pose2d {
+        val alignPose = FieldConstants.Processor.centerFace.applyFlip().transformBy(processorTransform)
+        val txTyRobotPose = localizer.estimatedPose
+
+        val yDistance = abs(txTyRobotPose.relativeTo(alignPose).y)
+
+        var xOffset = -(yDistance * 0.75)
+        return alignPose.transformBy(Transform2d(xOffset, 0.0, Rotation2d.kZero))
+    }
+
     companion object {
         val coralScoringToleranceInches = LoggedTunableNumber("RobotPosition/CoralToleranceInches", 1.5)
         val coralScoringToleranceDegrees = LoggedTunableNumber("RobotPosition/CoralToleranceDegrees", 1.0)

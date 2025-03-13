@@ -182,7 +182,7 @@ class Robot : LoggedRobot() {
                                     Meters.of(DrivetrainConstants.BUMPER_LENGTH),
                                 )
                                 .withRobotMass(Pounds.of(135.0)),
-                            /* initialPoseOnField = */ Pose2d(7.0, 6.175, Rotation2d.fromDegrees(225.0)).applyFlip(),
+                            /* initialPoseOnField = */ Pose2d(7.0, 6.175, Rotation2d.fromDegrees(225.0)),
                         )
 
                     val gyroIO = GyroIOSim(swerveSim.gyroSimulation, odometryThread)
@@ -275,7 +275,8 @@ class Robot : LoggedRobot() {
 
         LEDState.visionDisconnected = { cameras.any { !it.connected } }
         LEDState.seesDisabledTag = { seesDisabledTagDebouncer.calculate(isDisabled && cameras.any { it.seesAnyTag }) }
-        LEDState.displayElevatorHeight = { true /*switches.eight.asBoolean*/ }
+        LEDState.displayElevatorHeight = { switches.eight.asBoolean }
+        LEDState.shouldRunDisplay = { switches.seven.asBoolean }
 
         LEDState.codeLoading = false
     }
@@ -357,13 +358,22 @@ class Robot : LoggedRobot() {
                 joystickDriveController,
                 {
                     MathUtil.clamp(
-                        localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                        (localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
                             FieldConstants.Reef.maxRadius -
-                            (DrivetrainConstants.BUMPER_LENGTH / 2),
-                        1.0,
-                        4.0,
+                            (DrivetrainConstants.BUMPER_LENGTH / 2)) * 2.5,
+                        2.0,
+                        5.0,
                     )
                 },
+            )
+
+        val autoAlignForScoringProcessor =
+            DriveToPose(
+                drive,
+                localizer,
+                { robotPosition.getActiveProcessorAlignPose() },
+                { localizer.estimatedPose },
+                joystickDriveController,
             )
 
         RobotModeTriggers.autonomous()
@@ -410,16 +420,9 @@ class Robot : LoggedRobot() {
 
         rollers.hasAlgaeTrigger
             .and { scoringState.algaeTarget == ScoringState.AlgaeScoringTarget.PROCESSOR }
-            .and {
-                localizer.estimatedPose.applyFlip().let {
-                    // Along the right wall or close to the opponent processor
-                    (it.y < 3.0 && it.x < (FieldConstants.fieldLength / 2)) ||
-                        it.distanceTo(FieldConstants.Processor.centerFace.flip()) < 3.0
-                }
-            }
-            .and(!controllerHasRotationInput)
+            .and(driver.rightBumper())
             .and(!disableAutoAlign)
-            .whileTrue(drive.runVelocity({ processorRotationAlign.calculate() }))
+            .whileTrue(autoAlignForScoringProcessor)
 
         val readyToScoreCoral =
             Trigger {
@@ -459,8 +462,6 @@ class Robot : LoggedRobot() {
         ((driver.a().or(readyToScoreCoral)).and(superstructure::atGoal).and {
                 superstructure.currentState.isCoralScoring
             })
-            //            .let { it.or { isAutonomousEnabled && it.debounce(.5,
-            // Debouncer.DebounceType.kFalling).asBoolean } }
             .whileTrue(rollers.runGoal { rollers.getScoringStateForTarget(scoringState.coralTarget) })
 
         driver
@@ -582,10 +583,10 @@ class Robot : LoggedRobot() {
         driver.rightStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasAlgae(true) }))
         driver.leftStick().and(Constants.robot::isSim).onTrue(Commands.runOnce({ rollers.simSetHasCoral(true) }))
 
-        driver.rightStick().onTrue(Commands.runOnce({ scoringState.climbMode = !scoringState.climbMode }))
-        driver.povUp().and { scoringState.climbMode }.whileTrue(climber.runGoal(Climber.Goal.UP))
-        driver.povDown().and { scoringState.climbMode }.whileTrue(climber.runGoal(Climber.Goal.DOWN))
-        driver.povRight().and { scoringState.climbMode }.whileTrue(climber.runGoal(Climber.Goal.CLIMB))
+        driver.rightStick().whileTrue(rollers.runGoal(Rollers.State.UNJAM_CORAL))
+        driver.povUp().or(operator.rightBumper()).whileTrue(climber.runGoal(Climber.Goal.UP))
+        driver.povDown().or(operator.leftBumper()).whileTrue(climber.runGoal(Climber.Goal.DOWN))
+        driver.povRight().whileTrue(climber.runGoal(Climber.Goal.CLIMB))
 
         val coralStationRotationAlign =
             JoystickAimAtAngleController(

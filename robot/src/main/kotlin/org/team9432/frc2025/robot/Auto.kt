@@ -114,7 +114,7 @@ class Auto(
             }),
             Commands.waitUntil(
                 rollers.hasCoralTrigger.or {
-                    autoAlignForStationPickup.withinTolerance(6.0, Units.degreesToRotations(15.0))
+                    autoAlignForStationPickup.withinTolerance(2.0, Units.degreesToRotations(5.0))
                 }
             ),
             Commands.runOnce({ scoringState.autoCoralStationPose = null }),

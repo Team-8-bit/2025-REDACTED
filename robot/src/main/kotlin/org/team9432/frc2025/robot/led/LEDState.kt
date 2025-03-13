@@ -43,6 +43,8 @@ object LEDState {
     var displayElevatorHeight = { false }
     var elevatorHeight = { 0.0 }
 
+    var shouldRunDisplay = { false }
+
     fun updateBuffer(buffer: AddressableLEDBuffer) {
         if (initLoops < INIT_LOOP_COUNT) {
             initLoops++
@@ -67,10 +69,14 @@ object LEDState {
         } else if (isAutoAligning()) {
             autoAlignPattern.applyTo(buffer)
         } else {
-            when (AllianceTracker.currentAlliance) {
-                null -> idlePattern.applyTo(buffer)
-                Alliance.Red -> redPattern.applyTo(buffer)
-                Alliance.Blue -> bluePattern.applyTo(buffer)
+            if (shouldRunDisplay()) {
+                idlePattern.applyTo(buffer)
+            } else {
+                when (AllianceTracker.currentAlliance) {
+                    null -> idlePattern.applyTo(buffer)
+                    Alliance.Red -> redPattern.applyTo(buffer)
+                    Alliance.Blue -> bluePattern.applyTo(buffer)
+                }
             }
         }
     }

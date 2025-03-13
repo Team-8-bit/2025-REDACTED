@@ -212,8 +212,9 @@ class Localizer {
         Logger.recordOutput("Localizer/OdometryPose", odometryPose)
         Logger.recordOutput("Localizer/EstimatedPose", estimatedPose)
 
-        val tagPoses = Array(FieldConstants.APRIL_TAG_COUNT) { getTxTyPose(it + 1) ?: Pose2d.kZero }
-        Logger.recordOutput("Localizer/TxTyPoses", *tagPoses)
+        val tagPoses =
+            Array(FieldConstants.APRIL_TAG_COUNT) { getTxTyPose(it + 1) ?: Pose2d.kZero }.filter { it.x != 0.0 }
+        Logger.recordOutput("Localizer/TxTyPoses", *tagPoses.toTypedArray())
 
         Logger.recordOutput("Localizer/RobotVelocity", robotVelocity)
         Logger.recordOutput("Localizer/FieldVelocity", fieldVelocity)

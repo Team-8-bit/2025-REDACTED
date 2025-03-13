@@ -110,7 +110,9 @@ open class CameraIOPhotonVision(
 
             else -> {
                 println(result.targets.size)
-                throw Exception("I don't think this should happen") // TODO: Replace with continue before comp
+                return null to null
+                //                throw Exception("I don't think this should happen") // TODO:
+                // Replace with continue before comp
             }
         }
 

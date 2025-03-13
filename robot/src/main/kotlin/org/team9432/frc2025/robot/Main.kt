@@ -2,6 +2,7 @@ package org.team9432.frc2025.robot
 
 import choreo.Choreo
 import com.ctre.phoenix6.SignalLogger
+import edu.wpi.first.math.MathUtil
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
@@ -350,6 +351,15 @@ class Robot : LoggedRobot() {
                     ) ?: localizer.estimatedPose
                 },
                 joystickDriveController,
+                {
+                    MathUtil.clamp(
+                        localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                            FieldConstants.Reef.maxRadius -
+                            (DrivetrainConstants.BUMPER_LENGTH / 2),
+                        1.0,
+                        4.0,
+                    )
+                },
             )
 
         RobotModeTriggers.autonomous()

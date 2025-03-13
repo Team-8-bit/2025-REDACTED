@@ -26,7 +26,8 @@ class Auto(
 ) {
     fun initializeAuto(): Command = superstructure.fakeAutoHome().alongWith(rollers.preloadCoral().asProxy())
 
-    private val coralStationTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.kZero)
+    private val coralStationTransform =
+        Transform2d((DrivetrainConstants.BUMPER_LENGTH / 2) + Units.inchesToMeters(12.0), 0.0, Rotation2d.kZero)
 
     val autoAlignForStationPickup =
         DriveToPose(

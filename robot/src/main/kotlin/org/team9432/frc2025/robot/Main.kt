@@ -519,10 +519,24 @@ class Robot : LoggedRobot() {
                         if (switches.four.asBoolean) {
                             Rollers.State.INTAKE_CORAL
                         } else {
-                            Rollers.State.INTAKE_CORAL_COMBO
+                            val distanceBeforeActivation = 1.0 // Meter
+                            if (
+                                FieldConstants.CoralStation.entries.any { station ->
+                                    station.centerPose.applyFlip().distanceTo(localizer.estimatedPose) -
+                                        (DrivetrainConstants.BUMPER_LENGTH / 2) > distanceBeforeActivation
+                                }
+                            ) {
+                                Rollers.State.INTAKE_CORAL_COMBO
+                            } else {
+                                Rollers.State.INTAKE_CORAL
+                            }
                         }
                     } else {
-                        Rollers.State.IDLE
+                        if (superstructure.currentState == SuperstructureState.STOW) {
+                            Rollers.State.IDLE
+                        } else {
+                            Rollers.State.UNJAM_CORAL
+                        }
                     }
                 }
             }
@@ -583,18 +597,6 @@ class Robot : LoggedRobot() {
         driver.povUp().or(operator.rightBumper()).whileTrue(climber.runGoal(Climber.Goal.UP))
         driver.povDown().or(operator.leftBumper()).whileTrue(climber.runGoal(Climber.Goal.DOWN))
         driver.povRight().whileTrue(climber.runGoal(Climber.Goal.CLIMB))
-
-        //        val coralStationRotationAlign =
-        //            JoystickAimAtAngleController(
-        //                joystickDriveController,
-        //                {
-        //                    if (localizer.estimatedPose.applyFlip().y > FieldConstants.fieldWidth
-        // / 2)
-        //                        FieldConstants.CoralStation.LEFT.centerPose.rotation.applyFlip()
-        //                    else FieldConstants.CoralStation.RIGHT.centerPose.rotation.applyFlip()
-        //                },
-        //                localizer,
-        //            )
 
         drive.defaultCommand =
             drive

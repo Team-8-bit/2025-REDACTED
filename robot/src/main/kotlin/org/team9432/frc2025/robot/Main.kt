@@ -463,7 +463,7 @@ class Robot : LoggedRobot() {
                                 ScoringState.AlgaeScoringTarget.NET -> SuperstructureState.PREPARE_NET
                             }
                         }
-                        .until(driver.a().and(superstructure::atGoal))
+                        .until((driver.a().or(autoAlignForScoringProcessor::atGoal)).and(superstructure::atGoal))
                         .andThen(rollers.runGoal(Rollers.State.SCORE_ALGAE)))
                     .asProxy()
                     .onlyIf(rollers.hasAlgaeTrigger)
@@ -629,7 +629,11 @@ class Robot : LoggedRobot() {
                 })
                 .withName("Drive Default")
 
-        LEDState.isAutoAligning = { autoAlignForScoringCoral.running || autoAlignForCollectingAlgae.running }
+        LEDState.isAutoAligning = {
+            autoAlignForScoringCoral.running ||
+                autoAlignForCollectingAlgae.running ||
+                autoAlignForScoringProcessor.running
+        }
     }
 
     private fun CommandGenericHID.rumbleCommand() =

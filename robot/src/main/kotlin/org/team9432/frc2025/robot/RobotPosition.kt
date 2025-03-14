@@ -151,13 +151,17 @@ class RobotPosition(private val localizer: Localizer) {
 
     fun getActiveProcessorAlignPose(): Pose2d {
         val alignPose = FieldConstants.Processor.centerFace.applyFlip().transformBy(processorTransform)
-        val txTyRobotPose = localizer.estimatedPose
+        val robotPose = localizer.estimatedPose
 
-        val yDistance = abs(txTyRobotPose.relativeTo(alignPose).y)
+        val yDistance = abs(robotPose.relativeTo(alignPose).y)
 
-        var xOffset = -(yDistance * 0.75)
+        var xOffset = MathUtil.clamp(yDistance * 0.75, 0.0, 1.0)
 
-        return alignPose.transformBy(Transform2d(xOffset, 0.0, Rotation2d.kZero))
+        if (robotPose.distanceTo(alignPose) > 1.0) {
+            xOffset += 0.75
+        }
+
+        return alignPose.transformBy(Transform2d(-xOffset, 0.0, Rotation2d.kZero))
     }
 
     companion object {

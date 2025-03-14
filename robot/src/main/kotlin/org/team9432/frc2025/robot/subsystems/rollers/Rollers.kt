@@ -115,7 +115,7 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         // Check if the coral has been collected
         val coralAligned =
             coralAlignedDebouncer.calculate(
-                state == State.INTAKE_CORAL &&
+                (state == State.INTAKE_CORAL || state == State.INTAKE_CORAL_COMBO) &&
                     abs(manipulator.torqueCurrentAmps) > coralAlignedTorqueCurrentThreshold.get()
             )
         if (coralAligned && !Constants.robot.isSim) {

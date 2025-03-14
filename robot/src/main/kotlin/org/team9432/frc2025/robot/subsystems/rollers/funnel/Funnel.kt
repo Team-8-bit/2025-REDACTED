@@ -13,8 +13,8 @@ class Funnel(private val io: FunnelIO) {
 
     enum class Goal(private val voltageSupplier: () -> Double) {
         IDLE({ 0.0 }),
-        INTAKE_CORAL(LoggedTunableNumber("Funnel/Setpoints/IntakeCoral", 2.0)),
-        UNJAM_CORAL(LoggedTunableNumber("Funnel/Setpoints/UnjamCoral", -6.0)),
+        INTAKE_CORAL(LoggedTunableNumber("Funnel/Setpoints/IntakeCoral", 8.0)),
+        UNJAM_CORAL(LoggedTunableNumber("Funnel/Setpoints/UnjamCoral", -12.0)),
         EJECT_ALGAE(LoggedTunableNumber("Funnel/Setpoints/EjectAlgae", -12.0));
 
         val voltage

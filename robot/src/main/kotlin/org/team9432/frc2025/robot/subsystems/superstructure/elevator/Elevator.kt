@@ -45,9 +45,11 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
         L2(LoggedTunableNumber("Elevator/Setpoints/L2", 0.54)),
         L3(LoggedTunableNumber("Elevator/Setpoints/L3", 0.97)),
         L4(LoggedTunableNumber("Elevator/Setpoints/L4", ElevatorConstants.MAX_POSITION)),
+        L4_PREP(LoggedTunableNumber("Elevator/Setpoints/L4Prep", 0.75)),
         INTAKE_ALGAE_REEF_LOW(LoggedTunableNumber("Elevator/Setpoints/IntakeAlgaeReefLow", 0.5)),
         INTAKE_ALGAE_REEF_HIGH(LoggedTunableNumber("Elevator/Setpoints/IntakeAlgaeReefHigh", 0.9)),
         HOLD_ALGAE_LOW(LoggedTunableNumber("Elevator/Setpoints/HoldAlgaeLow", 0.1)),
+        UNJAM_CORAL(LoggedTunableNumber("Elevator/Setpoints/UnjamCoral", 0.25)),
         PREPARE_PROCESSOR(LoggedTunableNumber("Elevator/Setpoints/PrepareProcessor", 0.1)),
         PREPARE_NET(LoggedTunableNumber("Elevator/Setpoints/PrepareNet", ElevatorConstants.MAX_POSITION)),
         SCORE_NET(LoggedTunableNumber("Elevator/Setpoints/ScoreNet", ElevatorConstants.MAX_POSITION));

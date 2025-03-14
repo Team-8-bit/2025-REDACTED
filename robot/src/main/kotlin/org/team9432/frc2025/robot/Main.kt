@@ -38,7 +38,10 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.photonvision.simulation.VisionSystemSim
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.dashboard.AutoSelector
-import org.team9432.frc2025.lib.util.*
+import org.team9432.frc2025.lib.util.applyFlip
+import org.team9432.frc2025.lib.util.distanceTo
+import org.team9432.frc2025.lib.util.not
+import org.team9432.frc2025.lib.util.transformBySpeeds
 import org.team9432.frc2025.robot.FieldConstants.Reef.Branch
 import org.team9432.frc2025.robot.ScoringState.CoralScoringTarget
 import org.team9432.frc2025.robot.commands.drive.DriveToPose
@@ -361,7 +364,7 @@ class Robot : LoggedRobot() {
                         (localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
                             FieldConstants.Reef.maxRadius -
                             (DrivetrainConstants.BUMPER_LENGTH / 2)) * 2.5,
-                        2.0,
+                        2.5,
                         5.0,
                     )
                 },
@@ -408,16 +411,6 @@ class Robot : LoggedRobot() {
             .and(!disableAutoAlign)
             .whileTrue(drive.runVelocity({ netRotationAlign.calculate() }))
 
-        val processorRotationAlign =
-            JoystickAimAtAngleController(
-                joystickDriveController,
-                {
-                    if (localizer.estimatedPose.x > FieldConstants.fieldLength / 2) Rotation2d.kCCW_90deg
-                    else Rotation2d.kCW_90deg
-                },
-                localizer,
-            )
-
         rollers.hasAlgaeTrigger
             .and { scoringState.algaeTarget == ScoringState.AlgaeScoringTarget.PROCESSOR }
             .and(driver.rightBumper())
@@ -427,15 +420,13 @@ class Robot : LoggedRobot() {
         val readyToScoreCoral =
             Trigger {
                     val teleopGood =
-                        (scoringState.coralTarget == CoralScoringTarget.L3 ||
-                            scoringState.coralTarget == CoralScoringTarget.L2) &&
+                        scoringState.coralTarget != CoralScoringTarget.L1 &&
                             robotPosition.withinCoralScoringTolerance.asBoolean
-
                     val autoGood = robotPosition.withinCoralScoringTolerance.asBoolean
 
                     teleopGood || autoGood
                 }
-                .debounce(0.1)
+                .debounce(0.05)
 
         (driver
                 .rightBumper()
@@ -443,20 +434,18 @@ class Robot : LoggedRobot() {
             .and(rollers.hasCoralTrigger)
             .and(!driver.leftBumper())
             .whileTrue(
-                superstructure
-                    .runGoal {
-                        if (robotPosition.isSafeToUseArm.asBoolean) {
-                            when (scoringState.coralTarget) {
-                                CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
-                                CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
-                                CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
-                                CoralScoringTarget.L4 -> SuperstructureState.PREPARE_L4
-                            }
-                        } else {
-                            superstructure.goal
+                superstructure.runGoal {
+                    if (robotPosition.isSafeToUseArm.asBoolean) {
+                        when (scoringState.coralTarget) {
+                            CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
+                            CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
+                            CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
+                            CoralScoringTarget.L4 -> SuperstructureState.PREPARE_L4
                         }
+                    } else {
+                        superstructure.goal
                     }
-                    .alongWith(Commands.sequence())
+                }
             )
 
         ((driver.a().or(readyToScoreCoral)).and(superstructure::atGoal).and {
@@ -476,6 +465,7 @@ class Robot : LoggedRobot() {
                         }
                         .until(driver.a().and(superstructure::atGoal))
                         .andThen(rollers.runGoal(Rollers.State.SCORE_ALGAE)))
+                    .asProxy()
                     .onlyIf(rollers.hasAlgaeTrigger)
             )
 
@@ -496,6 +486,8 @@ class Robot : LoggedRobot() {
                     }
                     .alongWith(rollers.runGoal(Rollers.State.INTAKE_ALGAE))
             )
+
+        driver.y().whileTrue(superstructure.runGoal { SuperstructureState.UNJAM_CORAL })
 
         driver
             .b()
@@ -541,7 +533,7 @@ class Robot : LoggedRobot() {
                             CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
                             CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
                             CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
-                            CoralScoringTarget.L4 -> SuperstructureState.PREPARE_L4
+                            CoralScoringTarget.L4 -> SuperstructureState.L4_PREP
                         }
                     } else {
                         SuperstructureState.STOW
@@ -588,16 +580,17 @@ class Robot : LoggedRobot() {
         driver.povDown().or(operator.leftBumper()).whileTrue(climber.runGoal(Climber.Goal.DOWN))
         driver.povRight().whileTrue(climber.runGoal(Climber.Goal.CLIMB))
 
-        val coralStationRotationAlign =
-            JoystickAimAtAngleController(
-                joystickDriveController,
-                {
-                    if (localizer.estimatedPose.applyFlip().y > FieldConstants.fieldWidth / 2)
-                        FieldConstants.CoralStation.LEFT.centerPose.rotation.applyFlip()
-                    else FieldConstants.CoralStation.RIGHT.centerPose.rotation.applyFlip()
-                },
-                localizer,
-            )
+        //        val coralStationRotationAlign =
+        //            JoystickAimAtAngleController(
+        //                joystickDriveController,
+        //                {
+        //                    if (localizer.estimatedPose.applyFlip().y > FieldConstants.fieldWidth
+        // / 2)
+        //                        FieldConstants.CoralStation.LEFT.centerPose.rotation.applyFlip()
+        //                    else FieldConstants.CoralStation.RIGHT.centerPose.rotation.applyFlip()
+        //                },
+        //                localizer,
+        //            )
 
         drive.defaultCommand =
             drive
@@ -605,22 +598,27 @@ class Robot : LoggedRobot() {
                     if (!isTeleopEnabled) {
                         ChassisSpeeds()
                     } else {
-                        if (
-                            superstructure.currentState == SuperstructureState.STOW &&
-                                localizer.estimatedPose.applyFlip().x < FieldConstants.fieldLength / 2 &&
-                                localizer.estimatedPose.applyFlip().let { robotPose ->
-                                    FieldConstants.CoralStation.entries.any {
-                                        robotPose.distanceTo(it.centerPose) < 2.0
-                                    }
-                                } &&
-                                !controllerHasRotationInput.asBoolean &&
-                                !disableAutoAlign.asBoolean &&
-                                !disableHPAlign.asBoolean
-                        ) {
-                            coralStationRotationAlign.calculate()
-                        } else {
-                            joystickDriveController.calculate()
-                        }
+                        //                        if (
+                        //                            superstructure.currentState ==
+                        // SuperstructureState.STOW &&
+                        //                                localizer.estimatedPose.applyFlip().x <
+                        // FieldConstants.fieldLength / 2 &&
+                        //                                localizer.estimatedPose.applyFlip().let {
+                        // robotPose ->
+                        //
+                        // FieldConstants.CoralStation.entries.any {
+                        //
+                        // robotPose.distanceTo(it.centerPose) < 2.0
+                        //                                    }
+                        //                                } &&
+                        //                                !controllerHasRotationInput.asBoolean &&
+                        //                                !disableAutoAlign.asBoolean &&
+                        //                                !disableHPAlign.asBoolean
+                        //                        ) {
+                        //                            coralStationRotationAlign.calculate()
+                        //                        } else {
+                        joystickDriveController.calculate()
+                        //                        }
                     }
                 })
                 .withName("Drive Default")

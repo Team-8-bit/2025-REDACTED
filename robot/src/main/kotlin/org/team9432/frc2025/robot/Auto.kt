@@ -87,7 +87,8 @@ class Auto(
                         Pair(Branch.E, CoralScoringTarget.L4),
                         Pair(Branch.D, CoralScoringTarget.L4),
                         Pair(Branch.C, CoralScoringTarget.L4),
-                        Pair(Branch.B, CoralScoringTarget.L4),
+                        Pair(Branch.C, CoralScoringTarget.L4),
+                        //                        Pair(Branch.B, CoralScoringTarget.L4),
                     ),
                     CoralStation.RIGHT,
                 )

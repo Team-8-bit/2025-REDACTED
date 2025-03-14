@@ -156,6 +156,7 @@ class RobotPosition(private val localizer: Localizer) {
         val yDistance = abs(txTyRobotPose.relativeTo(alignPose).y)
 
         var xOffset = -(yDistance * 0.75)
+
         return alignPose.transformBy(Transform2d(xOffset, 0.0, Rotation2d.kZero))
     }
 

@@ -86,8 +86,39 @@ class Auto(
                         Pair(Branch.E, CoralScoringTarget.L4),
                         Pair(Branch.D, CoralScoringTarget.L4),
                         Pair(Branch.C, CoralScoringTarget.L4),
+                        Pair(Branch.B, CoralScoringTarget.L4),
+                    ),
+                    CoralStation.RIGHT,
+                )
+            },
+            emptySet(),
+        )
+
+    fun maxL4LeftNoFront(): Command =
+        Commands.defer(
+            {
+                auto(
+                    listOf(
+                        Pair(Branch.J, CoralScoringTarget.L4),
+                        Pair(Branch.K, CoralScoringTarget.L4),
+                        Pair(Branch.L, CoralScoringTarget.L4),
+                        Pair(Branch.L, CoralScoringTarget.L4),
+                    ),
+                    CoralStation.LEFT,
+                )
+            },
+            emptySet(),
+        )
+
+    fun maxL4RightNoFront(): Command =
+        Commands.defer(
+            {
+                auto(
+                    listOf(
+                        Pair(Branch.E, CoralScoringTarget.L4),
+                        Pair(Branch.D, CoralScoringTarget.L4),
                         Pair(Branch.C, CoralScoringTarget.L4),
-                        //                        Pair(Branch.B, CoralScoringTarget.L4),
+                        Pair(Branch.C, CoralScoringTarget.L4),
                     ),
                     CoralStation.RIGHT,
                 )
@@ -117,7 +148,7 @@ class Auto(
                     autoAlignForStationPickup.withinTolerance(2.0, Units.degreesToRotations(5.0))
                 }
             ),
-            //            Commands.waitSeconds(0.5),
+            //            Commands.waitSeconds(0.5), This works, add if needed
             Commands.runOnce({ scoringState.autoCoralStationPose = null }),
             Commands.waitUntil(rollers.hasCoralTrigger).withTimeout(2.5),
             Commands.waitUntil((!rollers.hasCoralTrigger)),

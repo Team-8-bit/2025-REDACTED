@@ -289,7 +289,6 @@ class Robot : LoggedRobot() {
         drive.coastOverride = { switches.one.asBoolean }
 
         val disableAutoAlign = switches.three
-        val disableHPAlign = switches.four
 
         val joystickDriveController =
             JoystickDriveController(
@@ -532,7 +531,7 @@ class Robot : LoggedRobot() {
                             }
                         }
                     } else {
-                        if (superstructure.currentState == SuperstructureState.STOW) {
+                        if (superstructure.currentState == SuperstructureState.STOW || switches.four.asBoolean) {
                             Rollers.State.IDLE
                         } else {
                             Rollers.State.UNJAM_CORAL

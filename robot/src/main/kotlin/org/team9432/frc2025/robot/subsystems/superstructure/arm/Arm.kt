@@ -78,7 +78,7 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
                         kS = 4.440481,
                         kG = 7.537810 - 4.440481,
                         velocity = 3.0,
-                        acceleration = 3.0,
+                        acceleration = 8.0,
                         jerk = 0.0,
                     )
 

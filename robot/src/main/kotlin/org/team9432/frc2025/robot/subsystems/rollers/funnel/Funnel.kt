@@ -36,20 +36,23 @@ class Funnel(private val io: FunnelIO) {
         if (goal == Goal.IDLE) {
             io.setControl(neutralOut)
         } else if (goal == Goal.INTAKE_UNJAM_COMBO) {
-            val intakeTime = unjamComboIntakeTime.get()
-            val unjamTime = unjamComboUnjamTime.get()
-
-            if (!unjamTimer.isRunning || unjamTimer.hasElapsed(intakeTime + unjamTime)) {
-                unjamTimer.restart()
-            }
-
-            if (!unjamTimer.hasElapsed(intakeTime)) {
-                io.setControl(voltageControl.withOutput(Goal.INTAKE_CORAL.voltage))
-                voltage = voltageControl.Output
-            } else {
-                io.setControl(voltageControl.withOutput(Goal.UNJAM_CORAL.voltage))
-                voltage = voltageControl.Output
-            }
+            // Works, potential durability issues
+            //            val intakeTime = unjamComboIntakeTime.get()
+            //            val unjamTime = unjamComboUnjamTime.get()
+            //
+            //            if (!unjamTimer.isRunning || unjamTimer.hasElapsed(intakeTime +
+            // unjamTime)) {
+            //                unjamTimer.restart()
+            //            }
+            //
+            //            if (!unjamTimer.hasElapsed(intakeTime)) {
+            //                io.setControl(voltageControl.withOutput(Goal.INTAKE_CORAL.voltage))
+            //                voltage = voltageControl.Output
+            //            } else {
+            //                io.setControl(voltageControl.withOutput(Goal.UNJAM_CORAL.voltage))
+            //                voltage = voltageControl.Output
+            //            }
+            io.setControl(voltageControl.withOutput(Goal.INTAKE_CORAL.voltage))
         } else {
             io.setControl(voltageControl.withOutput(goal.voltage))
             voltage = voltageControl.Output

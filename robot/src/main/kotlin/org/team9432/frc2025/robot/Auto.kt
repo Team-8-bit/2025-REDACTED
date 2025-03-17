@@ -26,7 +26,7 @@ class Auto(
 ) {
     fun initializeAuto(): Command = superstructure.fakeAutoHome().alongWith(rollers.preloadCoral().asProxy())
 
-    private val coralStationTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.kZero)
+    private val coralStationTransform = Transform2d((DrivetrainConstants.BUMPER_LENGTH / 2), 0.0, Rotation2d.kZero)
 
     val autoAlignForStationPickup =
         DriveToPose(
@@ -38,6 +38,9 @@ class Auto(
 
     fun onlyL2(branch: Branch): Command =
         Commands.defer({ initializeAuto().andThen(preloadAndScore(branch, CoralScoringTarget.L2)) }, emptySet())
+
+    fun onlyL4(branch: Branch): Command =
+        Commands.defer({ initializeAuto().andThen(preloadAndScore(branch, CoralScoringTarget.L4)) }, emptySet())
 
     fun auto(moves: List<Pair<Branch, CoralScoringTarget>>, coralStation: CoralStation): Command =
         Commands.defer(
@@ -91,6 +94,38 @@ class Auto(
             emptySet(),
         )
 
+    fun maxL4LeftNoFront(): Command =
+        Commands.defer(
+            {
+                auto(
+                    listOf(
+                        Pair(Branch.J, CoralScoringTarget.L4),
+                        Pair(Branch.K, CoralScoringTarget.L4),
+                        Pair(Branch.L, CoralScoringTarget.L4),
+                        Pair(Branch.L, CoralScoringTarget.L4),
+                    ),
+                    CoralStation.LEFT,
+                )
+            },
+            emptySet(),
+        )
+
+    fun maxL4RightNoFront(): Command =
+        Commands.defer(
+            {
+                auto(
+                    listOf(
+                        Pair(Branch.E, CoralScoringTarget.L4),
+                        Pair(Branch.D, CoralScoringTarget.L4),
+                        Pair(Branch.C, CoralScoringTarget.L4),
+                        Pair(Branch.C, CoralScoringTarget.L4),
+                    ),
+                    CoralStation.RIGHT,
+                )
+            },
+            emptySet(),
+        )
+
     private fun preloadAndScore(branch: Branch, level: CoralScoringTarget) =
         Commands.sequence(
             Commands.runOnce({
@@ -110,11 +145,12 @@ class Auto(
             }),
             Commands.waitUntil(
                 rollers.hasCoralTrigger.or {
-                    autoAlignForStationPickup.withinTolerance(6.0, Units.degreesToRotations(15.0))
+                    autoAlignForStationPickup.withinTolerance(2.0, Units.degreesToRotations(5.0))
                 }
             ),
+            //            Commands.waitSeconds(0.5), This works, add if needed
             Commands.runOnce({ scoringState.autoCoralStationPose = null }),
-            Commands.waitUntil(rollers.hasCoralTrigger).withTimeout(2.0),
+            Commands.waitUntil(rollers.hasCoralTrigger).withTimeout(2.5),
             Commands.waitUntil((!rollers.hasCoralTrigger)),
             Commands.waitSeconds(0.3),
         )

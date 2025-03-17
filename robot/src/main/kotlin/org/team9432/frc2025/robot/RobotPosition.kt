@@ -95,12 +95,15 @@ class RobotPosition(private val localizer: Localizer) {
         val map =
             FieldConstants.Reef.Branch.entries.associateWith { branch ->
                 getBaseBranchAlignPose(branch).let { branchPose ->
-                    robotPose.distanceTo(branchPose) to abs(robotPose.rotation.degrees - branchPose.rotation.degrees)
+                    robotPose.distanceTo(branchPose) to
+                        Units.radiansToDegrees(
+                            abs(MathUtil.angleModulus(robotPose.rotation.radians - branchPose.rotation.radians))
+                        )
                 }
             }
         val target =
             map.minBy {
-                val degMult = 15 // 15 Degrees is equivalent to one meter of distance when choosing poles
+                val degMult = 45 // degrees equivalent to one meter of distance when choosing poles
 
                 val (distanceMeters, distanceDegrees) = it.value
                 (distanceDegrees / degMult) + distanceMeters
@@ -141,6 +144,24 @@ class RobotPosition(private val localizer: Localizer) {
             coralScoringToleranceInches.get() &&
             abs(difference.rotation.degrees) < coralScoringToleranceDegrees.get() &&
             velocityLow
+    }
+
+    private val processorTransform =
+        Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2 + Units.inchesToMeters(2.0), 0.0, Rotation2d.k180deg)
+
+    fun getActiveProcessorAlignPose(): Pose2d {
+        val alignPose = FieldConstants.Processor.centerFace.applyFlip().transformBy(processorTransform)
+        val robotPose = localizer.estimatedPose
+
+        val yDistance = abs(robotPose.relativeTo(alignPose).y)
+
+        var xOffset = MathUtil.clamp(yDistance * 0.75, 0.0, 1.0)
+
+        if (robotPose.distanceTo(alignPose) > 1.0) {
+            xOffset += 0.75
+        }
+
+        return alignPose.transformBy(Transform2d(-xOffset, 0.0, Rotation2d.kZero))
     }
 
     companion object {

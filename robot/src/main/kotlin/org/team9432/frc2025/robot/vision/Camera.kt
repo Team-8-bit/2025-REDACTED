@@ -24,6 +24,9 @@ class Camera(
     val connected
         get() = inputs.connected
 
+    val seesAnyTag
+        get() = inputs.poseObservations.isNotEmpty()
+
     override fun periodic() {
         io.updateInputs(inputs)
         Logger.processInputs("Vision/${cameraConstants.cameraName}", inputs)

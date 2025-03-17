@@ -33,6 +33,7 @@ class DriveToPose(
     private val targetPose: () -> Pose2d,
     private val robotPose: () -> Pose2d = { localizer.estimatedPose },
     private val driverInput: JoystickDriveController? = null,
+    private val maxAcceleration: () -> Double = { driveMaxAcceleration.get() },
 ) : Command() {
     private val driveController = ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0))
     private val thetaController = ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0))
@@ -69,6 +70,8 @@ class DriveToPose(
             Units.radiansToRotations(fieldVelocity.omegaRadiansPerSecond),
         )
         lastSetpointTranslation = currentPose.translation
+
+        driveController.constraints = TrapezoidProfile.Constraints(driveMaxVelocity.get(), maxAcceleration())
     }
 
     override fun execute() {
@@ -90,8 +93,7 @@ class DriveToPose(
         ) {
             driveController.p = drivekP.get()
             driveController.d = drivekD.get()
-            driveController.constraints =
-                TrapezoidProfile.Constraints(driveMaxVelocity.get(), driveMaxAcceleration.get())
+            driveController.constraints = TrapezoidProfile.Constraints(driveMaxVelocity.get(), driveMaxAcceleration())
             driveController.setTolerance(Units.inchesToMeters(driveToleranceInches.get()))
             thetaController.p = thetakP.get()
             thetaController.d = thetakD.get()
@@ -104,10 +106,12 @@ class DriveToPose(
         val currentPose = robotPose()
         val targetPose = targetPose()
 
+        val driveConstraints = TrapezoidProfile.Constraints(driveController.constraints.maxVelocity, maxAcceleration())
+        driveController.constraints = driveConstraints
+
         // Calculate drive speed
         val currentDistance = currentPose.translation.getDistance(targetPose.translation)
-        val ffScaler =
-            MathUtil.clamp((currentDistance - ffMinRadius.get()) / (ffMaxRadius.get() - ffMinRadius.get()), 0.0, 1.0)
+        MathUtil.clamp((currentDistance - ffMinRadius.get()) / (ffMaxRadius.get() - ffMinRadius.get()), 0.0, 1.0)
         driveErrorAbs = currentDistance
         driveController.reset(
             lastSetpointTranslation.getDistance(targetPose.translation),
@@ -201,11 +205,11 @@ class DriveToPose(
 
         init {
             drivekP.initDefault(2.0)
-            drivekD.initDefault(0.2)
+            drivekD.initDefault(0.05)
             thetakP.initDefault(4.0)
             thetakD.initDefault(0.4)
-            driveMaxVelocity.initDefault(3.0)
-            driveMaxAcceleration.initDefault(2.5)
+            driveMaxVelocity.initDefault(4.0)
+            driveMaxAcceleration.initDefault(3.0)
             thetaMaxVelocity.initDefault(1.0)
             thetaMaxAcceleration.initDefault(1.5)
             driveToleranceInches.initDefault(1.0)

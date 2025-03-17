@@ -28,11 +28,22 @@ object LEDState {
         LEDPattern.steps(mutableMapOf(0.0 to Color.kBlue, 5.0 / 46.0 to Color.kBlack))
             .scrollAtAbsoluteSpeed(MetersPerSecond.of(6.0), spacing)
 
+    private val seesDisabledTagPattern = LEDPattern.solid(Color.kForestGreen).breathe(Seconds.of(3.0))
+
+    private val elevatorHeightPattern =
+        LEDPattern.solid(Color.kBisque).mask(LEDPattern.progressMaskLayer { elevatorHeight() })
+
     var codeLoading = false
     var climbMode = false
     var isAutoAligning = { false }
 
     var visionDisconnected = { false }
+    var seesDisabledTag = { false }
+
+    var displayElevatorHeight = { false }
+    var elevatorHeight = { 0.0 }
+
+    var shouldRunDisplay = { false }
 
     fun updateBuffer(buffer: AddressableLEDBuffer) {
         if (initLoops < INIT_LOOP_COUNT) {
@@ -46,6 +57,11 @@ object LEDState {
 
         if (codeLoading) {
             codeLoadingPattern.applyTo(buffer)
+        } else if (displayElevatorHeight()) {
+            elevatorHeightPattern.applyTo(LEDStrip.leftSection)
+            elevatorHeightPattern.reversed().applyTo(LEDStrip.rightSection)
+        } else if (seesDisabledTag()) {
+            seesDisabledTagPattern.applyTo(buffer)
         } else if (climbMode) {
             climbModePattern.applyTo(buffer)
         } else if (visionDisconnected()) {
@@ -53,10 +69,14 @@ object LEDState {
         } else if (isAutoAligning()) {
             autoAlignPattern.applyTo(buffer)
         } else {
-            when (AllianceTracker.currentAlliance) {
-                null -> idlePattern.applyTo(buffer)
-                Alliance.Red -> redPattern.applyTo(buffer)
-                Alliance.Blue -> bluePattern.applyTo(buffer)
+            if (shouldRunDisplay()) {
+                idlePattern.applyTo(buffer)
+            } else {
+                when (AllianceTracker.currentAlliance) {
+                    null -> idlePattern.applyTo(buffer)
+                    Alliance.Red -> redPattern.applyTo(buffer)
+                    Alliance.Blue -> bluePattern.applyTo(buffer)
+                }
             }
         }
     }

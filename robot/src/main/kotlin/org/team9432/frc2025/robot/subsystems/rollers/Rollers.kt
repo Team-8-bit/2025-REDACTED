@@ -29,6 +29,7 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     enum class State {
         IDLE,
         INTAKE_CORAL,
+        INTAKE_CORAL_COMBO,
         SCORE_CORAL_TALL,
         SCORE_CORAL_LOW,
         UNJAM_CORAL,
@@ -75,6 +76,11 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             State.IDLE -> {}
             State.INTAKE_CORAL -> {
                 funnel.goal = Funnel.Goal.INTAKE_CORAL
+                manipulator.goal = Manipulator.Goal.INTAKE_CORAL
+            }
+
+            State.INTAKE_CORAL_COMBO -> {
+                funnel.goal = Funnel.Goal.INTAKE_UNJAM_COMBO
                 manipulator.goal = Manipulator.Goal.INTAKE_CORAL
             }
 

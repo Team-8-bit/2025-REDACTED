@@ -45,7 +45,7 @@ object VisionConstants {
                         Units.degreesToRadians(-45.0),
                     ),
                 ),
-            initialPitchOffset = -3.0,
+            initialPitchOffset = 0.0,
         ),
         FRONT_RIGHT(
             stdDevFactor = 1.0,

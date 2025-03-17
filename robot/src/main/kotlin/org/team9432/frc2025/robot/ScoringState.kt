@@ -5,7 +5,7 @@ import org.littletonrobotics.junction.Logger
 
 class ScoringState {
     var teleCoralTarget = CoralScoringTarget.L4
-    var algaeTarget = AlgaeScoringTarget.NET
+    var algaeTarget = AlgaeScoringTarget.PROCESSOR
 
     var autoCoralTarget: CoralScoringTarget? = null
     var autoBranchTarget: FieldConstants.Reef.Branch? = null

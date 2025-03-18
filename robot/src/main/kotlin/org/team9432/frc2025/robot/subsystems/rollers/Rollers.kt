@@ -53,6 +53,9 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     private var algaeCollectedDebouncer = Debouncer(algaeCollectionDebounceTime.get())
     private var algaeDroppedDebouncer = Debouncer(algaeDroppedDebounceTime.get())
 
+    private val rollerSensors = RollerSensors()
+    private val rollerSensorInputs = LoggedRollerSensorsInputs()
+
     init {
         LoggedTunableNumber.ifChanged(hashCode(), coralAlignedDebounceTime) { (dt) ->
             coralAlignedDebouncer = Debouncer(dt)
@@ -66,6 +69,9 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     }
 
     override fun periodic() {
+        rollerSensors.updateInputs(rollerSensorInputs)
+        Logger.processInputs("RollersSensors", rollerSensorInputs)
+
         funnel.periodic()
         manipulator.periodic()
 
@@ -113,12 +119,15 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         }
 
         // Check if the coral has been collected
-        val coralAligned =
+        val coralCurrentDetector =
             coralAlignedDebouncer.calculate(
                 state == State.INTAKE_CORAL &&
                     abs(manipulator.torqueCurrentAmps) > coralAlignedTorqueCurrentThreshold.get()
             )
-        if (coralAligned && !Constants.robot.isSim) {
+
+        val coralBeambreakDetector = rollerSensorInputs.frontCoralTripped && state == State.INTAKE_CORAL
+
+        if ((coralCurrentDetector || coralBeambreakDetector) && !Constants.robot.isSim) {
             hasCoral = true
         }
 
@@ -158,9 +167,11 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             in setOf(RobotState.CoralScoringTarget.L2, RobotState.CoralScoringTarget.L3) -> {
                 State.SCORE_CORAL_LOW
             }
+
             RobotState.CoralScoringTarget.L1 -> {
                 State.SCORE_CORAL_L1
             }
+
             else -> {
                 State.SCORE_CORAL_TALL
             }

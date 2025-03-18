@@ -432,42 +432,42 @@ class Robot : LoggedRobot() {
                 .debounce(0.05)
 
         (driver.rightBumper())
-            .and(rollers.hasCoralTrigger)
             .and(!driver.leftBumper())
             .whileTrue(
-                superstructure.runGoal {
-                    if (
-                        robotPosition.isSafeToUseArm.asBoolean ||
-                            (superstructure.currentState == SuperstructureState.L4_PREP &&
-                                scoringState.coralTarget == CoralScoringTarget.L4)
-                    ) {
-                        when (scoringState.coralTarget) {
-                            CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
-                            CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
-                            CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
-                            CoralScoringTarget.L4 -> {
-                                val shouldFullyExtend =
-                                    localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
-                                        FieldConstants.Reef.maxRadius -
-                                        (DrivetrainConstants.BUMPER_LENGTH / 2) < 0.25 &&
-                                        robotPosition.angleFromReef() < 30
-                                if (shouldFullyExtend) {
-                                    SuperstructureState.PREPARE_L4
-                                } else {
-                                    SuperstructureState.L4_PREP
+                (superstructure
+                        .runGoal {
+                            if (
+                                robotPosition.isSafeToUseArm.asBoolean ||
+                                    (superstructure.currentState == SuperstructureState.L4_PREP &&
+                                        scoringState.coralTarget == CoralScoringTarget.L4)
+                            ) {
+                                when (scoringState.coralTarget) {
+                                    CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
+                                    CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
+                                    CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
+                                    CoralScoringTarget.L4 -> {
+                                        val shouldFullyExtend =
+                                            localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                                                FieldConstants.Reef.maxRadius -
+                                                (DrivetrainConstants.BUMPER_LENGTH / 2) < 0.25 &&
+                                                robotPosition.angleFromReef() < 30
+                                        if (shouldFullyExtend) {
+                                            SuperstructureState.PREPARE_L4
+                                        } else {
+                                            SuperstructureState.L4_PREP
+                                        }
+                                    }
                                 }
+                            } else {
+                                superstructure.goal
                             }
                         }
-                    } else {
-                        superstructure.goal
-                    }
-                }
+                        .alongWith(
+                            Commands.waitUntil((driver.a().or(readyToScoreCoral)).and(superstructure::atGoal))
+                                .andThen(rollers.runGoal { rollers.getScoringStateForTarget(scoringState.coralTarget) })
+                        ))
+                    .onlyIf(rollers.hasCoralTrigger)
             )
-
-        ((driver.a().or(readyToScoreCoral)).and(superstructure::atGoal).and {
-                superstructure.currentState.isCoralScoring
-            })
-            .whileTrue(rollers.runGoal { rollers.getScoringStateForTarget(scoringState.coralTarget) })
 
         driver
             .rightBumper()

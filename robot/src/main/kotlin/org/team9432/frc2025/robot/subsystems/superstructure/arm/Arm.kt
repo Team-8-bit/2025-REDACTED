@@ -159,6 +159,8 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
 
     fun fakeAutoHome(): Command = runOnce { hasHomed = true }
 
+    fun clearHome(): Command = runOnce { hasHomed = false }
+
     /** Runs the elevator to the given [goal] and ends when the position is reached. */
     fun runToGoal(goal: Goal) = runOnce { this.goal = goal }.andThen(Commands.idle(this)).until(::atGoal)
 

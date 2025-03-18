@@ -12,14 +12,12 @@ import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.net.PortForwarder
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.DriverStation
-import edu.wpi.first.wpilibj.GenericHID.RumbleType
 import edu.wpi.first.wpilibj.PowerDistribution
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.button.CommandGenericHID
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -37,18 +35,9 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.photonvision.simulation.VisionSystemSim
 import org.team9432.frc2025.lib.AllianceTracker
-import org.team9432.frc2025.lib.dashboard.AutoSelector
-import org.team9432.frc2025.lib.util.applyFlip
-import org.team9432.frc2025.lib.util.distanceTo
-import org.team9432.frc2025.lib.util.not
-import org.team9432.frc2025.lib.util.transformBySpeeds
-import org.team9432.frc2025.robot.FieldConstants.Reef.Branch
-import org.team9432.frc2025.robot.ScoringState.CoralScoringTarget
+import org.team9432.frc2025.lib.util.*
+import org.team9432.frc2025.robot.RobotState.CoralScoringTarget
 import org.team9432.frc2025.robot.commands.drive.DriveToPose
-import org.team9432.frc2025.robot.commands.drive.DrivetrainSimpleFeedforward
-import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
-import org.team9432.frc2025.robot.led.LEDState
-import org.team9432.frc2025.robot.led.LEDStrip
 import org.team9432.frc2025.robot.subsystems.climber.Climber
 import org.team9432.frc2025.robot.subsystems.climber.ClimberIO
 import org.team9432.frc2025.robot.subsystems.climber.ClimberIOReal
@@ -81,6 +70,7 @@ import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIO
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOReal
 import org.team9432.frc2025.robot.subsystems.superstructure.elevator.ElevatorIOSim
+import org.team9432.frc2025.robot.util.*
 import org.team9432.frc2025.robot.vision.*
 
 class Robot : LoggedRobot() {
@@ -92,7 +82,7 @@ class Robot : LoggedRobot() {
     private val superstructure: Superstructure
     private val rollers: Rollers
     private val climber: Climber
-    private val scoringState = ScoringState()
+    private val robotState = RobotState()
 
     private val cameras: Set<Camera>
     private val localizer = Localizer()
@@ -100,12 +90,13 @@ class Robot : LoggedRobot() {
     private val robotPosition = RobotPosition(localizer)
 
     private val autoCommands: Auto
-
+    private val autoChooser: AutoChooser
     private val seesDisabledTagDebouncer = Debouncer(0.5, Debouncer.DebounceType.kFalling)
 
     init {
         LEDState.codeLoading = true
         LEDState.updateBuffer(LEDStrip.buffer)
+        LEDStrip.displayBuffer()
 
         SignalLogger.start()
 
@@ -266,7 +257,8 @@ class Robot : LoggedRobot() {
             odometryThread.start()
         }
 
-        autoCommands = Auto(robotPosition, localizer, drive, superstructure, rollers, scoringState)
+        autoCommands = Auto(robotPosition, localizer, drive, superstructure, rollers, robotState)
+        autoChooser = AutoChooser(autoCommands, localizer, drive, superstructure)
 
         bindButtons()
 
@@ -285,8 +277,8 @@ class Robot : LoggedRobot() {
     }
 
     private fun bindButtons() {
-        superstructure.coastOverride = { switches.one.asBoolean }
-        drive.coastOverride = { switches.one.asBoolean }
+        superstructure.coastOverride = { switches.one.asBoolean && isDisabled }
+        drive.coastOverride = { switches.one.asBoolean && isDisabled }
 
         val disableAutoAlign = switches.three
 
@@ -334,18 +326,18 @@ class Robot : LoggedRobot() {
                 localizer,
                 {
                     val branch =
-                        scoringState.autoBranchTarget
+                        robotState.autoBranchTarget
                             ?: robotPosition.nearestReefAlignBranch(
                                 localizer.estimatedPose.transformBySpeeds(localizer.robotVelocity, 0.1)
                             )
                     val target = robotPosition.getActiveBranchAlignPose(branch)
 
                     val isNotReadyForL4 =
-                        scoringState.coralTarget == CoralScoringTarget.L4 &&
+                        robotState.coralTarget == CoralScoringTarget.L4 &&
                             superstructure.currentState !in
                                 setOf(SuperstructureState.L4_PREP, SuperstructureState.PREPARE_L4)
                     val isNotReadyForL1 =
-                        scoringState.coralTarget == CoralScoringTarget.L1 &&
+                        robotState.coralTarget == CoralScoringTarget.L1 &&
                             superstructure.currentState == SuperstructureState.PREPARE_L1
 
                     val armNotReady = isNotReadyForL1 || isNotReadyForL4
@@ -358,7 +350,7 @@ class Robot : LoggedRobot() {
                 },
                 {
                     localizer.getTxTyPose(
-                        (scoringState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch()).getTag()
+                        (robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch()).getTag()
                     ) ?: localizer.estimatedPose
                 },
                 joystickDriveController,
@@ -384,14 +376,14 @@ class Robot : LoggedRobot() {
 
         RobotModeTriggers.autonomous()
             .and((!rollers.hasCoralTrigger))
-            .and { scoringState.autoCoralStationPose != null }
+            .and { robotState.autoCoralStationPose != null }
             .whileTrue(autoCommands.autoAlignForStationPickup)
 
         (driver.rightBumper().or(RobotModeTriggers.autonomous()))
-            .and(rollers.hasCoralTrigger.or { isAutonomousEnabled && scoringState.autoCoralStationPose == null })
+            .and(rollers.hasCoralTrigger.or { isAutonomousEnabled && robotState.autoCoralStationPose == null })
             .and(!driver.leftBumper())
             .and(!disableAutoAlign)
-            .and { scoringState.teleCoralTarget != CoralScoringTarget.L1 }
+            .and { robotState.teleCoralTarget != CoralScoringTarget.L1 }
             .whileTrue(autoAlignForScoringCoral)
 
         driver
@@ -404,7 +396,7 @@ class Robot : LoggedRobot() {
         val netRotationAlign =
             JoystickAimAtAngleController(joystickDriveController, { Rotation2d.kZero.applyFlip() }, localizer)
         rollers.hasAlgaeTrigger
-            .and { scoringState.algaeTarget == ScoringState.AlgaeScoringTarget.NET }
+            .and { robotState.algaeTarget == RobotState.AlgaeScoringTarget.NET }
             .and {
                 localizer.estimatedPose.applyFlip().let {
                     it.y > FieldConstants.fieldWidth / 2 && it.x > (FieldConstants.fieldLength / 2) - 3.0
@@ -415,23 +407,18 @@ class Robot : LoggedRobot() {
             .whileTrue(drive.runVelocity({ netRotationAlign.calculate() }))
 
         rollers.hasAlgaeTrigger
-            .and { scoringState.algaeTarget == ScoringState.AlgaeScoringTarget.PROCESSOR }
+            .and { robotState.algaeTarget == RobotState.AlgaeScoringTarget.PROCESSOR }
             .and(driver.rightBumper())
             .and(!disableAutoAlign)
             .whileTrue(autoAlignForScoringProcessor)
 
         val readyToScoreCoral =
-            Trigger {
-                    val teleopGood =
-                        scoringState.coralTarget != CoralScoringTarget.L1 &&
-                            robotPosition.withinCoralScoringTolerance.asBoolean
-                    val autoGood = robotPosition.withinCoralScoringTolerance.asBoolean
-
-                    teleopGood || autoGood
-                }
+            robotPosition.withinCoralScoringTolerance
+                .and { robotState.coralTarget != CoralScoringTarget.L1 }
                 .debounce(0.05)
 
-        (driver.rightBumper())
+        driver
+            .rightBumper()
             .and(!driver.leftBumper())
             .whileTrue(
                 (superstructure
@@ -439,9 +426,9 @@ class Robot : LoggedRobot() {
                             if (
                                 robotPosition.isSafeToUseArm.asBoolean ||
                                     (superstructure.currentState == SuperstructureState.L4_PREP &&
-                                        scoringState.coralTarget == CoralScoringTarget.L4)
+                                        robotState.coralTarget == CoralScoringTarget.L4)
                             ) {
-                                when (scoringState.coralTarget) {
+                                when (robotState.coralTarget) {
                                     CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
                                     CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
                                     CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
@@ -464,7 +451,7 @@ class Robot : LoggedRobot() {
                         }
                         .alongWith(
                             Commands.waitUntil((driver.a().or(readyToScoreCoral)).and(superstructure::atGoal))
-                                .andThen(rollers.runGoal { rollers.getScoringStateForTarget(scoringState.coralTarget) })
+                                .andThen(rollers.runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) })
                         ))
                     .onlyIf(rollers.hasCoralTrigger)
             )
@@ -474,9 +461,9 @@ class Robot : LoggedRobot() {
             .whileTrue(
                 (superstructure
                         .runGoal {
-                            when (scoringState.algaeTarget) {
-                                ScoringState.AlgaeScoringTarget.PROCESSOR -> SuperstructureState.PROCESSOR
-                                ScoringState.AlgaeScoringTarget.NET -> SuperstructureState.PREPARE_NET
+                            when (robotState.algaeTarget) {
+                                RobotState.AlgaeScoringTarget.PROCESSOR -> SuperstructureState.PROCESSOR
+                                RobotState.AlgaeScoringTarget.NET -> SuperstructureState.PREPARE_NET
                             }
                         }
                         .until((driver.a().or(autoAlignForScoringProcessor::atGoal)).and(superstructure::atGoal))
@@ -528,31 +515,29 @@ class Robot : LoggedRobot() {
             rollers.runGoal {
                 if (!superstructure.isHomed) {
                     Rollers.State.IDLE
-                } else {
-                    if (rollers.hasAlgae) {
-                        Rollers.State.INTAKE_ALGAE
-                    } else if (!rollers.hasCoral && superstructure.currentState == SuperstructureState.STOW) {
-                        if (switches.four.asBoolean) {
-                            Rollers.State.INTAKE_CORAL
-                        } else {
-                            val distanceBeforeActivation = 1.0 // Meter
-                            if (
-                                FieldConstants.CoralStation.entries.any { station ->
-                                    station.centerPose.applyFlip().distanceTo(localizer.estimatedPose) -
-                                        (DrivetrainConstants.BUMPER_LENGTH / 2) > distanceBeforeActivation
-                                }
-                            ) {
-                                Rollers.State.INTAKE_CORAL_COMBO
-                            } else {
-                                Rollers.State.INTAKE_CORAL
-                            }
-                        }
+                } else if (rollers.hasAlgae) {
+                    Rollers.State.INTAKE_ALGAE
+                } else if (!rollers.hasCoral && superstructure.currentState == SuperstructureState.STOW) {
+                    if (switches.four.asBoolean) {
+                        Rollers.State.INTAKE_CORAL
                     } else {
-                        if (superstructure.currentState == SuperstructureState.STOW || switches.four.asBoolean) {
-                            Rollers.State.IDLE
+                        val distanceBeforeActivation = 1.0 // Meter
+                        if (
+                            FieldConstants.CoralStation.entries.any { station ->
+                                station.centerPose.applyFlip().distanceTo(localizer.estimatedPose) -
+                                    (DrivetrainConstants.BUMPER_LENGTH / 2) > distanceBeforeActivation
+                            }
+                        ) {
+                            Rollers.State.INTAKE_CORAL_COMBO
                         } else {
-                            Rollers.State.UNJAM_CORAL
+                            Rollers.State.INTAKE_CORAL
                         }
+                    }
+                } else {
+                    if (superstructure.currentState == SuperstructureState.STOW || switches.four.asBoolean) {
+                        Rollers.State.IDLE
+                    } else {
+                        Rollers.State.UNJAM_CORAL
                     }
                 }
             }
@@ -563,7 +548,7 @@ class Robot : LoggedRobot() {
                     if (rollers.hasAlgae) {
                         SuperstructureState.ALGAE_STOW
                     } else if (rollers.hasCoral) {
-                        when (scoringState.coralTarget) {
+                        when (robotState.coralTarget) {
                             CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
                             CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
                             CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
@@ -579,27 +564,26 @@ class Robot : LoggedRobot() {
 
         operator
             .x()
-            .onTrue(Commands.runOnce({ scoringState.teleCoralTarget = CoralScoringTarget.L1 }).ignoringDisable(true))
+            .onTrue(Commands.runOnce({ robotState.teleCoralTarget = CoralScoringTarget.L1 }).ignoringDisable(true))
         operator
             .a()
-            .onTrue(Commands.runOnce({ scoringState.teleCoralTarget = CoralScoringTarget.L2 }).ignoringDisable(true))
+            .onTrue(Commands.runOnce({ robotState.teleCoralTarget = CoralScoringTarget.L2 }).ignoringDisable(true))
         operator
             .b()
-            .onTrue(Commands.runOnce({ scoringState.teleCoralTarget = CoralScoringTarget.L3 }).ignoringDisable(true))
+            .onTrue(Commands.runOnce({ robotState.teleCoralTarget = CoralScoringTarget.L3 }).ignoringDisable(true))
         operator
             .y()
-            .onTrue(Commands.runOnce({ scoringState.teleCoralTarget = CoralScoringTarget.L4 }).ignoringDisable(true))
+            .onTrue(Commands.runOnce({ robotState.teleCoralTarget = CoralScoringTarget.L4 }).ignoringDisable(true))
 
         operator
             .povUp()
             .onTrue(
-                Commands.runOnce({ scoringState.algaeTarget = ScoringState.AlgaeScoringTarget.NET })
-                    .ignoringDisable(true)
+                Commands.runOnce({ robotState.algaeTarget = RobotState.AlgaeScoringTarget.NET }).ignoringDisable(true)
             )
         operator
             .povDown()
             .onTrue(
-                Commands.runOnce({ scoringState.algaeTarget = ScoringState.AlgaeScoringTarget.PROCESSOR })
+                Commands.runOnce({ robotState.algaeTarget = RobotState.AlgaeScoringTarget.PROCESSOR })
                     .ignoringDisable(true)
             )
 
@@ -652,100 +636,12 @@ class Robot : LoggedRobot() {
         }
     }
 
-    private fun CommandGenericHID.rumbleCommand() =
-        Commands.startEnd(
-                { hid.setRumble(RumbleType.kBothRumble, 1.0) },
-                { hid.setRumble(RumbleType.kBothRumble, 0.0) },
-            )
-            .asProxy()
-
-    private fun CommandGenericHID.alternatingRumbleCommand(periodSeconds: Double) =
-        Commands.repeatingSequence(
-                Commands.runOnce({
-                    hid.setRumble(RumbleType.kLeftRumble, 1.0)
-                    hid.setRumble(RumbleType.kRightRumble, 0.0)
-                }),
-                Commands.waitSeconds(periodSeconds / 2),
-                Commands.runOnce({
-                    hid.setRumble(RumbleType.kLeftRumble, 0.0)
-                    hid.setRumble(RumbleType.kRightRumble, 1.0)
-                }),
-                Commands.waitSeconds(periodSeconds / 2),
-            )
-            .finallyDo { _ -> hid.setRumble(RumbleType.kBothRumble, 0.0) }
-            .asProxy()
-
-    private var currentAuto = Commands.none()
-    private val autoChoosers =
-        List(5) { AutoSelector.DashboardQuestion("Option $it Chooser", "Option $it Question") }.toSet()
-
-    private val autoChooser =
-        AutoSelector(autoChoosers) {
-                addQuestion("Which Auto?", { currentAuto = it }) {
-                    addOption("Do Nothing (Broken)", Commands::none)
-
-                    addOption("Max L4 Left", { autoCommands.maxL4Left() })
-                    addOption("Max L4 Right", { autoCommands.maxL4Right() })
-
-                    addOption("Max L4 Left No Front", { autoCommands.maxL4LeftNoFront() })
-                    addOption("Max L4 Right No Front", { autoCommands.maxL4RightNoFront() })
-
-                    addOption("Only L2") {
-                        addQuestion("Side", { currentAuto = it }) {
-                            addOption("Left", { autoCommands.onlyL2(Branch.J) })
-                            addOption("Right", { autoCommands.onlyL2(Branch.E) })
-                            var branch: Branch? = null
-                            addOption("Custom", { branch?.let { autoCommands.onlyL2(it) } }) {
-                                addQuestion("Which Branch?", { branch = it }) {
-                                    Branch.entries.forEach { addOption(it.name, { it }) }
-                                }
-                            }
-                        }
-                    }
-                    addOption("Only L4") {
-                        addQuestion("Side", { currentAuto = it }) {
-                            addOption("Left", { autoCommands.onlyL4(Branch.J) })
-                            addOption("Right", { autoCommands.onlyL4(Branch.E) })
-                            var branch: Branch? = null
-                            addOption("Custom", { branch?.let { autoCommands.onlyL4(it) } }) {
-                                addQuestion("Which Branch?", { branch = it }) {
-                                    Branch.entries.forEach { addOption(it.name, { it }) }
-                                }
-                            }
-                        }
-                    }
-
-                    var characterizationAuto = Commands.none()
-                    addOption("Characterization", { characterizationAuto }) {
-                        addQuestion("Which routine?", { characterizationAuto = it }) {
-                            addOption(
-                                "Drive Simple Feedforward Characterization",
-                                { DrivetrainSimpleFeedforward(drive) },
-                            )
-                            addOption(
-                                "Drive Wheel Radius Characterization",
-                                { WheelRadiusCharacterization(drive, localizer) },
-                            )
-                            addOption(
-                                "Elevator Static Characterization",
-                                { superstructure.elevatorStaticCharacterization() },
-                            )
-                            addOption(
-                                "CoralArm Static Characterization",
-                                { superstructure.armStaticCharacterization() },
-                            )
-                        }
-                    }
-                }
-            }
-            .also { it.update() }
-
     override fun autonomousInit() {
-        currentAuto.schedule()
+        autoChooser.command.schedule()
     }
 
     override fun autonomousExit() {
-        currentAuto.cancel()
+        autoChooser.command.cancel()
     }
 
     private fun loggerInit() {
@@ -802,7 +698,7 @@ class Robot : LoggedRobot() {
     }
 
     override fun teleopPeriodic() {
-        scoringState.clearAutoState()
+        robotState.clearAutoState()
     }
 
     override fun robotPeriodic() {
@@ -823,11 +719,11 @@ class Robot : LoggedRobot() {
         // Log robot state
         localizer.log()
         robotPosition.outputTelemetry()
-        scoringState.log()
+        robotState.log()
 
         autoChooser.update()
 
-        LEDState.climbMode = scoringState.climbMode
+        LEDState.climbMode = robotState.climbMode
 
         LEDState.updateBuffer(LEDStrip.buffer)
         LEDStrip.displayBuffer()

@@ -2,8 +2,9 @@ package org.team9432.frc2025.robot
 
 import edu.wpi.first.math.geometry.Pose2d
 import org.littletonrobotics.junction.Logger
+import org.team9432.frc2025.robot.util.FieldConstants
 
-class ScoringState {
+class RobotState {
     var teleCoralTarget = CoralScoringTarget.L4
     var algaeTarget = AlgaeScoringTarget.PROCESSOR
 

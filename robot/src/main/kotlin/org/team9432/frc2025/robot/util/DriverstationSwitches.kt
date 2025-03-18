@@ -1,4 +1,4 @@
-package org.team9432.frc2025.robot
+package org.team9432.frc2025.robot.util
 
 import edu.wpi.first.wpilibj2.command.button.CommandGenericHID
 

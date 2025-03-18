@@ -16,8 +16,8 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
-import org.team9432.frc2025.robot.led.LEDState
 import org.team9432.frc2025.robot.subsystems.superstructure.SuperstructureConstants
+import org.team9432.frc2025.robot.util.LEDState
 
 class Elevator(private val io: ElevatorIO) : SubsystemBase() {
     private val inputs: LoggedElevatorIOInputs = LoggedElevatorIOInputs()
@@ -187,6 +187,8 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
             .onlyWhile { !motorOutputDisabled() }
 
     fun fakeAutoHome(): Command = runOnce { hasHomed = true }
+
+    fun clearHome(): Command = runOnce { hasHomed = false }
 
     /** Runs the elevator to the given [goal] and ends when the position is reached. */
     fun runToGoal(goal: Goal) = run { this.goal = goal }.until(::atGoal)

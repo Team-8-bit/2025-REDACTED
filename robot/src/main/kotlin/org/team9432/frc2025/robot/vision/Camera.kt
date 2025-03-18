@@ -9,8 +9,8 @@ import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import kotlin.math.pow
 import org.littletonrobotics.junction.Logger
-import org.team9432.frc2025.robot.FieldConstants
 import org.team9432.frc2025.robot.Localizer
+import org.team9432.frc2025.robot.util.FieldConstants
 import org.team9432.frc2025.robot.vision.VisionConstants.FIELD_BORDER_MARGIN
 import org.team9432.frc2025.robot.vision.VisionConstants.aprilTagLayout
 

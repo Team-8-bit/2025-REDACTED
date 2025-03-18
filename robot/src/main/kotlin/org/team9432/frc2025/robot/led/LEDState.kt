@@ -53,6 +53,12 @@ object LEDState {
             redPattern.applyTo(buffer)
             bluePattern.applyTo(buffer)
             codeLoadingPattern.applyTo(buffer)
+
+            if (codeLoading) {
+                codeLoadingPattern.applyTo(buffer)
+            }
+
+            return
         }
 
         if (codeLoading) {

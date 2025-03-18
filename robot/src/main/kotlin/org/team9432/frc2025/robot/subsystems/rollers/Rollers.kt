@@ -17,7 +17,7 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     companion object {
         val coralAlignedTorqueCurrentThreshold =
             LoggedTunableNumber("Rollers/CoralCollectedThresholdTorqueCurrent", 13.0)
-        val coralAlignedDebounceTime = LoggedTunableNumber("Rollers/CoralCollectedDebounce", 0.25)
+        val coralAlignedDebounceTime = LoggedTunableNumber("Rollers/CoralCollectedDebounce", 0.2)
 
         val algaeCollectionThresholdRPS = LoggedTunableNumber("Rollers/AlgaeCollectionThresholdRPS", 30.0)
         val algaeCollectionDebounceTime = LoggedTunableNumber("Rollers/AlgaeCollectionDebounce", 0.1)

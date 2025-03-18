@@ -17,7 +17,7 @@ enum class SuperstructureState(val elevatorGoal: Elevator.Goal, val armGoal: Arm
     PREPARE_NET(elevatorGoal = Elevator.Goal.PREPARE_NET, armGoal = Arm.Goal.PREPARE_NET),
     SCORE_NET(elevatorGoal = Elevator.Goal.SCORE_NET, armGoal = Arm.Goal.SCORE_NET),
     ALGAE_FLOOR(elevatorGoal = Elevator.Goal.STOW, armGoal = Arm.Goal.FLOOR_ALGAE),
-    UNJAM_CORAL(elevatorGoal = Elevator.Goal.MIN_ARM_OUT, armGoal = Arm.Goal.UNJAM_CORAL),
+    UNJAM_CORAL(elevatorGoal = Elevator.Goal.UNJAM_CORAL, armGoal = Arm.Goal.UNJAM_CORAL),
     PROCESSOR(elevatorGoal = Elevator.Goal.PREPARE_PROCESSOR, armGoal = Arm.Goal.PREPARE_PROCESSOR);
 
     val isCoralScoring

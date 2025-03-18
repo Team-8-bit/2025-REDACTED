@@ -13,7 +13,6 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.distanceTo
-import org.team9432.frc2025.lib.util.velocityLessThan
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 
 class RobotPosition(private val localizer: Localizer) {
@@ -33,7 +32,7 @@ class RobotPosition(private val localizer: Localizer) {
         val reefDistanceGood =
             estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) >
                 FieldConstants.Reef.maxRadius + (DrivetrainConstants.BUMPER_LENGTH / 2) + Units.inchesToMeters(8.0)
-        val reefRotationGood = angleFromReef() > 90
+        val reefRotationGood = angleFromReef() > 75
 
         val bargeDistanceGood =
             abs(estimatedPose.x - FieldConstants.fieldLength / 2) >
@@ -49,7 +48,7 @@ class RobotPosition(private val localizer: Localizer) {
         (reefDistanceGood || reefRotationGood) && (bargeDistanceGood || bargeRotationGood)
     }
 
-    private fun angleFromReef(estimatedPose: Pose2d = localizer.estimatedPose): Double {
+    fun angleFromReef(estimatedPose: Pose2d = localizer.estimatedPose): Double {
         val angleToPointAtReef =
             atan2(
                 FieldConstants.Reef.center.applyFlip().y - estimatedPose.y,
@@ -80,7 +79,7 @@ class RobotPosition(private val localizer: Localizer) {
             xOffset += 0.5
         }
 
-        xOffset = min(xOffset, 1.0)
+        xOffset = min(xOffset, 0.75)
 
         val activeAlignPose = alignPose.transformBy(Transform2d(-xOffset, 0.0, Rotation2d.kZero))
         Logger.recordOutput("RobotPosition/BranchAlignPose", activeAlignPose)
@@ -138,12 +137,12 @@ class RobotPosition(private val localizer: Localizer) {
 
         val difference = robotPose.relativeTo(scorePose)
 
-        val velocityLow = localizer.robotVelocity.velocityLessThan(0.2, Units.degreesToRadians(4.0))
+        //        val velocityLow = localizer.robotVelocity.velocityLessThan(0.2,
+        // Units.degreesToRadians(4.0))
 
         return@Trigger Units.metersToInches(abs(hypot(difference.x, difference.y))) <
-            coralScoringToleranceInches.get() &&
-            abs(difference.rotation.degrees) < coralScoringToleranceDegrees.get() &&
-            velocityLow
+            coralScoringToleranceInches.get() && abs(difference.rotation.degrees) < coralScoringToleranceDegrees.get()
+        //                &&velocityLow
     }
 
     private val processorTransform =

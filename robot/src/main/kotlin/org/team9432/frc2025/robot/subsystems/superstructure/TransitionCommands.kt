@@ -34,7 +34,7 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
         addArmFirst(ARM_ABOVE_BUMPER to PREPARE_L1)
         addElevatorFirst(PREPARE_L1 to ARM_ABOVE_BUMPER)
 
-        val tallCoralGoals = setOf(PREPARE_L2, PREPARE_L3, PREPARE_L4, L4_PREP)
+        val tallCoralGoals = setOf(PREPARE_L1, PREPARE_L2, PREPARE_L3, PREPARE_L4, L4_PREP)
         for (tallCoralGoal in tallCoralGoals) {
             addSymmetricParallel(ARM_ABOVE_BUMPER, tallCoralGoal)
 

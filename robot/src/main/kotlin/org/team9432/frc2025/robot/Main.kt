@@ -320,7 +320,7 @@ class Robot : LoggedRobot() {
                             superstructure.currentState == SuperstructureState.INTAKE_ALGAE_HIGH)
                     ) {
                         // Wait to lower algae arm
-                        pose.transformBy(Transform2d(-0.25, 0.0, Rotation2d.kZero))
+                        pose.transformBy(Transform2d(-0.2, 0.0, Rotation2d.kZero))
                     } else {
                         pose
                     }
@@ -340,12 +340,16 @@ class Robot : LoggedRobot() {
                             )
                     val target = robotPosition.getActiveBranchAlignPose(branch)
 
-                    if (
-                        (scoringState.coralTarget == CoralScoringTarget.L1 &&
-                            superstructure.currentState != SuperstructureState.PREPARE_L1) ||
-                            (scoringState.coralTarget == CoralScoringTarget.L4 &&
-                                superstructure.currentState != SuperstructureState.PREPARE_L4)
-                    ) {
+                    val isNotReadyForL4 =
+                        scoringState.coralTarget == CoralScoringTarget.L4 &&
+                            superstructure.currentState !in
+                                setOf(SuperstructureState.L4_PREP, SuperstructureState.PREPARE_L4)
+                    val isNotReadyForL1 =
+                        scoringState.coralTarget == CoralScoringTarget.L1 &&
+                            superstructure.currentState == SuperstructureState.PREPARE_L1
+
+                    val armNotReady = isNotReadyForL1 || isNotReadyForL4
+                    if (armNotReady) {
                         // Wait to drive all the way until arm is in position
                         target.transformBy(Transform2d(-0.25, 0.0, Rotation2d.kZero))
                     } else {
@@ -427,19 +431,32 @@ class Robot : LoggedRobot() {
                 }
                 .debounce(0.05)
 
-        (driver
-                .rightBumper()
-                .or(Trigger { localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) < 2.5 }))
+        (driver.rightBumper())
             .and(rollers.hasCoralTrigger)
             .and(!driver.leftBumper())
             .whileTrue(
                 superstructure.runGoal {
-                    if (robotPosition.isSafeToUseArm.asBoolean) {
+                    if (
+                        robotPosition.isSafeToUseArm.asBoolean ||
+                            (superstructure.currentState == SuperstructureState.L4_PREP &&
+                                scoringState.coralTarget == CoralScoringTarget.L4)
+                    ) {
                         when (scoringState.coralTarget) {
                             CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
                             CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
                             CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
-                            CoralScoringTarget.L4 -> SuperstructureState.PREPARE_L4
+                            CoralScoringTarget.L4 -> {
+                                val shouldFullyExtend =
+                                    localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                                        FieldConstants.Reef.maxRadius -
+                                        (DrivetrainConstants.BUMPER_LENGTH / 2) < 0.25 &&
+                                        robotPosition.angleFromReef() < 30
+                                if (shouldFullyExtend) {
+                                    SuperstructureState.PREPARE_L4
+                                } else {
+                                    SuperstructureState.L4_PREP
+                                }
+                            }
                         }
                     } else {
                         superstructure.goal

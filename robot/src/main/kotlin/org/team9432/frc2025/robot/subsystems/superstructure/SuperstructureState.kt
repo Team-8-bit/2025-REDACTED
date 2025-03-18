@@ -10,6 +10,8 @@ enum class SuperstructureState(val elevatorGoal: Elevator.Goal, val armGoal: Arm
     SCORE_L2(elevatorGoal = Elevator.Goal.SCORE_L2, armGoal = Arm.Goal.SCORE_L2),
     SCORE_L3(elevatorGoal = Elevator.Goal.SCORE_L3, armGoal = Arm.Goal.SCORE_L3),
     SCORE_L4(elevatorGoal = Elevator.Goal.SCORE_L4, armGoal = Arm.Goal.SCORE_L4),
+    ADAPTIVE_SCORE_L2(elevatorGoal = Elevator.Goal.ADAPTIVE_SCORE_L2, armGoal = Arm.Goal.ADAPTIVE_SCORE_L2),
+    ADAPTIVE_SCORE_L3(elevatorGoal = Elevator.Goal.ADAPTIVE_SCORE_L3, armGoal = Arm.Goal.ADAPTIVE_SCORE_L3),
     PREP_L4(elevatorGoal = Elevator.Goal.PREP_L4, armGoal = Arm.Goal.SCORE_L4),
     ALGAE_STOW(elevatorGoal = Elevator.Goal.HOLD_ALGAE_LOW, armGoal = Arm.Goal.HOLD_ALGAE_LOW),
     INTAKE_ALGAE_LOW(elevatorGoal = Elevator.Goal.INTAKE_ALGAE_REEF_LOW, armGoal = Arm.Goal.INTAKE_ALGAE_REEF),

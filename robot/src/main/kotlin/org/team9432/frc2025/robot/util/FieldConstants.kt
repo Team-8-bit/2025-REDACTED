@@ -66,6 +66,7 @@ object FieldConstants {
         val faceToZoneLine: Double = Units.inchesToMeters(12.0) // Side of the reef to the inside of the reef zone line
 
         val maxRadius: Double = Units.inchesToMeters(76.0 / 2)
+        val faceToCenter: Double = Units.inchesToMeters(65.491090 / 2)
 
         private val centerFaces: Array<Pose2d?> =
             arrayOfNulls(6) // Starting facing the driver station in counterclockwise order

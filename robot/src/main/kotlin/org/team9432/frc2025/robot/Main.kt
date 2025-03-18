@@ -62,6 +62,7 @@ import org.team9432.frc2025.robot.subsystems.rollers.dispenser.ManipulatorIOReal
 import org.team9432.frc2025.robot.subsystems.rollers.funnel.Funnel
 import org.team9432.frc2025.robot.subsystems.rollers.funnel.FunnelIO
 import org.team9432.frc2025.robot.subsystems.rollers.funnel.FunnelIOReal
+import org.team9432.frc2025.robot.subsystems.superstructure.AdaptiveDistanceLookupTable
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
 import org.team9432.frc2025.robot.subsystems.superstructure.SuperstructureState
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
@@ -257,6 +258,20 @@ class Robot : LoggedRobot() {
         autoCommands = Auto(robotPosition, localizer, drive, superstructure, rollers, robotState)
         autoChooser = AutoChooser(autoCommands, localizer, drive, superstructure)
 
+        Elevator.Goal.ADAPTIVE_SCORE_L2.overrideSetpointSupplier = {
+            AdaptiveDistanceLookupTable.L2.getElevatorHeight(robotPosition.nearestBranchDistance)
+        }
+        Arm.Goal.ADAPTIVE_SCORE_L2.overrideSetpointSupplier = {
+            AdaptiveDistanceLookupTable.L2.getArmAngle(robotPosition.nearestBranchDistance)
+        }
+
+        Elevator.Goal.ADAPTIVE_SCORE_L3.overrideSetpointSupplier = {
+            AdaptiveDistanceLookupTable.L3.getElevatorHeight(robotPosition.nearestBranchDistance)
+        }
+        Arm.Goal.ADAPTIVE_SCORE_L3.overrideSetpointSupplier = {
+            AdaptiveDistanceLookupTable.L3.getArmAngle(robotPosition.nearestBranchDistance)
+        }
+
         bindButtons()
 
         PortForwarder.add(5800, "10.94.32.11", 5800)
@@ -432,8 +447,8 @@ class Robot : LoggedRobot() {
                         ) {
                             when (robotState.coralTarget) {
                                 CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
-                                CoralScoringTarget.L2 -> SuperstructureState.SCORE_L2
-                                CoralScoringTarget.L3 -> SuperstructureState.SCORE_L3
+                                CoralScoringTarget.L2 -> SuperstructureState.ADAPTIVE_SCORE_L2
+                                CoralScoringTarget.L3 -> SuperstructureState.ADAPTIVE_SCORE_L3
                                 CoralScoringTarget.L4 -> {
                                     val shouldFullyExtend =
                                         localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
@@ -542,8 +557,8 @@ class Robot : LoggedRobot() {
                     } else if (rollers.hasCoral) {
                         when (robotState.coralTarget) {
                             CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
-                            CoralScoringTarget.L2 -> SuperstructureState.SCORE_L2
-                            CoralScoringTarget.L3 -> SuperstructureState.SCORE_L3
+                            CoralScoringTarget.L2 -> SuperstructureState.ADAPTIVE_SCORE_L2
+                            CoralScoringTarget.L3 -> SuperstructureState.ADAPTIVE_SCORE_L3
                             CoralScoringTarget.L4 -> SuperstructureState.PREP_L4
                         }
                     } else {

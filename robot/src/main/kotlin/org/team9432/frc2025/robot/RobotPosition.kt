@@ -24,6 +24,7 @@ class RobotPosition(private val localizer: Localizer) {
         Logger.recordOutput("RobotPosition/AngleFromReef", angleFromReef())
         Logger.recordOutput("RobotPosition/WithinCoralTolerance", withinCoralScoringTolerance)
         Logger.recordOutput("RobotPosition/isOnBlueSide", isOnBlueSide)
+        Logger.recordOutput("RobotPosition/nearestBranchDistance", nearestBranchDistance)
     }
 
     fun waitUntilRelativeMovement(passing: (Double, Double, Rotation2d) -> Boolean): Command =
@@ -60,6 +61,9 @@ class RobotPosition(private val localizer: Localizer) {
             }
         (reefDistanceGood || reefRotationGood) && (bargeDistanceGood || bargeRotationGood)
     }
+
+    val nearestBranchDistance
+        get() = abs(localizer.estimatedPose.relativeTo(getBaseBranchAlignPose(nearestReefAlignBranch())).x)
 
     fun angleFromReef(estimatedPose: Pose2d = localizer.estimatedPose): Double {
         val angleToPointAtReef =

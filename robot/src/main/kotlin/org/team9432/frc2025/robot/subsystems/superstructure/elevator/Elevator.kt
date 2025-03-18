@@ -41,17 +41,17 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
                 SuperstructureConstants.MIN_ARM_EXTENSION_ELEVATOR_HEIGHT,
             )
         ),
-        L1(LoggedTunableNumber("Elevator/Setpoints/L1", 0.2)),
-        L2(LoggedTunableNumber("Elevator/Setpoints/L2", 0.54)),
-        L3(LoggedTunableNumber("Elevator/Setpoints/L3", 0.97)),
-        L4(LoggedTunableNumber("Elevator/Setpoints/L4", ElevatorConstants.MAX_POSITION)),
-        L4_PREP(LoggedTunableNumber("Elevator/Setpoints/L4Prep", 0.625)),
+        SCORE_L1(LoggedTunableNumber("Elevator/Setpoints/ScoreL1", 0.2)),
+        SCORE_L2(LoggedTunableNumber("Elevator/Setpoints/ScoreL2", 0.54)),
+        SCORE_L3(LoggedTunableNumber("Elevator/Setpoints/ScoreL3", 0.97)),
+        SCORE_L4(LoggedTunableNumber("Elevator/Setpoints/ScoreL4", ElevatorConstants.MAX_POSITION)),
+        PREP_L4(LoggedTunableNumber("Elevator/Setpoints/PrepL4", 0.625)),
         INTAKE_ALGAE_REEF_LOW(LoggedTunableNumber("Elevator/Setpoints/IntakeAlgaeReefLow", 0.5)),
         INTAKE_ALGAE_REEF_HIGH(LoggedTunableNumber("Elevator/Setpoints/IntakeAlgaeReefHigh", 0.9)),
         HOLD_ALGAE_LOW(LoggedTunableNumber("Elevator/Setpoints/HoldAlgaeLow", 0.1)),
         UNJAM_CORAL(LoggedTunableNumber("Elevator/Setpoints/UnjamCoral", 0.25)),
         PREPARE_PROCESSOR(LoggedTunableNumber("Elevator/Setpoints/PrepareProcessor", 0.1)),
-        PREPARE_NET(LoggedTunableNumber("Elevator/Setpoints/PrepareNet", ElevatorConstants.MAX_POSITION)),
+        PREP_NET(LoggedTunableNumber("Elevator/Setpoints/PrepNet", ElevatorConstants.MAX_POSITION)),
         SCORE_NET(LoggedTunableNumber("Elevator/Setpoints/ScoreNet", ElevatorConstants.MAX_POSITION));
 
         val meters

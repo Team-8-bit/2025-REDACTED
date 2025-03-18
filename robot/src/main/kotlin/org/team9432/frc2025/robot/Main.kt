@@ -512,27 +512,11 @@ class Robot : LoggedRobot() {
                 } else if (rollers.hasAlgae) {
                     Rollers.State.INTAKE_ALGAE
                 } else if (!rollers.hasCoral && superstructure.currentState == SuperstructureState.STOW) {
-                    if (switches.four.asBoolean) {
-                        Rollers.State.INTAKE_CORAL
-                    } else {
-                        val distanceBeforeActivation = 1.0 // Meter
-                        if (
-                            FieldConstants.CoralStation.entries.any { station ->
-                                station.centerPose.applyFlip().distanceTo(localizer.estimatedPose) -
-                                    (DrivetrainConstants.BUMPER_LENGTH / 2) > distanceBeforeActivation
-                            }
-                        ) {
-                            Rollers.State.INTAKE_CORAL_COMBO
-                        } else {
-                            Rollers.State.INTAKE_CORAL
-                        }
-                    }
+                    Rollers.State.INTAKE_CORAL
+                } else if (superstructure.currentState == SuperstructureState.STOW || switches.four.asBoolean) {
+                    Rollers.State.IDLE
                 } else {
-                    if (superstructure.currentState == SuperstructureState.STOW || switches.four.asBoolean) {
-                        Rollers.State.IDLE
-                    } else {
-                        Rollers.State.UNJAM_CORAL
-                    }
+                    Rollers.State.UNJAM_CORAL
                 }
             }
 

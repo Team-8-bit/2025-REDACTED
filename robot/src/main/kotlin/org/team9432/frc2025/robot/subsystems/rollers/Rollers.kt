@@ -29,7 +29,6 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     enum class State {
         IDLE,
         INTAKE_CORAL,
-        INTAKE_CORAL_COMBO,
         SCORE_CORAL_TALL,
         SCORE_CORAL_LOW,
         SCORE_CORAL_L1,
@@ -80,11 +79,6 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
                 manipulator.goal = Manipulator.Goal.INTAKE_CORAL
             }
 
-            State.INTAKE_CORAL_COMBO -> {
-                funnel.goal = Funnel.Goal.INTAKE_UNJAM_COMBO
-                manipulator.goal = Manipulator.Goal.INTAKE_CORAL
-            }
-
             State.SCORE_CORAL_TALL -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_TALL
                 hasCoral = false
@@ -121,7 +115,7 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         // Check if the coral has been collected
         val coralAligned =
             coralAlignedDebouncer.calculate(
-                (state == State.INTAKE_CORAL || state == State.INTAKE_CORAL_COMBO) &&
+                state == State.INTAKE_CORAL &&
                     abs(manipulator.torqueCurrentAmps) > coralAlignedTorqueCurrentThreshold.get()
             )
         if (coralAligned && !Constants.robot.isSim) {

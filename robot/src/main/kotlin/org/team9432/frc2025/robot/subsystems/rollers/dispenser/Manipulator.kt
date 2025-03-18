@@ -17,6 +17,7 @@ class Manipulator(private val io: ManipulatorIO) {
         INTAKE_CORAL,
         OUTTAKE_CORAL_TALL,
         OUTTAKE_CORAL_LOW,
+        OUTTAKE_CORAL_L1,
         INTAKE_ALGAE,
         HOLD_ALGAE,
         SCORE_ALGAE,
@@ -33,6 +34,7 @@ class Manipulator(private val io: ManipulatorIO) {
             Goal.INTAKE_CORAL -> io.setControl(voltageControl.withOutput(5.0))
             Goal.OUTTAKE_CORAL_TALL -> io.setControl(voltageControl.withOutput(-12.0))
             Goal.OUTTAKE_CORAL_LOW -> io.setControl(voltageControl.withOutput(12.0))
+            Goal.OUTTAKE_CORAL_L1 -> io.setControl(voltageControl.withOutput(4.0))
             Goal.INTAKE_ALGAE -> io.setControl(voltageControl.withOutput(-10.0))
             Goal.HOLD_ALGAE -> io.setControl(currentControl.withOutput(-30.0))
             Goal.SCORE_ALGAE -> io.setControl(voltageControl.withOutput(12.0))

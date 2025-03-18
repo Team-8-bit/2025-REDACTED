@@ -32,6 +32,7 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         INTAKE_CORAL_COMBO,
         SCORE_CORAL_TALL,
         SCORE_CORAL_LOW,
+        SCORE_CORAL_L1,
         UNJAM_CORAL,
         INTAKE_ALGAE,
         SCORE_ALGAE,
@@ -91,6 +92,11 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
 
             State.SCORE_CORAL_LOW -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_LOW
+                hasCoral = false
+            }
+
+            State.SCORE_CORAL_L1 -> {
+                manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_L1
                 hasCoral = false
             }
 
@@ -154,17 +160,16 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     fun runGoal(state: () -> State) = run { this.state = state() }
 
     fun getScoringStateForTarget(target: ScoringState.CoralScoringTarget) =
-        if (
-            target in
-                setOf(
-                    ScoringState.CoralScoringTarget.L1,
-                    ScoringState.CoralScoringTarget.L2,
-                    ScoringState.CoralScoringTarget.L3,
-                )
-        ) {
-            State.SCORE_CORAL_LOW
-        } else {
-            State.SCORE_CORAL_TALL
+        when (target) {
+            in setOf(ScoringState.CoralScoringTarget.L2, ScoringState.CoralScoringTarget.L3) -> {
+                State.SCORE_CORAL_LOW
+            }
+            ScoringState.CoralScoringTarget.L1 -> {
+                State.SCORE_CORAL_L1
+            }
+            else -> {
+                State.SCORE_CORAL_TALL
+            }
         }
 
     fun simSetHasAlgae(hasAlgae: Boolean) {

@@ -1,6 +1,5 @@
 package org.team9432.frc2025.robot
 
-import choreo.Choreo
 import com.ctre.phoenix6.SignalLogger
 import edu.wpi.first.math.MathUtil
 import edu.wpi.first.math.filter.Debouncer
@@ -103,11 +102,6 @@ class Robot : LoggedRobot() {
         loggerInit()
 
         val odometryThread = OdometryThread()
-
-        // Run this a few times now so it isn't slow at the start of auto
-        for (i in 0..25) {
-            Choreo.loadTrajectory("Test Path")
-        }
 
         // No need to instantiate subsystems if the robot is running in replay
         if (!Constants.mode.isReplay) {

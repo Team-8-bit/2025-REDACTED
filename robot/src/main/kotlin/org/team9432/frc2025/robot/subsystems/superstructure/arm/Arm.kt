@@ -32,10 +32,10 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
     // All angles are in rotations
     enum class Goal(private val angleSupplier: () -> Double) {
         STOW({ ArmConstants.MIN_POSITION }),
-        L1(LoggedTunableNumber("Arm/Setpoints/L1", -0.1)),
-        L2(LoggedTunableNumber("Arm/Setpoints/L2", -0.2)),
-        L3(LoggedTunableNumber("Arm/Setpoints/L3", -0.2)),
-        L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.17)),
+        SCORE_L1(LoggedTunableNumber("Arm/Setpoints/L1", -0.1)),
+        SCORE_L2(LoggedTunableNumber("Arm/Setpoints/L2", -0.2)),
+        SCORE_L3(LoggedTunableNumber("Arm/Setpoints/L3", -0.2)),
+        SCORE_L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.17)),
         INTAKE_ALGAE_REEF(LoggedTunableNumber("Arm/Setpoints/IntakeAlgaeReef", -0.15)),
         HOLD_ALGAE_LOW(LoggedTunableNumber("Arm/Setpoints/HoldAlgaeLow", -0.2)),
         PREPARE_PROCESSOR(LoggedTunableNumber("Arm/Setpoints/PrepareProcessor", -0.2)),

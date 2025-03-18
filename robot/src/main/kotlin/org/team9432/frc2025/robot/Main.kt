@@ -14,7 +14,6 @@ import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.PowerDistribution
 import edu.wpi.first.wpilibj.RobotBase
-import edu.wpi.first.wpilibj.RobotBase.getRuntimeType
 import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
@@ -342,10 +341,10 @@ class Robot : LoggedRobot() {
                     val isNotReadyForL4 =
                         robotState.coralTarget == CoralScoringTarget.L4 &&
                             superstructure.currentState !in
-                                setOf(SuperstructureState.L4_PREP, SuperstructureState.PREPARE_L4)
+                                setOf(SuperstructureState.PREP_L4, SuperstructureState.SCORE_L4)
                     val isNotReadyForL1 =
                         robotState.coralTarget == CoralScoringTarget.L1 &&
-                            superstructure.currentState == SuperstructureState.PREPARE_L1
+                            superstructure.currentState == SuperstructureState.SCORE_L1
 
                     val armNotReady = isNotReadyForL1 || isNotReadyForL4
                     if (armNotReady) {
@@ -428,13 +427,13 @@ class Robot : LoggedRobot() {
                     .runGoal {
                         if (
                             robotPosition.isSafeToUseArm.asBoolean ||
-                                (superstructure.currentState == SuperstructureState.L4_PREP &&
+                                (superstructure.currentState == SuperstructureState.PREP_L4 &&
                                     robotState.coralTarget == CoralScoringTarget.L4)
                         ) {
                             when (robotState.coralTarget) {
-                                CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
-                                CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
-                                CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
+                                CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
+                                CoralScoringTarget.L2 -> SuperstructureState.SCORE_L2
+                                CoralScoringTarget.L3 -> SuperstructureState.SCORE_L3
                                 CoralScoringTarget.L4 -> {
                                     val shouldFullyExtend =
                                         localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
@@ -442,9 +441,9 @@ class Robot : LoggedRobot() {
                                             (DrivetrainConstants.BUMPER_LENGTH / 2) < 0.25 &&
                                             robotPosition.angleFromReef() < 30
                                     if (shouldFullyExtend) {
-                                        SuperstructureState.PREPARE_L4
+                                        SuperstructureState.SCORE_L4
                                     } else {
-                                        SuperstructureState.L4_PREP
+                                        SuperstructureState.PREP_L4
                                     }
                                 }
                             }
@@ -477,7 +476,7 @@ class Robot : LoggedRobot() {
                         .runGoal {
                             when (robotState.algaeTarget) {
                                 AlgaeScoringTarget.PROCESSOR -> SuperstructureState.PROCESSOR
-                                AlgaeScoringTarget.NET -> SuperstructureState.PREPARE_NET
+                                AlgaeScoringTarget.NET -> SuperstructureState.PREP_NET
                             }
                         }
                         .until(
@@ -542,10 +541,10 @@ class Robot : LoggedRobot() {
                         SuperstructureState.ALGAE_STOW
                     } else if (rollers.hasCoral) {
                         when (robotState.coralTarget) {
-                            CoralScoringTarget.L1 -> SuperstructureState.PREPARE_L1
-                            CoralScoringTarget.L2 -> SuperstructureState.PREPARE_L2
-                            CoralScoringTarget.L3 -> SuperstructureState.PREPARE_L3
-                            CoralScoringTarget.L4 -> SuperstructureState.L4_PREP
+                            CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
+                            CoralScoringTarget.L2 -> SuperstructureState.SCORE_L2
+                            CoralScoringTarget.L3 -> SuperstructureState.SCORE_L3
+                            CoralScoringTarget.L4 -> SuperstructureState.PREP_L4
                         }
                     } else {
                         SuperstructureState.STOW

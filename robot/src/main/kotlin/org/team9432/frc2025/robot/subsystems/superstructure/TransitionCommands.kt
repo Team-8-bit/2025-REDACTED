@@ -31,10 +31,10 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
         addElevatorFirst(STOW to ARM_ABOVE_BUMPER)
         addElevatorFirst(ARM_ABOVE_BUMPER to STOW)
 
-        addArmFirst(ARM_ABOVE_BUMPER to PREPARE_L1)
-        addElevatorFirst(PREPARE_L1 to ARM_ABOVE_BUMPER)
+        addArmFirst(ARM_ABOVE_BUMPER to SCORE_L1)
+        addElevatorFirst(SCORE_L1 to ARM_ABOVE_BUMPER)
 
-        val tallCoralGoals = setOf(PREPARE_L1, PREPARE_L2, PREPARE_L3, PREPARE_L4, L4_PREP)
+        val tallCoralGoals = setOf(SCORE_L1, SCORE_L2, SCORE_L3, SCORE_L4, PREP_L4)
         for (tallCoralGoal in tallCoralGoals) {
             addSymmetricParallel(ARM_ABOVE_BUMPER, tallCoralGoal)
 
@@ -49,11 +49,11 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
         }
 
         addSymmetricParallel(ALGAE_STOW, PROCESSOR)
-        addSymmetricParallel(ALGAE_STOW, PREPARE_NET)
+        addSymmetricParallel(ALGAE_STOW, PREP_NET)
 
         addElevatorFirst(ALGAE_STOW to ARM_ABOVE_BUMPER)
 
-        addSymmetricParallel(PREPARE_NET, SCORE_NET)
+        addSymmetricParallel(PREP_NET, SCORE_NET)
 
         addSymmetricParallel(SCORE_NET, ARM_ABOVE_BUMPER)
 
@@ -66,7 +66,7 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
 
         addSymmetricParallel(INTAKE_ALGAE_LOW, INTAKE_ALGAE_HIGH)
 
-        addParallel(PREPARE_NET to ARM_ABOVE_BUMPER)
+        addParallel(PREP_NET to ARM_ABOVE_BUMPER)
 
         addArmFirst(ARM_ABOVE_BUMPER to ALGAE_FLOOR)
         addElevatorFirst(ALGAE_FLOOR to ARM_ABOVE_BUMPER)

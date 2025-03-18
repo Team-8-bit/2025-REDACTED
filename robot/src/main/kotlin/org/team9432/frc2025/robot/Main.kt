@@ -8,11 +8,13 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.system.plant.DCMotor
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.net.PortForwarder
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.PowerDistribution
 import edu.wpi.first.wpilibj.RobotBase
+import edu.wpi.first.wpilibj.RobotBase.getRuntimeType
 import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
@@ -478,7 +480,12 @@ class Robot : LoggedRobot() {
                                 AlgaeScoringTarget.NET -> SuperstructureState.PREPARE_NET
                             }
                         }
-                        .until((driver.a().or(autoAlignForScoringProcessor::atGoal)).and(superstructure::atGoal))
+                        .until(
+                            (driver.a().or {
+                                    autoAlignForScoringProcessor.withinTolerance(2.0, Units.degreesToRotations(5.0))
+                                })
+                                .and(superstructure::atGoal)
+                        )
                         .andThen(rollers.runGoal(Rollers.State.SCORE_ALGAE)))
                     .asProxy()
                     .onlyIf(rollers.hasAlgaeTrigger)

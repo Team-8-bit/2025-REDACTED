@@ -32,8 +32,8 @@ class Climber(private val io: ClimberIO) : SubsystemBase() {
 
         when (goal) {
             Goal.IDLE -> io.setControl(neutralOut)
-            Goal.UP -> io.setControl(torqueCurrent.withOutput(10.0))
-            Goal.DOWN -> io.setControl(torqueCurrent.withOutput(-10.0))
+            Goal.UP -> io.setControl(voltageControl.withOutput(10.0))
+            Goal.DOWN -> io.setControl(voltageControl.withOutput(-10.0))
             Goal.CLIMB -> io.setControl(torqueCurrent.withOutput(40.0))
         }
     }

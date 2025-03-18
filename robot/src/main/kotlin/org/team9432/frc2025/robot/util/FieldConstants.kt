@@ -163,6 +163,23 @@ object FieldConstants {
                         H -> G
                         G -> H
                     }
+
+            val oppositeOnFace
+                get() =
+                    when (this) {
+                        A -> B
+                        B -> A
+                        C -> D
+                        D -> C
+                        E -> F
+                        F -> E
+                        G -> H
+                        H -> G
+                        I -> J
+                        J -> I
+                        K -> L
+                        L -> K
+                    }
         }
 
         enum class StagedAlgae(private val high: Boolean, val centerFace: Int) {

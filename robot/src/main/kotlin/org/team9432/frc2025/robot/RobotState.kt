@@ -13,6 +13,8 @@ class RobotState {
     var autoCoralStationPose: Pose2d? = null
     var climbMode = false
 
+    var flipBranch = false
+
     fun clearAutoState() {
         autoCoralTarget = null
         autoBranchTarget = null

@@ -47,12 +47,15 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         private set
 
     private var hasRunRemoveCoral = false
-    var readyToRemoveCoral = false
-        set(value) {
-            if (hasRunRemoveCoral && value) {
-                field = value
-            }
+
+    fun hasRunRollersToRemoveCoral() = hasRunRemoveCoral
+
+    fun removeCoralIfReady() {
+        if (hasRunRemoveCoral) {
+            hasCoral = false
+            hasRunRemoveCoral = false
         }
+    }
 
     val hasCoralTrigger = Trigger { hasCoral }
     val hasAlgaeTrigger = Trigger { hasAlgae }
@@ -97,17 +100,23 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
 
             State.SCORE_CORAL_TALL -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_TALL
-                hasRunRemoveCoral = true
+                if (hasCoral) {
+                    hasRunRemoveCoral = true
+                }
             }
 
             State.SCORE_CORAL_LOW -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_LOW
-                hasRunRemoveCoral = true
+                if (hasCoral) {
+                    hasRunRemoveCoral = true
+                }
             }
 
             State.SCORE_CORAL_L1 -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_L1
-                hasRunRemoveCoral = true
+                if (hasCoral) {
+                    hasRunRemoveCoral = true
+                }
             }
 
             State.UNJAM_CORAL -> {
@@ -156,12 +165,6 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             )
         if (algaeDropped && !Constants.robot.isSim) {
             hasAlgae = false
-        }
-
-        if (hasRunRemoveCoral && readyToRemoveCoral) {
-            hasCoral = false
-            readyToRemoveCoral = false
-            hasRunRemoveCoral = false
         }
 
         Logger.recordOutput("Rollers/State", state)

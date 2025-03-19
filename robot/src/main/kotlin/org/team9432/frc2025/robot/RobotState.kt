@@ -28,6 +28,7 @@ class RobotState {
         Logger.recordOutput("ScoringState/algaeTarget", algaeTarget)
         Logger.recordOutput("ScoringState/autoCoralTarget", autoCoralTarget)
         Logger.recordOutput("ScoringState/autoBranchTarget", autoBranchTarget)
+        Logger.recordOutput("ScoringState/autoCoralStationPose", autoCoralStationPose ?: Pose2d())
     }
 
     enum class CoralScoringTarget {

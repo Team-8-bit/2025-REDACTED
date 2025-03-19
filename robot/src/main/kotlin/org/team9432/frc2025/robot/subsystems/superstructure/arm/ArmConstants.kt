@@ -7,7 +7,7 @@ object ArmConstants {
     const val POSITION_TOLERANCE = 0.01
 
     const val MIN_POSITION = -0.25
-    const val MAX_POSITION = 0.17
+    const val MAX_POSITION = 0.175
 
     const val PEAK_TORQUE_AMPS = 60.0
 }

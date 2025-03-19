@@ -338,55 +338,56 @@ class Robot : LoggedRobot() {
         var lastBranch: FieldConstants.Reef.Branch? = null
         val autoAlignForScoringCoral =
             DriveToPose(
-                drive,
-                localizer,
-                {
-                    var branch =
-                        robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch(localizer.estimatedPose)
+                    drive,
+                    localizer,
+                    {
+                        var branch =
+                            robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch(localizer.estimatedPose)
 
-                    if (branch != lastBranch) {
-                        lastBranch = branch
-                        robotState.flipBranch = false
-                    }
+                        if (branch != lastBranch) {
+                            lastBranch = branch
+                            robotState.flipBranch = false
+                        }
 
-                    if (robotState.flipBranch) {
-                        branch = branch.oppositeOnFace
-                    }
+                        if (robotState.flipBranch) {
+                            branch = branch.oppositeOnFace
+                        }
 
-                    val target = robotPosition.getActiveBranchAlignPose(branch)
+                        val target = robotPosition.getActiveBranchAlignPose(branch)
 
-                    val isNotReadyForL4 =
-                        robotState.coralTarget == CoralScoringTarget.L4 &&
-                            superstructure.currentState !in
-                                setOf(SuperstructureState.PREP_L4, SuperstructureState.SCORE_L4)
-                    val isNotReadyForL1 =
-                        robotState.coralTarget == CoralScoringTarget.L1 &&
-                            superstructure.currentState == SuperstructureState.SCORE_L1
+                        val isNotReadyForL4 =
+                            robotState.coralTarget == CoralScoringTarget.L4 &&
+                                superstructure.currentState !in
+                                    setOf(SuperstructureState.PREP_L4, SuperstructureState.SCORE_L4)
+                        val isNotReadyForL1 =
+                            robotState.coralTarget == CoralScoringTarget.L1 &&
+                                superstructure.currentState == SuperstructureState.SCORE_L1
 
-                    val armNotReady = isNotReadyForL1 || isNotReadyForL4
-                    if (armNotReady) {
-                        // Wait to drive all the way until arm is in position
-                        target.transformBy(Transform2d(-0.25, 0.0, Rotation2d.kZero))
-                    } else {
-                        target
-                    }
-                },
-                {
-                    localizer.getTxTyPose(
-                        (robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch()).getTag()
-                    ) ?: localizer.estimatedPose
-                },
-                joystickDriveController,
-                {
-                    MathUtil.clamp(
-                        (localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
-                            FieldConstants.Reef.maxRadius -
-                            (DrivetrainConstants.BUMPER_LENGTH / 2)) * 2.5,
-                        2.5,
-                        5.0,
-                    )
-                },
-            )
+                        val armNotReady = isNotReadyForL1 || isNotReadyForL4
+                        if (armNotReady) {
+                            // Wait to drive all the way until arm is in position
+                            target.transformBy(Transform2d(-0.25, 0.0, Rotation2d.kZero))
+                        } else {
+                            target
+                        }
+                    },
+                    {
+                        localizer.getTxTyPose(
+                            (robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch()).getTag()
+                        ) ?: localizer.estimatedPose
+                    },
+                    joystickDriveController,
+                    {
+                        MathUtil.clamp(
+                            (localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                                FieldConstants.Reef.maxRadius -
+                                (DrivetrainConstants.BUMPER_LENGTH / 2)) * 2.5,
+                            2.5,
+                            5.0,
+                        )
+                    },
+                )
+                .apply { name = "AutoAlignForScoringCoral" }
 
         val autoAlignForScoringProcessor =
             DriveToPose(
@@ -403,7 +404,8 @@ class Robot : LoggedRobot() {
             .whileTrue(autoCommands.autoAlignForStationPickup)
 
         (driver.rightBumper().or(RobotModeTriggers.autonomous()))
-            .and(!rollers.hasAlgaeTrigger.or { isAutonomousEnabled && robotState.autoCoralStationPose == null })
+            .and({ robotState.autoCoralStationPose == null })
+            .and((!rollers.hasAlgaeTrigger).or { isAutonomousEnabled && robotState.autoCoralStationPose == null })
             .and { !superstructure.currentState.isAlgaeScoring }
             .and(!driver.leftBumper())
             .and(!disableAutoAlign)
@@ -437,15 +439,19 @@ class Robot : LoggedRobot() {
             .and(!disableAutoAlign)
             .whileTrue(autoAlignForScoringProcessor)
 
-        val withinTolerance = robotPosition.withinCoralScoringTolerance.debounce(0.5, Debouncer.DebounceType.kFalling)
+        val withinTolerance =
+            robotPosition.withinCoralScoringTolerance
+                .debounce(0.5, Debouncer.DebounceType.kFalling)
+                .and(RobotModeTriggers.autonomous())
         (driver.a().or(withinTolerance))
+            .and { superstructure.goal.isCoralScoring }
             .and(superstructure::atGoal)
             .whileTrue(
                 rollers
                     .runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) }
                     .finallyDo { interrupted ->
                         robotState.flipBranch = false
-                        rollers.readyToRemoveCoral = true
+                        rollers.removeCoralIfReady()
                     }
             )
 
@@ -461,7 +467,7 @@ class Robot : LoggedRobot() {
                         }
                         .until(
                             (driver.a().or {
-                                    autoAlignForScoringProcessor.withinTolerance(2.0, Units.degreesToRotations(5.0))
+                                    autoAlignForScoringProcessor.withinTolerance(1.5, Units.degreesToRotations(1.5))
                                 })
                                 .and(superstructure::atGoal)
                         )
@@ -542,7 +548,7 @@ class Robot : LoggedRobot() {
                                 val shouldFullyExtend =
                                     localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
                                         FieldConstants.Reef.maxRadius -
-                                        (DrivetrainConstants.BUMPER_LENGTH / 2) < 0.5 &&
+                                        (DrivetrainConstants.BUMPER_LENGTH / 2) < 0.75 &&
                                         robotPosition.angleFromReef() < 30
                                 if (shouldFullyExtend) {
                                     SuperstructureState.SCORE_L4
@@ -559,7 +565,7 @@ class Robot : LoggedRobot() {
                 }
             }
 
-        val backupButton = driver.leftStick()
+        val backupButton = driver.leftStick().and { Constants.robot != Constants.RobotType.SIM }
 
         (operator.x())
             .or((driver.povLeft().and(!backupButton)))
@@ -600,7 +606,10 @@ class Robot : LoggedRobot() {
         (driver.povUp().and(backupButton)).or(operator.rightBumper()).whileTrue(climber.runGoal(Climber.Goal.UP))
         (driver.povDown().and(backupButton)).or(operator.leftBumper()).whileTrue(climber.runGoal(Climber.Goal.DOWN))
         driver.x().and(!backupButton).whileTrue(climber.runGoal(Climber.Goal.CLIMB))
-        driver.b().and(!backupButton).onTrue(Commands.runOnce({ robotState.flipBranch = !robotState.flipBranch }))
+        driver
+            .b()
+            .and(!backupButton)
+            .whileTrue(Commands.startEnd({ robotState.flipBranch = true }, { robotState.flipBranch = false }))
 
         drive.defaultCommand =
             drive

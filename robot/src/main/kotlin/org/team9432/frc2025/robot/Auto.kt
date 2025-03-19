@@ -30,11 +30,12 @@ class Auto(
 
     val autoAlignForStationPickup =
         DriveToPose(
-            drive,
-            localizer,
-            { robotState.autoCoralStationPose?.applyFlip() ?: localizer.estimatedPose },
-            { localizer.estimatedPose },
-        )
+                drive,
+                localizer,
+                { robotState.autoCoralStationPose?.applyFlip() ?: localizer.estimatedPose },
+                { localizer.estimatedPose },
+            )
+            .apply { name = "AutoAlignForStationPickup" }
 
     fun onlyL2(branch: Branch): Command =
         Commands.defer({ initializeAuto().andThen(preloadAndScore(branch, CoralScoringTarget.L2)) }, emptySet())
@@ -132,8 +133,10 @@ class Auto(
                 robotState.autoCoralTarget = level
                 robotState.autoBranchTarget = branch
             }),
-            Commands.waitUntil((!rollers.hasCoralTrigger)),
+            Commands.waitUntil(rollers::hasRunRollersToRemoveCoral),
             Commands.waitSeconds(0.3),
+            Commands.runOnce({ rollers.removeCoralIfReady() }),
+            Commands.waitUntil(!rollers.hasCoralTrigger),
         )
 
     private fun pickupAndScore(branch: Branch, level: CoralScoringTarget, coralStation: CoralStation) =
@@ -148,10 +151,12 @@ class Auto(
                     autoAlignForStationPickup.withinTolerance(2.0, Units.degreesToRotations(5.0))
                 }
             ),
-            //            Commands.waitSeconds(0.5), This works, add if needed
+            // Commands.waitSeconds(0.5), // This works, add if needed to pause at the coral station
             Commands.runOnce({ robotState.autoCoralStationPose = null }),
             Commands.waitUntil(rollers.hasCoralTrigger).withTimeout(2.5),
-            Commands.waitUntil((!rollers.hasCoralTrigger)),
+            Commands.waitUntil(rollers::hasRunRollersToRemoveCoral),
             Commands.waitSeconds(0.3),
+            Commands.runOnce({ rollers.removeCoralIfReady() }),
+            Commands.waitUntil(!rollers.hasCoralTrigger),
         )
 }

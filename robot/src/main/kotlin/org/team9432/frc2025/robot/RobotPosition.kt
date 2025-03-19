@@ -155,8 +155,7 @@ class RobotPosition(private val localizer: Localizer) {
             coralScoringToleranceInches.get() && abs(difference.rotation.degrees) < coralScoringToleranceDegrees.get()
     }
 
-    private val processorTransform =
-        Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2 + Units.inchesToMeters(2.0), 0.0, Rotation2d.k180deg)
+    private val processorTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)
 
     fun getActiveProcessorAlignPose(): Pose2d {
         val robotPose = localizer.estimatedPose

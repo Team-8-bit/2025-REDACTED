@@ -62,8 +62,12 @@ class RobotPosition(private val localizer: Localizer) {
         (reefDistanceGood || reefRotationGood) && (bargeDistanceGood || bargeRotationGood)
     }
 
-    val nearestBranchDistance
-        get() = abs(localizer.estimatedPose.relativeTo(getBaseBranchAlignPose(nearestReefAlignBranch())).x)
+    val nearestBranchDistance: Double
+        get() {
+            val branch = nearestReefAlignBranch()
+            val alignPose = getBaseBranchAlignPose(branch)
+            return abs(localizer.getReefPose(branch.getTag(), alignPose).relativeTo(alignPose).x)
+        }
 
     fun angleFromReef(estimatedPose: Pose2d = localizer.estimatedPose): Double {
         val angleToPointAtReef =
@@ -147,12 +151,8 @@ class RobotPosition(private val localizer: Localizer) {
 
         val difference = robotPose.relativeTo(scorePose)
 
-        //        val velocityLow = localizer.robotVelocity.velocityLessThan(0.2,
-        // Units.degreesToRadians(4.0))
-
         return@Trigger Units.metersToInches(abs(hypot(difference.x, difference.y))) <
             coralScoringToleranceInches.get() && abs(difference.rotation.degrees) < coralScoringToleranceDegrees.get()
-        //                &&velocityLow
     }
 
     private val processorTransform =

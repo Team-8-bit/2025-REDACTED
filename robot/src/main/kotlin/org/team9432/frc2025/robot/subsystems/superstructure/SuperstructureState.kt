@@ -23,7 +23,7 @@ enum class SuperstructureState(val elevatorGoal: Elevator.Goal, val armGoal: Arm
     PROCESSOR(elevatorGoal = Elevator.Goal.PREPARE_PROCESSOR, armGoal = Arm.Goal.PREPARE_PROCESSOR);
 
     val isCoralScoring
-        get() = this in setOf(SCORE_L1, SCORE_L2, SCORE_L3, SCORE_L4)
+        get() = this in setOf(SCORE_L1, SCORE_L2, SCORE_L3, SCORE_L4, PREP_L4, ADAPTIVE_SCORE_L3, ADAPTIVE_SCORE_L2)
 
     val isAlgaeScoring
         get() = this in setOf(PREP_NET, SCORE_NET, PROCESSOR)

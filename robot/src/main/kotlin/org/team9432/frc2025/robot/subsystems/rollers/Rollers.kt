@@ -46,8 +46,18 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     var hasAlgae = false
         private set
 
+    private var hasRunRemoveCoral = false
+    var readyToRemoveCoral = false
+        set(value) {
+            if (hasRunRemoveCoral && value) {
+                field = value
+            }
+        }
+
     val hasCoralTrigger = Trigger { hasCoral }
     val hasAlgaeTrigger = Trigger { hasAlgae }
+
+    var disableBeambreak = { false }
 
     private var coralAlignedDebouncer = Debouncer(coralAlignedDebounceTime.get())
     private var algaeCollectedDebouncer = Debouncer(algaeCollectionDebounceTime.get())
@@ -87,17 +97,17 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
 
             State.SCORE_CORAL_TALL -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_TALL
-                hasCoral = false
+                hasRunRemoveCoral = true
             }
 
             State.SCORE_CORAL_LOW -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_LOW
-                hasCoral = false
+                hasRunRemoveCoral = true
             }
 
             State.SCORE_CORAL_L1 -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_L1
-                hasCoral = false
+                hasRunRemoveCoral = true
             }
 
             State.UNJAM_CORAL -> {
@@ -125,7 +135,8 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
                     abs(manipulator.torqueCurrentAmps) > coralAlignedTorqueCurrentThreshold.get()
             )
 
-        val coralBeambreakDetector = rollerSensorInputs.frontCoralTripped && state == State.INTAKE_CORAL
+        val coralBeambreakDetector =
+            (rollerSensorInputs.frontCoralTripped && state == State.INTAKE_CORAL) && !disableBeambreak()
 
         if ((coralCurrentDetector || coralBeambreakDetector) && !Constants.robot.isSim) {
             hasCoral = true
@@ -145,6 +156,12 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
             )
         if (algaeDropped && !Constants.robot.isSim) {
             hasAlgae = false
+        }
+
+        if (hasRunRemoveCoral && readyToRemoveCoral) {
+            hasCoral = false
+            readyToRemoveCoral = false
+            hasRunRemoveCoral = false
         }
 
         Logger.recordOutput("Rollers/State", state)

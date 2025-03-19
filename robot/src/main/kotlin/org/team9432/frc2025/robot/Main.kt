@@ -62,7 +62,6 @@ import org.team9432.frc2025.robot.subsystems.rollers.dispenser.ManipulatorIOReal
 import org.team9432.frc2025.robot.subsystems.rollers.funnel.Funnel
 import org.team9432.frc2025.robot.subsystems.rollers.funnel.FunnelIO
 import org.team9432.frc2025.robot.subsystems.rollers.funnel.FunnelIOReal
-import org.team9432.frc2025.robot.subsystems.superstructure.AdaptiveDistanceLookupTable
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
 import org.team9432.frc2025.robot.subsystems.superstructure.SuperstructureState
 import org.team9432.frc2025.robot.subsystems.superstructure.arm.Arm
@@ -258,19 +257,23 @@ class Robot : LoggedRobot() {
         autoCommands = Auto(robotPosition, localizer, drive, superstructure, rollers, robotState)
         autoChooser = AutoChooser(autoCommands, localizer, drive, superstructure)
 
-        Elevator.Goal.ADAPTIVE_SCORE_L2.overrideSetpointSupplier = {
-            AdaptiveDistanceLookupTable.L2.getElevatorHeight(robotPosition.nearestBranchDistance)
-        }
-        Arm.Goal.ADAPTIVE_SCORE_L2.overrideSetpointSupplier = {
-            AdaptiveDistanceLookupTable.L2.getArmAngle(robotPosition.nearestBranchDistance)
-        }
-
-        Elevator.Goal.ADAPTIVE_SCORE_L3.overrideSetpointSupplier = {
-            AdaptiveDistanceLookupTable.L3.getElevatorHeight(robotPosition.nearestBranchDistance)
-        }
-        Arm.Goal.ADAPTIVE_SCORE_L3.overrideSetpointSupplier = {
-            AdaptiveDistanceLookupTable.L3.getArmAngle(robotPosition.nearestBranchDistance)
-        }
+        //        Elevator.Goal.ADAPTIVE_SCORE_L2.overrideSetpointSupplier = {
+        //
+        // AdaptiveDistanceLookupTable.L2.getElevatorHeight(robotPosition.nearestBranchDistance)
+        //        }
+        //        Arm.Goal.ADAPTIVE_SCORE_L2.overrideSetpointSupplier = {
+        //
+        // AdaptiveDistanceLookupTable.L2.getArmAngle(robotPosition.nearestBranchDistance)
+        //        }
+        //
+        //        Elevator.Goal.ADAPTIVE_SCORE_L3.overrideSetpointSupplier = {
+        //
+        // AdaptiveDistanceLookupTable.L3.getElevatorHeight(robotPosition.nearestBranchDistance)
+        //        }
+        //        Arm.Goal.ADAPTIVE_SCORE_L3.overrideSetpointSupplier = {
+        //
+        // AdaptiveDistanceLookupTable.L3.getArmAngle(robotPosition.nearestBranchDistance)
+        //        }
 
         bindButtons()
 
@@ -282,7 +285,7 @@ class Robot : LoggedRobot() {
 
         LEDState.visionDisconnected = { cameras.any { !it.connected } }
         LEDState.seesDisabledTag = { seesDisabledTagDebouncer.calculate(isDisabled && cameras.any { it.seesAnyTag }) }
-        LEDState.displayElevatorHeight = { switches.eight.asBoolean }
+        LEDState.displayElevatorHeight = { false }
         LEDState.shouldRunDisplay = { switches.seven.asBoolean }
 
         LEDState.codeLoading = false
@@ -291,6 +294,8 @@ class Robot : LoggedRobot() {
     private fun bindButtons() {
         superstructure.coastOverride = { switches.one.asBoolean && isDisabled }
         drive.coastOverride = { switches.one.asBoolean && isDisabled }
+
+        rollers.disableBeambreak = { switches.eight.asBoolean }
 
         val disableAutoAlign = switches.three
 
@@ -337,10 +342,7 @@ class Robot : LoggedRobot() {
                 localizer,
                 {
                     var branch =
-                        robotState.autoBranchTarget
-                            ?: robotPosition.nearestReefAlignBranch(
-                                localizer.estimatedPose.transformBySpeeds(localizer.robotVelocity, 0.1)
-                            )
+                        robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch(localizer.estimatedPose)
 
                     if (branch != lastBranch) {
                         lastBranch = branch
@@ -401,7 +403,7 @@ class Robot : LoggedRobot() {
             .whileTrue(autoCommands.autoAlignForStationPickup)
 
         (driver.rightBumper().or(RobotModeTriggers.autonomous()))
-            .and(rollers.hasCoralTrigger.or { isAutonomousEnabled && robotState.autoCoralStationPose == null })
+            .and(!rollers.hasAlgaeTrigger.or { isAutonomousEnabled && robotState.autoCoralStationPose == null })
             .and(!driver.leftBumper())
             .and(!disableAutoAlign)
             .and { robotState.teleCoralTarget != CoralScoringTarget.L1 }
@@ -434,54 +436,16 @@ class Robot : LoggedRobot() {
             .and(!disableAutoAlign)
             .whileTrue(autoAlignForScoringProcessor)
 
-        driver
-            .rightBumper()
-            .and(!driver.leftBumper())
+        val withinTolerance = robotPosition.withinCoralScoringTolerance.debounce(0.5, Debouncer.DebounceType.kFalling)
+        (driver.a().or(withinTolerance))
+            .and(superstructure::atGoal)
             .whileTrue(
-                superstructure
-                    .runGoal {
-                        if (
-                            robotPosition.isSafeToUseArm.asBoolean ||
-                                (superstructure.currentState == SuperstructureState.PREP_L4 &&
-                                    robotState.coralTarget == CoralScoringTarget.L4)
-                        ) {
-                            when (robotState.coralTarget) {
-                                CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
-                                CoralScoringTarget.L2 -> SuperstructureState.ADAPTIVE_SCORE_L2
-                                CoralScoringTarget.L3 -> SuperstructureState.ADAPTIVE_SCORE_L3
-                                CoralScoringTarget.L4 -> {
-                                    val shouldFullyExtend =
-                                        localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
-                                            FieldConstants.Reef.maxRadius -
-                                            (DrivetrainConstants.BUMPER_LENGTH / 2) < 0.25 &&
-                                            robotPosition.angleFromReef() < 30
-                                    if (shouldFullyExtend) {
-                                        SuperstructureState.SCORE_L4
-                                    } else {
-                                        SuperstructureState.PREP_L4
-                                    }
-                                }
-                            }
-                        } else {
-                            superstructure.goal
-                        }
+                rollers
+                    .runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) }
+                    .finallyDo { interrupted ->
+                        robotState.flipBranch = false
+                        rollers.readyToRemoveCoral = true
                     }
-                    .alongWith(
-                        Commands.waitUntil(
-                                driver
-                                    .a()
-                                    .or(
-                                        // Check if ready to score
-                                        robotPosition.withinCoralScoringTolerance
-                                            .and { robotState.coralTarget != CoralScoringTarget.L1 }
-                                            .debounce(0.05)
-                                    )
-                                    .and(superstructure::atGoal)
-                            )
-                            .andThen(rollers.runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) })
-                    )
-                    .onlyIf(rollers.hasCoralTrigger)
-                    .finallyDo { interrupted -> robotState.flipBranch = false }
             )
 
         driver
@@ -534,9 +498,11 @@ class Robot : LoggedRobot() {
             )
             .whileTrue(driver.alternatingRumbleCommand(0.25))
 
+        val homeSystemCommand = superstructure.homeSystem()
+
         rollers.defaultCommand =
             rollers.runGoal {
-                if (!superstructure.isHomed) {
+                if (!superstructure.isHomed || homeSystemCommand.isScheduled) {
                     Rollers.State.IDLE
                 } else if (rollers.hasAlgae) {
                     Rollers.State.INTAKE_ALGAE
@@ -551,7 +517,19 @@ class Robot : LoggedRobot() {
 
         superstructure.defaultCommand =
             superstructure.runGoal {
-                if (robotPosition.isSafeToUseArm.asBoolean) {
+                val threeToTwo =
+                    robotState.coralTarget == CoralScoringTarget.L2 &&
+                        superstructure.currentState in
+                            setOf(SuperstructureState.SCORE_L3, SuperstructureState.ADAPTIVE_SCORE_L3)
+                val twoToThree =
+                    robotState.coralTarget == CoralScoringTarget.L3 &&
+                        superstructure.currentState in
+                            setOf(SuperstructureState.SCORE_L2, SuperstructureState.ADAPTIVE_SCORE_L2)
+
+                val fourToFour =
+                    robotState.coralTarget == CoralScoringTarget.L4 &&
+                        superstructure.currentState == SuperstructureState.PREP_L4
+                if (robotPosition.isSafeToUseArm.asBoolean || threeToTwo || twoToThree || fourToFour) {
                     if (rollers.hasAlgae) {
                         SuperstructureState.ALGAE_STOW
                     } else if (rollers.hasCoral) {
@@ -559,7 +537,18 @@ class Robot : LoggedRobot() {
                             CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
                             CoralScoringTarget.L2 -> SuperstructureState.ADAPTIVE_SCORE_L2
                             CoralScoringTarget.L3 -> SuperstructureState.ADAPTIVE_SCORE_L3
-                            CoralScoringTarget.L4 -> SuperstructureState.PREP_L4
+                            CoralScoringTarget.L4 -> {
+                                val shouldFullyExtend =
+                                    localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                                        FieldConstants.Reef.maxRadius -
+                                        (DrivetrainConstants.BUMPER_LENGTH / 2) < 0.5 &&
+                                        robotPosition.angleFromReef() < 30
+                                if (shouldFullyExtend) {
+                                    SuperstructureState.SCORE_L4
+                                } else {
+                                    SuperstructureState.PREP_L4
+                                }
+                            }
                         }
                     } else {
                         SuperstructureState.STOW
@@ -591,7 +580,7 @@ class Robot : LoggedRobot() {
             .or((driver.povDown().and(!backupButton)))
             .onTrue(Commands.runOnce({ robotState.algaeTarget = AlgaeScoringTarget.PROCESSOR }).ignoringDisable(true))
 
-        driver.start().and(!backupButton).onTrue(superstructure.homeSystem())
+        driver.start().and(!backupButton).onTrue(homeSystemCommand)
         driver.back().onTrue(Commands.runOnce(drive::resetGyro))
 
         driver.x().and(backupButton).onTrue(Commands.runOnce({ rollers.clearCoral() }))
@@ -610,7 +599,7 @@ class Robot : LoggedRobot() {
         (driver.povUp().and(backupButton)).or(operator.rightBumper()).whileTrue(climber.runGoal(Climber.Goal.UP))
         (driver.povDown().and(backupButton)).or(operator.leftBumper()).whileTrue(climber.runGoal(Climber.Goal.DOWN))
         driver.x().and(!backupButton).whileTrue(climber.runGoal(Climber.Goal.CLIMB))
-        driver.b().and(!backupButton).whileTrue(Commands.runOnce({ robotState.flipBranch = !robotState.flipBranch }))
+        driver.b().and(!backupButton).onTrue(Commands.runOnce({ robotState.flipBranch = !robotState.flipBranch }))
 
         drive.defaultCommand =
             drive

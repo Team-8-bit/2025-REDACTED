@@ -404,6 +404,7 @@ class Robot : LoggedRobot() {
 
         (driver.rightBumper().or(RobotModeTriggers.autonomous()))
             .and(!rollers.hasAlgaeTrigger.or { isAutonomousEnabled && robotState.autoCoralStationPose == null })
+            .and { !superstructure.currentState.isAlgaeScoring }
             .and(!driver.leftBumper())
             .and(!disableAutoAlign)
             .and { robotState.teleCoralTarget != CoralScoringTarget.L1 }

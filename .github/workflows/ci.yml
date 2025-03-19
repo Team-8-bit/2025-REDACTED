@@ -7,7 +7,7 @@ jobs:
   # Check formatting of the project.
   spotless-check:
     runs-on: ubuntu-22.04
-    container: wpilib/roborio-cross-ubuntu:2024-22.04
+    container: wpilib/roborio-cross-ubuntu:2025-22.04
 
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
   # Ensures robot code builds. This also runs all unit tests.
   build:
     runs-on: ubuntu-22.04
-    container: wpilib/roborio-cross-ubuntu:2024-22.04
+    container: wpilib/roborio-cross-ubuntu:2025-22.04
 
     steps:
       - uses: actions/checkout@v4

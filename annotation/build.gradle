@@ -1,6 +1,6 @@
 plugins {
     id("org.jetbrains.kotlin.jvm").version("2.1.0")
-    id("edu.wpi.first.GradleRIO").version("2025.2.1")
+    id("edu.wpi.first.GradleRIO").version("2025.3.2")
 }
 
 group = "org.team9432.lib"

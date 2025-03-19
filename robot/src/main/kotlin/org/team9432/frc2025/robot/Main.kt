@@ -709,8 +709,6 @@ class Robot : LoggedRobot() {
 
         autoChooser.update()
 
-        LEDState.climbMode = robotState.climbMode
-
         LEDState.updateBuffer(LEDStrip.buffer)
         LEDStrip.displayBuffer()
     }

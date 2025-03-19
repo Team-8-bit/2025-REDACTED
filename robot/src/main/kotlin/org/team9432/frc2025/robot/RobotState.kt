@@ -11,7 +11,6 @@ class RobotState {
     var autoCoralTarget: CoralScoringTarget? = null
     var autoBranchTarget: FieldConstants.Reef.Branch? = null
     var autoCoralStationPose: Pose2d? = null
-    var climbMode = false
 
     var flipBranch = false
 

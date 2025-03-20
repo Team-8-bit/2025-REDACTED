@@ -10,7 +10,7 @@ import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 
 object VisionConstants {
     // AprilTag layout
-    val aprilTagLayout: AprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded)
+    val aprilTagLayout: AprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2025Reefscape)
 
     // Basic filtering thresholds
     const val MAX_AMBIGUITY = 0.4

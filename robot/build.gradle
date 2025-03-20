@@ -2,7 +2,7 @@ import edu.wpi.first.gradlerio.GradleRIOPlugin
 
 plugins {
     id("org.jetbrains.kotlin.jvm").version("2.1.0")
-    id("edu.wpi.first.GradleRIO").version("2025.3.2")
+    id("edu.wpi.first.GradleRIO").version("2025.2.1")
     id("com.google.devtools.ksp").version("2.1.0-1.0.29")
     id("com.peterabeles.gversion").version("1.10.3")
 }

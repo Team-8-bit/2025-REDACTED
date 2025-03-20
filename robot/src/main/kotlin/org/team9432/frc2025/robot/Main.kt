@@ -444,16 +444,14 @@ class Robot : LoggedRobot() {
                 .debounce(0.05, Debouncer.DebounceType.kRising)
                 .debounce(0.5, Debouncer.DebounceType.kFalling)
                 .and(RobotModeTriggers.autonomous())
+
         (driver.a().or(withinTolerance))
             .and { superstructure.goal.isCoralScoring }
             .and(superstructure::atGoal)
             .whileTrue(
                 rollers
                     .runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) }
-                    .finallyDo { interrupted ->
-                        robotState.flipBranch = false
-                        rollers.removeCoralIfReady()
-                    }
+                    .finallyDo { interrupted -> robotState.flipBranch = false }
             )
 
         driver

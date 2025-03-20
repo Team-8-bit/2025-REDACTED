@@ -133,10 +133,8 @@ class Auto(
                 robotState.autoCoralTarget = level
                 robotState.autoBranchTarget = branch
             }),
-            Commands.waitUntil(rollers::hasRunRollersToRemoveCoral),
-            Commands.waitSeconds(0.3),
-            Commands.runOnce({ rollers.removeCoralIfReady() }),
             Commands.waitUntil(!rollers.hasCoralTrigger),
+            Commands.waitSeconds(0.3),
         )
 
     private fun pickupAndScore(branch: Branch, level: CoralScoringTarget, coralStation: CoralStation) =
@@ -154,9 +152,7 @@ class Auto(
             // Commands.waitSeconds(0.5), // This works, add if needed to pause at the coral station
             Commands.runOnce({ robotState.autoCoralStationPose = null }),
             Commands.waitUntil(rollers.hasCoralTrigger).withTimeout(2.5),
-            Commands.waitUntil(rollers::hasRunRollersToRemoveCoral),
-            Commands.waitSeconds(0.3),
-            Commands.runOnce({ rollers.removeCoralIfReady() }),
             Commands.waitUntil(!rollers.hasCoralTrigger),
+            Commands.waitSeconds(0.3),
         )
 }

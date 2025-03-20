@@ -327,7 +327,7 @@ class Robot : LoggedRobot() {
                             superstructure.currentState == SuperstructureState.INTAKE_ALGAE_HIGH)
                     ) {
                         // Wait to lower algae arm
-                        pose.transformBy(Transform2d(-0.2, 0.0, Rotation2d.kZero))
+                        pose.transformBy(Transform2d(-0.25, 0.0, Rotation2d.kZero))
                     } else {
                         pose
                     }
@@ -404,7 +404,7 @@ class Robot : LoggedRobot() {
             .whileTrue(autoCommands.autoAlignForStationPickup)
 
         (driver.rightBumper().or(RobotModeTriggers.autonomous()))
-            .and({ robotState.autoCoralStationPose == null })
+            //            .and({ robotState.autoCoralStationPose == null })
             .and((!rollers.hasAlgaeTrigger).or { isAutonomousEnabled && robotState.autoCoralStationPose == null })
             .and { !superstructure.currentState.isAlgaeScoring }
             .and(!driver.leftBumper())
@@ -441,6 +441,7 @@ class Robot : LoggedRobot() {
 
         val withinTolerance =
             robotPosition.withinCoralScoringTolerance
+                .debounce(0.05, Debouncer.DebounceType.kRising)
                 .debounce(0.5, Debouncer.DebounceType.kFalling)
                 .and(RobotModeTriggers.autonomous())
         (driver.a().or(withinTolerance))
@@ -536,7 +537,14 @@ class Robot : LoggedRobot() {
                 val fourToFour =
                     robotState.coralTarget == CoralScoringTarget.L4 &&
                         superstructure.currentState == SuperstructureState.PREP_L4
-                if (robotPosition.isSafeToUseArm.asBoolean || threeToTwo || twoToThree || fourToFour) {
+
+                val stowToTwoOrThree =
+                    robotState.coralTarget in setOf(CoralScoringTarget.L2, CoralScoringTarget.L3) &&
+                        superstructure.currentState == SuperstructureState.STOW
+
+                if (
+                    robotPosition.isSafeToUseArm.asBoolean || threeToTwo || twoToThree || fourToFour || stowToTwoOrThree
+                ) {
                     if (rollers.hasAlgae) {
                         SuperstructureState.ALGAE_STOW
                     } else if (rollers.hasCoral) {
@@ -548,8 +556,8 @@ class Robot : LoggedRobot() {
                                 val shouldFullyExtend =
                                     localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
                                         FieldConstants.Reef.maxRadius -
-                                        (DrivetrainConstants.BUMPER_LENGTH / 2) < 0.75 &&
-                                        robotPosition.angleFromReef() < 30
+                                        (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0 &&
+                                        robotPosition.angleFromReef() < 45
                                 if (shouldFullyExtend) {
                                     SuperstructureState.SCORE_L4
                                 } else {
@@ -565,7 +573,7 @@ class Robot : LoggedRobot() {
                 }
             }
 
-        val backupButton = driver.leftStick().and { Constants.robot != Constants.RobotType.SIM }
+        val backupButton = driver.back()
 
         (operator.x())
             .or((driver.povLeft().and(!backupButton)))
@@ -588,7 +596,7 @@ class Robot : LoggedRobot() {
             .onTrue(Commands.runOnce({ robotState.algaeTarget = AlgaeScoringTarget.PROCESSOR }).ignoringDisable(true))
 
         driver.start().and(!backupButton).onTrue(homeSystemCommand)
-        driver.back().onTrue(Commands.runOnce(drive::resetGyro))
+        driver.start().and(backupButton).onTrue(Commands.runOnce(drive::resetGyro))
 
         driver.x().and(backupButton).onTrue(Commands.runOnce({ rollers.clearCoral() }))
         driver.y().whileTrue(superstructure.runGoal { SuperstructureState.UNJAM_CORAL })
@@ -606,10 +614,7 @@ class Robot : LoggedRobot() {
         (driver.povUp().and(backupButton)).or(operator.rightBumper()).whileTrue(climber.runGoal(Climber.Goal.UP))
         (driver.povDown().and(backupButton)).or(operator.leftBumper()).whileTrue(climber.runGoal(Climber.Goal.DOWN))
         driver.x().and(!backupButton).whileTrue(climber.runGoal(Climber.Goal.CLIMB))
-        driver
-            .b()
-            .and(!backupButton)
-            .whileTrue(Commands.startEnd({ robotState.flipBranch = true }, { robotState.flipBranch = false }))
+        driver.b().and(!backupButton).whileTrue(Commands.runOnce({ robotState.flipBranch = true }))
 
         drive.defaultCommand =
             drive

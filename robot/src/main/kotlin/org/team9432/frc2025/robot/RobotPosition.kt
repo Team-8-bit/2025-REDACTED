@@ -166,7 +166,7 @@ class RobotPosition(private val localizer: Localizer) {
 
         val yDistance = abs(robotPose.relativeTo(alignPose).y)
 
-        var xOffset = MathUtil.clamp(yDistance * 0.75, 0.0, 1.0)
+        var xOffset = MathUtil.clamp(yDistance * 0.5, 0.0, 1.0)
 
         if (robotPose.distanceTo(alignPose) > 1.0) {
             xOffset += 0.75

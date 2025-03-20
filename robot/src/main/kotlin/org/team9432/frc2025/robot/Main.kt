@@ -443,7 +443,6 @@ class Robot : LoggedRobot() {
             robotPosition.withinCoralScoringTolerance
                 .debounce(0.05, Debouncer.DebounceType.kRising)
                 .debounce(0.5, Debouncer.DebounceType.kFalling)
-                .and(RobotModeTriggers.autonomous())
 
         (driver.a().or(withinTolerance))
             .and { superstructure.goal.isCoralScoring }

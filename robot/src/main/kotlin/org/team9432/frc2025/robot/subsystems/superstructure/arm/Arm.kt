@@ -36,7 +36,7 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
         SCORE_L1(LoggedTunableNumber("Arm/Setpoints/ScoreL1", -0.1)),
         SCORE_L2(LoggedTunableNumber("Arm/Setpoints/ScoreL2", -0.2)),
         SCORE_L3(LoggedTunableNumber("Arm/Setpoints/ScoreL3", -0.2)),
-        SCORE_L4(LoggedTunableNumber("Arm/Setpoints/ScoreL4", 0.171)),
+        SCORE_L4(LoggedTunableNumber("Arm/Setpoints/ScoreL4", 0.17)),
         ADAPTIVE_SCORE_L2(SCORE_L2.angleSupplier),
         ADAPTIVE_SCORE_L3(SCORE_L3.angleSupplier),
         INTAKE_ALGAE_REEF(LoggedTunableNumber("Arm/Setpoints/IntakeAlgaeReef", -0.15)),

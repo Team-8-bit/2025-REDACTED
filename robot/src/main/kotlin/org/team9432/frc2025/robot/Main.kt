@@ -592,7 +592,7 @@ class Robot : LoggedRobot() {
             .or((driver.povDown().and(!backupButton)))
             .onTrue(Commands.runOnce({ robotState.algaeTarget = AlgaeScoringTarget.PROCESSOR }).ignoringDisable(true))
 
-        driver.start().and(!backupButton).onTrue(homeSystemCommand)
+        driver.start().and(!backupButton).onTrue(homeSystemCommand.andThen(Commands.runOnce({ rollers.clearCoral() })))
         driver.start().and(backupButton).onTrue(Commands.runOnce(drive::resetGyro))
 
         driver.x().and(backupButton).onTrue(Commands.runOnce({ rollers.clearCoral() }))

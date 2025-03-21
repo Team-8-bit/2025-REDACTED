@@ -43,7 +43,7 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
         ),
         SCORE_L1(LoggedTunableNumber("Elevator/Setpoints/ScoreL1", 0.2)),
         SCORE_L2(LoggedTunableNumber("Elevator/Setpoints/ScoreL2", 0.54)),
-        SCORE_L3(LoggedTunableNumber("Elevator/Setpoints/ScoreL3", 0.97)),
+        SCORE_L3(LoggedTunableNumber("Elevator/Setpoints/ScoreL3", 0.965)),
         SCORE_L4(LoggedTunableNumber("Elevator/Setpoints/ScoreL4", ElevatorConstants.MAX_POSITION)),
         PREP_L4(LoggedTunableNumber("Elevator/Setpoints/PrepL4", 0.625)),
         ADAPTIVE_SCORE_L2(SCORE_L2.setpointSupplier),

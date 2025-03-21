@@ -26,7 +26,7 @@ open class FunnelIOReal : FunnelIO {
             MotorOutput.Inverted = InvertedValue.Clockwise_Positive
             MotorOutput.NeutralMode = NeutralModeValue.Coast
 
-            CurrentLimits.SupplyCurrentLimit = 20.0
+            CurrentLimits.SupplyCurrentLimit = 25.0
             CurrentLimits.SupplyCurrentLimitEnable = true
         }
 

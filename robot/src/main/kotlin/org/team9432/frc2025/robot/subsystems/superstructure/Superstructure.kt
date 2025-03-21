@@ -160,9 +160,9 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
                 arm.clearHome(),
                 elevator.homeElevator(),
                 elevator.runToGoal(Elevator.Goal.MIN_ARM_OUT),
-                Commands.waitSeconds(0.1),
+                Commands.waitSeconds(0.0),
                 arm.homeArm(),
-                Commands.waitSeconds(0.1),
+                Commands.waitSeconds(0.0),
                 elevator.runToGoal(Elevator.Goal.STOW),
                 arm.runToGoal(Arm.Goal.STOW),
                 runOnce {

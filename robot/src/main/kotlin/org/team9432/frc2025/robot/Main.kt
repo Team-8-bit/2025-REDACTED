@@ -381,8 +381,8 @@ class Robot : LoggedRobot() {
                         MathUtil.clamp(
                             (localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
                                 FieldConstants.Reef.maxRadius -
-                                (DrivetrainConstants.BUMPER_LENGTH / 2)) * 2.5,
-                            2.5,
+                                (DrivetrainConstants.BUMPER_LENGTH / 2)) * 2.0,
+                            2.0,
                             5.0,
                         )
                     },

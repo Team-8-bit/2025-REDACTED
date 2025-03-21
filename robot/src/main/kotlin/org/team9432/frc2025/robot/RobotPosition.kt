@@ -14,6 +14,7 @@ import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.distanceTo
 import org.team9432.frc2025.lib.util.flip
+import org.team9432.frc2025.lib.util.velocityLessThan
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.util.FieldConstants
 
@@ -151,8 +152,12 @@ class RobotPosition(private val localizer: Localizer) {
 
         val difference = robotPose.relativeTo(scorePose)
 
+        val velocityLow = localizer.robotVelocity.velocityLessThan(0.2, Units.degreesToRadians(4.0))
+
         return@Trigger Units.metersToInches(abs(hypot(difference.x, difference.y))) <
-            coralScoringToleranceInches.get() && abs(difference.rotation.degrees) < coralScoringToleranceDegrees.get()
+            coralScoringToleranceInches.get() &&
+            abs(difference.rotation.degrees) < coralScoringToleranceDegrees.get() &&
+            velocityLow
     }
 
     private val processorTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)

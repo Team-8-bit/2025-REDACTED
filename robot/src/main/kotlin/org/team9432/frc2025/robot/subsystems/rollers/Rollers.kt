@@ -159,6 +159,10 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         hasCoral = false
     }
 
+    fun toggleCoral() {
+        hasCoral = !hasCoral
+    }
+
     fun preloadCoral() = Commands.runOnce({ hasCoral = true })
 
     fun runGoal(state: State) = runGoal { state }

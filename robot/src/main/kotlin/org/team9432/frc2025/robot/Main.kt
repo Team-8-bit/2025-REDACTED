@@ -594,7 +594,7 @@ class Robot : LoggedRobot() {
         driver.start().and(!backupButton).onTrue(homeSystemCommand.andThen(Commands.runOnce({ rollers.clearCoral() })))
         driver.start().and(backupButton).onTrue(Commands.runOnce(drive::resetGyro))
 
-        driver.x().and(backupButton).onTrue(Commands.runOnce({ rollers.clearCoral() }))
+        driver.x().and(backupButton).onTrue(Commands.runOnce({ rollers.toggleCoral() }))
         driver.y().whileTrue(superstructure.runGoal { SuperstructureState.UNJAM_CORAL })
         driver
             .b()

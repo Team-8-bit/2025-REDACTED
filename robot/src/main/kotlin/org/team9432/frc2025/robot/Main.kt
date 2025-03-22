@@ -366,7 +366,7 @@ class Robot : LoggedRobot() {
                         val armNotReady = isNotReadyForL1 || isNotReadyForL4
                         if (armNotReady) {
                             // Wait to drive all the way until arm is in position
-                            target.transformBy(Transform2d(-0.3, 0.0, Rotation2d.kZero))
+                            target.transformBy(Transform2d(-0.375, 0.0, Rotation2d.kZero))
                         } else {
                             target
                         }

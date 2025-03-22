@@ -538,34 +538,45 @@ class Robot : LoggedRobot() {
                     robotState.coralTarget in setOf(CoralScoringTarget.L2, CoralScoringTarget.L3) &&
                         superstructure.currentState == SuperstructureState.STOW
 
-                if (
-                    robotPosition.isSafeToUseArm.asBoolean || threeToTwo || twoToThree || fourToFour || stowToTwoOrThree
-                ) {
-                    if (rollers.hasAlgae) {
-                        SuperstructureState.ALGAE_STOW
-                    } else if (rollers.hasCoral) {
-                        when (robotState.coralTarget) {
-                            CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
-                            CoralScoringTarget.L2 -> SuperstructureState.ADAPTIVE_SCORE_L2
-                            CoralScoringTarget.L3 -> SuperstructureState.ADAPTIVE_SCORE_L3
-                            CoralScoringTarget.L4 -> {
-                                val shouldFullyExtend =
-                                    localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
-                                        FieldConstants.Reef.maxRadius -
-                                        (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0 &&
-                                        robotPosition.angleFromReef() < 45
-                                if (shouldFullyExtend) {
-                                    SuperstructureState.SCORE_L4
-                                } else {
-                                    SuperstructureState.PREP_L4
+                if (driver.a().asBoolean) {
+                    superstructure.goal
+                } else {
+                    if (
+                        robotPosition.isSafeToUseArm.asBoolean ||
+                            threeToTwo ||
+                            twoToThree ||
+                            fourToFour ||
+                            stowToTwoOrThree
+                    ) {
+                        if (rollers.hasAlgae) {
+                            SuperstructureState.ALGAE_STOW
+                        } else if (rollers.hasCoral) {
+                            when (robotState.coralTarget) {
+                                CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
+                                CoralScoringTarget.L2 -> SuperstructureState.ADAPTIVE_SCORE_L2
+                                CoralScoringTarget.L3 -> SuperstructureState.ADAPTIVE_SCORE_L3
+                                CoralScoringTarget.L4 -> {
+                                    val shouldFullyExtend =
+                                        localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                                            FieldConstants.Reef.maxRadius -
+                                            (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0 &&
+                                            robotPosition.angleFromReef() < 45
+                                    if (
+                                        shouldFullyExtend ||
+                                            (disableAutoAlign.asBoolean && driver.rightBumper().asBoolean)
+                                    ) {
+                                        SuperstructureState.SCORE_L4
+                                    } else {
+                                        SuperstructureState.PREP_L4
+                                    }
                                 }
                             }
+                        } else {
+                            SuperstructureState.STOW
                         }
                     } else {
-                        SuperstructureState.STOW
+                        superstructure.goal
                     }
-                } else {
-                    superstructure.goal
                 }
             }
 

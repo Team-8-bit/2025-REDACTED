@@ -16,6 +16,7 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
+import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator.Goal.SCORE_L2
 
 class Arm(private val io: ArmIO) : SubsystemBase() {
     private val inputs = LoggedArmIOInputs()
@@ -32,20 +33,24 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
     // All angles are in rotations
     enum class Goal(private val angleSupplier: () -> Double) {
         STOW({ ArmConstants.MIN_POSITION }),
-        L1(LoggedTunableNumber("Arm/Setpoints/L1", -0.1)),
-        L2(LoggedTunableNumber("Arm/Setpoints/L2", -0.2)),
-        L3(LoggedTunableNumber("Arm/Setpoints/L3", -0.2)),
-        L4(LoggedTunableNumber("Arm/Setpoints/L4", 0.17)),
+        SCORE_L1(LoggedTunableNumber("Arm/Setpoints/ScoreL1", -0.1)),
+        SCORE_L2(LoggedTunableNumber("Arm/Setpoints/ScoreL2", -0.2)),
+        SCORE_L3(LoggedTunableNumber("Arm/Setpoints/ScoreL3", -0.2)),
+        SCORE_L4(LoggedTunableNumber("Arm/Setpoints/ScoreL4", 0.17)),
+        ADAPTIVE_SCORE_L2(SCORE_L2.angleSupplier),
+        ADAPTIVE_SCORE_L3(SCORE_L3.angleSupplier),
         INTAKE_ALGAE_REEF(LoggedTunableNumber("Arm/Setpoints/IntakeAlgaeReef", -0.15)),
         HOLD_ALGAE_LOW(LoggedTunableNumber("Arm/Setpoints/HoldAlgaeLow", -0.2)),
         PREPARE_PROCESSOR(LoggedTunableNumber("Arm/Setpoints/PrepareProcessor", -0.2)),
-        PREPARE_NET(LoggedTunableNumber("Arm/Setpoints/PrepareNet", 0.17)),
+        PREP_NET(LoggedTunableNumber("Arm/Setpoints/PrepNet", 0.17)),
         SCORE_NET(LoggedTunableNumber("Arm/Setpoints/ScoreNet", 0.17)),
         UNJAM_CORAL(LoggedTunableNumber("Arm/Setpoints/UnjamCoral", 0.17)),
         FLOOR_ALGAE(LoggedTunableNumber("Arm/Setpoints/FloorAlgae", -0.15));
 
         val rotations
-            get() = angleSupplier.invoke()
+            get() = overrideSetpointSupplier?.invoke() ?: angleSupplier.invoke()
+
+        var overrideSetpointSupplier: (() -> Double)? = null
     }
 
     private val homingVolts = LoggedTunableNumber("Arm/Tuning/HomingVolts", -1.0)
@@ -78,7 +83,7 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
                         kS = 4.440481,
                         kG = 7.537810 - 4.440481,
                         velocity = 3.0,
-                        acceleration = 3.0,
+                        acceleration = 4.0,
                         jerk = 0.0,
                     )
 
@@ -158,6 +163,8 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
             .onlyWhile { !motorOutputDisabled() }
 
     fun fakeAutoHome(): Command = runOnce { hasHomed = true }
+
+    fun clearHome(): Command = runOnce { hasHomed = false }
 
     /** Runs the elevator to the given [goal] and ends when the position is reached. */
     fun runToGoal(goal: Goal) = runOnce { this.goal = goal }.andThen(Commands.idle(this)).until(::atGoal)

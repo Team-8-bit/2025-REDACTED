@@ -6,6 +6,7 @@ import org.team9432.frc2025.lib.util.MotorInformation
 
 object RobotMap {
     const val LED_PORT = 8 // PWM
+    const val FRONT_CORAL_LINEBREAK = 0 // DIO
 
     /* ******* Drivetrain ******* */
     const val DRIVETRAIN_CANBUS_NAME = "*"

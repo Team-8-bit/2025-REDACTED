@@ -8,7 +8,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import kotlin.math.atan2
 import kotlin.math.hypot
 import org.team9432.frc2025.lib.AllianceTracker
-import org.team9432.frc2025.robot.FieldConstants
+import org.team9432.frc2025.robot.util.FieldConstants
 
 fun applyX(x: Double): Double {
     return AllianceTracker.switch(blue = x, red = FieldConstants.fieldLength - x)

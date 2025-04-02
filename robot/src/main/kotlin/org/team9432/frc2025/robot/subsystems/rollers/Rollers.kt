@@ -9,7 +9,7 @@ import kotlin.math.abs
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
-import org.team9432.frc2025.robot.ScoringState
+import org.team9432.frc2025.robot.RobotState
 import org.team9432.frc2025.robot.subsystems.rollers.dispenser.Manipulator
 import org.team9432.frc2025.robot.subsystems.rollers.funnel.Funnel
 
@@ -17,7 +17,7 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     companion object {
         val coralAlignedTorqueCurrentThreshold =
             LoggedTunableNumber("Rollers/CoralCollectedThresholdTorqueCurrent", 13.0)
-        val coralAlignedDebounceTime = LoggedTunableNumber("Rollers/CoralCollectedDebounce", 0.25)
+        val coralAlignedDebounceTime = LoggedTunableNumber("Rollers/CoralCollectedDebounce", 0.2)
 
         val algaeCollectionThresholdRPS = LoggedTunableNumber("Rollers/AlgaeCollectionThresholdRPS", 30.0)
         val algaeCollectionDebounceTime = LoggedTunableNumber("Rollers/AlgaeCollectionDebounce", 0.1)
@@ -29,9 +29,9 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     enum class State {
         IDLE,
         INTAKE_CORAL,
-        INTAKE_CORAL_COMBO,
         SCORE_CORAL_TALL,
         SCORE_CORAL_LOW,
+        SCORE_CORAL_L1,
         UNJAM_CORAL,
         INTAKE_ALGAE,
         SCORE_ALGAE,
@@ -49,9 +49,14 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     val hasCoralTrigger = Trigger { hasCoral }
     val hasAlgaeTrigger = Trigger { hasAlgae }
 
+    var disableBeambreak = { false }
+
     private var coralAlignedDebouncer = Debouncer(coralAlignedDebounceTime.get())
     private var algaeCollectedDebouncer = Debouncer(algaeCollectionDebounceTime.get())
     private var algaeDroppedDebouncer = Debouncer(algaeDroppedDebounceTime.get())
+
+    private val rollerSensors = RollerSensors()
+    private val rollerSensorInputs = LoggedRollerSensorsInputs()
 
     init {
         LoggedTunableNumber.ifChanged(hashCode(), coralAlignedDebounceTime) { (dt) ->
@@ -66,6 +71,9 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
     }
 
     override fun periodic() {
+        rollerSensors.updateInputs(rollerSensorInputs)
+        Logger.processInputs("RollersSensors", rollerSensorInputs)
+
         funnel.periodic()
         manipulator.periodic()
 
@@ -79,11 +87,6 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
                 manipulator.goal = Manipulator.Goal.INTAKE_CORAL
             }
 
-            State.INTAKE_CORAL_COMBO -> {
-                funnel.goal = Funnel.Goal.INTAKE_UNJAM_COMBO
-                manipulator.goal = Manipulator.Goal.INTAKE_CORAL
-            }
-
             State.SCORE_CORAL_TALL -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_TALL
                 hasCoral = false
@@ -91,6 +94,11 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
 
             State.SCORE_CORAL_LOW -> {
                 manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_LOW
+                hasCoral = false
+            }
+
+            State.SCORE_CORAL_L1 -> {
+                manipulator.goal = Manipulator.Goal.OUTTAKE_CORAL_L1
                 hasCoral = false
             }
 
@@ -113,12 +121,16 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         }
 
         // Check if the coral has been collected
-        val coralAligned =
+        val coralCurrentDetector =
             coralAlignedDebouncer.calculate(
-                (state == State.INTAKE_CORAL || state == State.INTAKE_CORAL_COMBO) &&
+                state == State.INTAKE_CORAL &&
                     abs(manipulator.torqueCurrentAmps) > coralAlignedTorqueCurrentThreshold.get()
             )
-        if (coralAligned && !Constants.robot.isSim) {
+
+        val coralBeambreakDetector =
+            (rollerSensorInputs.frontCoralTripped && state == State.INTAKE_CORAL) && !disableBeambreak()
+
+        if ((coralCurrentDetector || coralBeambreakDetector) && !Constants.robot.isSim) {
             hasCoral = true
         }
 
@@ -147,24 +159,29 @@ class Rollers(private val funnel: Funnel, private val manipulator: Manipulator) 
         hasCoral = false
     }
 
+    fun toggleCoral() {
+        hasCoral = !hasCoral
+    }
+
     fun preloadCoral() = Commands.runOnce({ hasCoral = true })
 
     fun runGoal(state: State) = runGoal { state }
 
     fun runGoal(state: () -> State) = run { this.state = state() }
 
-    fun getScoringStateForTarget(target: ScoringState.CoralScoringTarget) =
-        if (
-            target in
-                setOf(
-                    ScoringState.CoralScoringTarget.L1,
-                    ScoringState.CoralScoringTarget.L2,
-                    ScoringState.CoralScoringTarget.L3,
-                )
-        ) {
-            State.SCORE_CORAL_LOW
-        } else {
-            State.SCORE_CORAL_TALL
+    fun getScoringStateForTarget(target: RobotState.CoralScoringTarget) =
+        when (target) {
+            in setOf(RobotState.CoralScoringTarget.L2, RobotState.CoralScoringTarget.L3) -> {
+                State.SCORE_CORAL_LOW
+            }
+
+            RobotState.CoralScoringTarget.L1 -> {
+                State.SCORE_CORAL_L1
+            }
+
+            else -> {
+                State.SCORE_CORAL_TALL
+            }
         }
 
     fun simSetHasAlgae(hasAlgae: Boolean) {

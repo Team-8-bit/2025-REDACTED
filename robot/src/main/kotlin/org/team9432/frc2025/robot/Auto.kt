@@ -7,14 +7,14 @@ import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
 import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.not
-import org.team9432.frc2025.robot.FieldConstants.CoralStation
-import org.team9432.frc2025.robot.FieldConstants.Reef.Branch
-import org.team9432.frc2025.robot.ScoringState.CoralScoringTarget
+import org.team9432.frc2025.robot.RobotState.CoralScoringTarget
 import org.team9432.frc2025.robot.commands.drive.DriveToPose
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.rollers.Rollers
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
+import org.team9432.frc2025.robot.util.FieldConstants.CoralStation
+import org.team9432.frc2025.robot.util.FieldConstants.Reef.Branch
 
 class Auto(
     private val robotPosition: RobotPosition,
@@ -22,7 +22,7 @@ class Auto(
     private val drive: Drive,
     private val superstructure: Superstructure,
     private val rollers: Rollers,
-    private val scoringState: ScoringState,
+    private val robotState: RobotState,
 ) {
     fun initializeAuto(): Command = superstructure.fakeAutoHome().alongWith(rollers.preloadCoral().asProxy())
 
@@ -30,11 +30,12 @@ class Auto(
 
     val autoAlignForStationPickup =
         DriveToPose(
-            drive,
-            localizer,
-            { scoringState.autoCoralStationPose?.applyFlip() ?: localizer.estimatedPose },
-            { localizer.estimatedPose },
-        )
+                drive,
+                localizer,
+                { robotState.autoCoralStationPose?.applyFlip() ?: localizer.estimatedPose },
+                { localizer.estimatedPose },
+            )
+            .apply { name = "AutoAlignForStationPickup" }
 
     fun onlyL2(branch: Branch): Command =
         Commands.defer({ initializeAuto().andThen(preloadAndScore(branch, CoralScoringTarget.L2)) }, emptySet())
@@ -129,29 +130,29 @@ class Auto(
     private fun preloadAndScore(branch: Branch, level: CoralScoringTarget) =
         Commands.sequence(
             Commands.runOnce({
-                scoringState.autoCoralTarget = level
-                scoringState.autoBranchTarget = branch
+                robotState.autoCoralTarget = level
+                robotState.autoBranchTarget = branch
             }),
-            Commands.waitUntil((!rollers.hasCoralTrigger)),
+            Commands.waitUntil(!rollers.hasCoralTrigger),
             Commands.waitSeconds(0.3),
         )
 
     private fun pickupAndScore(branch: Branch, level: CoralScoringTarget, coralStation: CoralStation) =
         Commands.sequence(
             Commands.runOnce({
-                scoringState.autoCoralTarget = level
-                scoringState.autoBranchTarget = branch
-                scoringState.autoCoralStationPose = coralStation.centerPose.transformBy(coralStationTransform)
+                robotState.autoCoralTarget = level
+                robotState.autoBranchTarget = branch
+                robotState.autoCoralStationPose = coralStation.centerPose.transformBy(coralStationTransform)
             }),
             Commands.waitUntil(
                 rollers.hasCoralTrigger.or {
                     autoAlignForStationPickup.withinTolerance(2.0, Units.degreesToRotations(5.0))
                 }
             ),
-            //            Commands.waitSeconds(0.5), This works, add if needed
-            Commands.runOnce({ scoringState.autoCoralStationPose = null }),
+            // Commands.waitSeconds(0.5), // This works, add if needed to pause at the coral station
+            Commands.runOnce({ robotState.autoCoralStationPose = null }),
             Commands.waitUntil(rollers.hasCoralTrigger).withTimeout(2.5),
-            Commands.waitUntil((!rollers.hasCoralTrigger)),
+            Commands.waitUntil(!rollers.hasCoralTrigger),
             Commands.waitSeconds(0.3),
         )
 }

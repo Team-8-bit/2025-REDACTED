@@ -16,8 +16,8 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
-import org.team9432.frc2025.robot.led.LEDState
 import org.team9432.frc2025.robot.subsystems.superstructure.SuperstructureConstants
+import org.team9432.frc2025.robot.util.LEDState
 
 class Elevator(private val io: ElevatorIO) : SubsystemBase() {
     private val inputs: LoggedElevatorIOInputs = LoggedElevatorIOInputs()
@@ -41,21 +41,25 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
                 SuperstructureConstants.MIN_ARM_EXTENSION_ELEVATOR_HEIGHT,
             )
         ),
-        L1(LoggedTunableNumber("Elevator/Setpoints/L1", 0.2)),
-        L2(LoggedTunableNumber("Elevator/Setpoints/L2", 0.54)),
-        L3(LoggedTunableNumber("Elevator/Setpoints/L3", 0.97)),
-        L4(LoggedTunableNumber("Elevator/Setpoints/L4", ElevatorConstants.MAX_POSITION)),
-        L4_PREP(LoggedTunableNumber("Elevator/Setpoints/L4Prep", 0.75)),
+        SCORE_L1(LoggedTunableNumber("Elevator/Setpoints/ScoreL1", 0.2)),
+        SCORE_L2(LoggedTunableNumber("Elevator/Setpoints/ScoreL2", 0.54)),
+        SCORE_L3(LoggedTunableNumber("Elevator/Setpoints/ScoreL3", 0.965)),
+        SCORE_L4(LoggedTunableNumber("Elevator/Setpoints/ScoreL4", ElevatorConstants.MAX_POSITION)),
+        PREP_L4(LoggedTunableNumber("Elevator/Setpoints/PrepL4", 0.625)),
+        ADAPTIVE_SCORE_L2(SCORE_L2.setpointSupplier),
+        ADAPTIVE_SCORE_L3(SCORE_L3.setpointSupplier),
         INTAKE_ALGAE_REEF_LOW(LoggedTunableNumber("Elevator/Setpoints/IntakeAlgaeReefLow", 0.5)),
         INTAKE_ALGAE_REEF_HIGH(LoggedTunableNumber("Elevator/Setpoints/IntakeAlgaeReefHigh", 0.9)),
         HOLD_ALGAE_LOW(LoggedTunableNumber("Elevator/Setpoints/HoldAlgaeLow", 0.1)),
         UNJAM_CORAL(LoggedTunableNumber("Elevator/Setpoints/UnjamCoral", 0.25)),
         PREPARE_PROCESSOR(LoggedTunableNumber("Elevator/Setpoints/PrepareProcessor", 0.1)),
-        PREPARE_NET(LoggedTunableNumber("Elevator/Setpoints/PrepareNet", ElevatorConstants.MAX_POSITION)),
+        PREP_NET(LoggedTunableNumber("Elevator/Setpoints/PrepNet", ElevatorConstants.MAX_POSITION)),
         SCORE_NET(LoggedTunableNumber("Elevator/Setpoints/ScoreNet", ElevatorConstants.MAX_POSITION));
 
         val meters
-            get() = setpointSupplier.invoke()
+            get() = overrideSetpointSupplier?.invoke() ?: setpointSupplier.invoke()
+
+        var overrideSetpointSupplier: (() -> Double)? = null
     }
 
     private val homingVolts = LoggedTunableNumber("Elevator/Tuning/HomingVolts", -1.0)
@@ -84,7 +88,7 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
                 Constants.RobotType.COMP -> {
                     TunableElevatorGains(
                         "Elevator/Gains",
-                        kP = 6000.0,
+                        kP = 9000.0,
                         kD = 200.0,
                         kSStage1 = 12.0,
                         kGStage1 = 1.0,
@@ -187,6 +191,8 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
             .onlyWhile { !motorOutputDisabled() }
 
     fun fakeAutoHome(): Command = runOnce { hasHomed = true }
+
+    fun clearHome(): Command = runOnce { hasHomed = false }
 
     /** Runs the elevator to the given [goal] and ends when the position is reached. */
     fun runToGoal(goal: Goal) = run { this.goal = goal }.until(::atGoal)

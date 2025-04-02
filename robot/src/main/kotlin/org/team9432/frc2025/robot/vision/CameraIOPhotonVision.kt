@@ -109,7 +109,7 @@ open class CameraIOPhotonVision(
             }
 
             else -> {
-                println(result.targets.size)
+                //                println(result.targets.size)
                 return null to null
                 //                throw Exception("I don't think this should happen") // TODO:
                 // Replace with continue before comp

@@ -13,10 +13,21 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.distanceTo
+import org.team9432.frc2025.lib.util.flip
 import org.team9432.frc2025.lib.util.velocityLessThan
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
+import org.team9432.frc2025.robot.util.FieldConstants
 
 class RobotPosition(private val localizer: Localizer) {
+    fun outputTelemetry() {
+        Logger.recordOutput("RobotPosition/isSafeToUseArm", isSafeToUseArm)
+        Logger.recordOutput("RobotPosition/ReefTargetBranch", nearestReefAlignBranch())
+        Logger.recordOutput("RobotPosition/AngleFromReef", angleFromReef())
+        Logger.recordOutput("RobotPosition/WithinCoralTolerance", withinCoralScoringTolerance)
+        Logger.recordOutput("RobotPosition/isOnBlueSide", isOnBlueSide)
+        Logger.recordOutput("RobotPosition/nearestBranchDistance", nearestBranchDistance)
+    }
+
     fun waitUntilRelativeMovement(passing: (Double, Double, Rotation2d) -> Boolean): Command =
         Commands.defer(
             {
@@ -28,12 +39,15 @@ class RobotPosition(private val localizer: Localizer) {
             emptySet(),
         )
 
+    val isOnBlueSide
+        get() = (localizer.estimatedPose.x - FieldConstants.fieldLength / 2).sign == -1.0
+
     val isSafeToUseArm = Trigger {
         val estimatedPose = localizer.estimatedPose
         val reefDistanceGood =
             estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) >
                 FieldConstants.Reef.maxRadius + (DrivetrainConstants.BUMPER_LENGTH / 2) + Units.inchesToMeters(8.0)
-        val reefRotationGood = angleFromReef() > 90
+        val reefRotationGood = angleFromReef() > 75
 
         val bargeDistanceGood =
             abs(estimatedPose.x - FieldConstants.fieldLength / 2) >
@@ -49,20 +63,20 @@ class RobotPosition(private val localizer: Localizer) {
         (reefDistanceGood || reefRotationGood) && (bargeDistanceGood || bargeRotationGood)
     }
 
-    private fun angleFromReef(estimatedPose: Pose2d = localizer.estimatedPose): Double {
+    val nearestBranchDistance: Double
+        get() {
+            val branch = nearestReefAlignBranch()
+            val alignPose = getBaseBranchAlignPose(branch)
+            return abs(localizer.getReefPose(branch.getTag(), alignPose).relativeTo(alignPose).x)
+        }
+
+    fun angleFromReef(estimatedPose: Pose2d = localizer.estimatedPose): Double {
         val angleToPointAtReef =
             atan2(
                 FieldConstants.Reef.center.applyFlip().y - estimatedPose.y,
                 FieldConstants.Reef.center.applyFlip().x - estimatedPose.x,
             )
         return abs(Math.toDegrees(MathUtil.angleModulus(angleToPointAtReef - estimatedPose.rotation.radians)))
-    }
-
-    fun outputTelemetry() {
-        Logger.recordOutput("RobotPosition/isSafeToUseArm", isSafeToUseArm)
-        Logger.recordOutput("RobotPosition/ReefTargetBranch", nearestReefAlignBranch())
-        Logger.recordOutput("RobotPosition/AngleFromReef", angleFromReef())
-        Logger.recordOutput("RobotPosition/WithinCoralTolerance", withinCoralScoringTolerance)
     }
 
     private val reefAlignTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)
@@ -80,7 +94,7 @@ class RobotPosition(private val localizer: Localizer) {
             xOffset += 0.5
         }
 
-        xOffset = min(xOffset, 1.0)
+        xOffset = min(xOffset, 0.75)
 
         val activeAlignPose = alignPose.transformBy(Transform2d(-xOffset, 0.0, Rotation2d.kZero))
         Logger.recordOutput("RobotPosition/BranchAlignPose", activeAlignPose)
@@ -146,16 +160,18 @@ class RobotPosition(private val localizer: Localizer) {
             velocityLow
     }
 
-    private val processorTransform =
-        Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2 + Units.inchesToMeters(2.0), 0.0, Rotation2d.k180deg)
+    private val processorTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)
 
     fun getActiveProcessorAlignPose(): Pose2d {
-        val alignPose = FieldConstants.Processor.centerFace.applyFlip().transformBy(processorTransform)
         val robotPose = localizer.estimatedPose
+        val processorPose =
+            if (isOnBlueSide) FieldConstants.Processor.centerFace else FieldConstants.Processor.centerFace.flip()
+
+        val alignPose = processorPose.transformBy(processorTransform)
 
         val yDistance = abs(robotPose.relativeTo(alignPose).y)
 
-        var xOffset = MathUtil.clamp(yDistance * 0.75, 0.0, 1.0)
+        var xOffset = MathUtil.clamp(yDistance * 0.5, 0.0, 1.0)
 
         if (robotPose.distanceTo(alignPose) > 1.0) {
             xOffset += 0.75
@@ -167,8 +183,5 @@ class RobotPosition(private val localizer: Localizer) {
     companion object {
         val coralScoringToleranceInches = LoggedTunableNumber("RobotPosition/CoralToleranceInches", 1.5)
         val coralScoringToleranceDegrees = LoggedTunableNumber("RobotPosition/CoralToleranceDegrees", 1.0)
-
-        val reefGuessDistanceWeight = LoggedTunableNumber("RobotPosition/ReefGuessDistanceWeight", 1.0)
-        val reefGuessAngleWeight = LoggedTunableNumber("RobotPosition/ReefGuessAngleWeight", 1.0)
     }
 }

@@ -2,15 +2,17 @@ package org.team9432.frc2025.robot
 
 import edu.wpi.first.math.geometry.Pose2d
 import org.littletonrobotics.junction.Logger
+import org.team9432.frc2025.robot.util.FieldConstants
 
-class ScoringState {
+class RobotState {
     var teleCoralTarget = CoralScoringTarget.L4
     var algaeTarget = AlgaeScoringTarget.PROCESSOR
 
     var autoCoralTarget: CoralScoringTarget? = null
     var autoBranchTarget: FieldConstants.Reef.Branch? = null
     var autoCoralStationPose: Pose2d? = null
-    var climbMode = false
+
+    var flipBranch = false
 
     fun clearAutoState() {
         autoCoralTarget = null
@@ -26,6 +28,7 @@ class ScoringState {
         Logger.recordOutput("ScoringState/algaeTarget", algaeTarget)
         Logger.recordOutput("ScoringState/autoCoralTarget", autoCoralTarget)
         Logger.recordOutput("ScoringState/autoBranchTarget", autoBranchTarget)
+        Logger.recordOutput("ScoringState/autoCoralStationPose", autoCoralStationPose ?: Pose2d())
     }
 
     enum class CoralScoringTarget {

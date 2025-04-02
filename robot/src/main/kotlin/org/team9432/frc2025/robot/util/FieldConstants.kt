@@ -4,7 +4,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file at
 // the root directory of this project.
-package org.team9432.frc2025.robot
+package org.team9432.frc2025.robot.util
 
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
@@ -66,6 +66,7 @@ object FieldConstants {
         val faceToZoneLine: Double = Units.inchesToMeters(12.0) // Side of the reef to the inside of the reef zone line
 
         val maxRadius: Double = Units.inchesToMeters(76.0 / 2)
+        val faceToCenter: Double = Units.inchesToMeters(65.491090 / 2)
 
         private val centerFaces: Array<Pose2d?> =
             arrayOfNulls(6) // Starting facing the driver station in counterclockwise order
@@ -162,6 +163,23 @@ object FieldConstants {
                         F -> I
                         H -> G
                         G -> H
+                    }
+
+            val oppositeOnFace
+                get() =
+                    when (this) {
+                        A -> B
+                        B -> A
+                        C -> D
+                        D -> C
+                        E -> F
+                        F -> E
+                        G -> H
+                        H -> G
+                        I -> J
+                        J -> I
+                        K -> L
+                        L -> K
                     }
         }
 

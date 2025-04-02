@@ -48,17 +48,31 @@ class Auto(
             {
                 if (moves.isEmpty()) return@defer Commands.none()
 
-                val commands =
-                    Array(moves.size) { index ->
-                        val (branch, level) = moves[index]
-                        if (index == 0) {
-                            preloadAndScore(branch, level)
-                        } else {
-                            pickupAndScore(branch, level, coralStation)
-                        }
-                    }
+                val moveQueue = moves.toMutableList()
 
-                initializeAuto().andThen(*commands)
+                val preloadMove = moveQueue.removeFirst()
+                val preload = preloadAndScore(preloadMove.first, preloadMove.second)
+
+                val nextCommands =
+                    Commands.defer(
+                            {
+                                if (moveQueue.isEmpty()) {
+                                    // This probably can't happen
+                                    Commands.none()
+                                } else {
+                                    val (branch, level) = moveQueue.first()
+                                    pickupAndScore(branch, level, coralStation) {
+                                        // Successful coral pickup, this branch will be scored on
+                                        moveQueue.removeFirst()
+                                    }
+                                }
+                            },
+                            emptySet(),
+                        )
+                        .repeatedly()
+                        .until(moveQueue::isEmpty)
+
+                initializeAuto().andThen(preload).andThen(nextCommands)
             },
             emptySet(),
         )
@@ -95,38 +109,6 @@ class Auto(
             emptySet(),
         )
 
-    fun maxL4LeftNoFront(): Command =
-        Commands.defer(
-            {
-                auto(
-                    listOf(
-                        Pair(Branch.J, CoralScoringTarget.L4),
-                        Pair(Branch.K, CoralScoringTarget.L4),
-                        Pair(Branch.L, CoralScoringTarget.L4),
-                        Pair(Branch.L, CoralScoringTarget.L4),
-                    ),
-                    CoralStation.LEFT,
-                )
-            },
-            emptySet(),
-        )
-
-    fun maxL4RightNoFront(): Command =
-        Commands.defer(
-            {
-                auto(
-                    listOf(
-                        Pair(Branch.E, CoralScoringTarget.L4),
-                        Pair(Branch.D, CoralScoringTarget.L4),
-                        Pair(Branch.C, CoralScoringTarget.L4),
-                        Pair(Branch.C, CoralScoringTarget.L4),
-                    ),
-                    CoralStation.RIGHT,
-                )
-            },
-            emptySet(),
-        )
-
     private fun preloadAndScore(branch: Branch, level: CoralScoringTarget) =
         Commands.sequence(
             Commands.runOnce({
@@ -137,7 +119,12 @@ class Auto(
             Commands.waitSeconds(0.3),
         )
 
-    private fun pickupAndScore(branch: Branch, level: CoralScoringTarget, coralStation: CoralStation) =
+    private fun pickupAndScore(
+        branch: Branch,
+        level: CoralScoringTarget,
+        coralStation: CoralStation,
+        onCoralPickup: () -> Unit = {},
+    ) =
         Commands.sequence(
             Commands.runOnce({
                 robotState.autoCoralTarget = level
@@ -151,7 +138,9 @@ class Auto(
             ),
             // Commands.waitSeconds(0.5), // This works, add if needed to pause at the coral station
             Commands.runOnce({ robotState.autoCoralStationPose = null }),
-            Commands.waitUntil(rollers.hasCoralTrigger).withTimeout(2.5),
+            Commands.waitUntil(rollers.hasCoralTrigger)
+                .finallyDo { interrupted -> if (!interrupted) onCoralPickup.invoke() }
+                .withTimeout(2.0),
             Commands.waitUntil(!rollers.hasCoralTrigger),
             Commands.waitSeconds(0.3),
         )

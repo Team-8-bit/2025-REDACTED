@@ -30,9 +30,6 @@ class AutoChooser(
                     addOption("Max L4 Left", { autoCommands.maxL4Left() })
                     addOption("Max L4 Right", { autoCommands.maxL4Right() })
 
-                    addOption("Max L4 Left No Front", { autoCommands.maxL4LeftNoFront() })
-                    addOption("Max L4 Right No Front", { autoCommands.maxL4RightNoFront() })
-
                     addOption("Only L2") {
                         addQuestion("Side", { command = it }) {
                             addOption("Left", { autoCommands.onlyL2(Branch.J) })

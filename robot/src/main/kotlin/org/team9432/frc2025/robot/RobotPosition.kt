@@ -79,6 +79,31 @@ class RobotPosition(private val localizer: Localizer) {
         return abs(Math.toDegrees(MathUtil.angleModulus(angleToPointAtReef - estimatedPose.rotation.radians)))
     }
 
+    fun getActiveNetAlignPose(): Pose2d {
+        val robotPose = localizer.estimatedPose.applyFlip()
+        val blueNetStart = (FieldConstants.fieldWidth / 2) + (DrivetrainConstants.BUMPER_LENGTH / 2) + 0.1
+        val isOnNetSide = robotPose.y > blueNetStart
+
+        val xConstant =
+            (FieldConstants.fieldLength / 2) -
+                (FieldConstants.Barge.netWidth / 2) -
+                (DrivetrainConstants.BUMPER_LENGTH / 2) -
+                0.2
+
+        val actualX = if (isOnNetSide) xConstant else xConstant - 0.5
+
+        val actualY =
+            MathUtil.clamp(
+                robotPose.y,
+                blueNetStart,
+                FieldConstants.fieldWidth - (DrivetrainConstants.BUMPER_LENGTH / 2) - 0.1,
+            )
+
+        val actualRotation = Rotation2d.kZero
+
+        return Pose2d(actualX, actualY, actualRotation).applyFlip()
+    }
+
     private val reefAlignTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)
 
     fun getActiveBranchAlignPose(branch: FieldConstants.Reef.Branch): Pose2d {

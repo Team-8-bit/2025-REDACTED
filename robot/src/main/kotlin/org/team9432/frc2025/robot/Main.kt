@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers
 import edu.wpi.first.wpilibj2.command.button.Trigger
+import kotlin.math.abs
 import org.ironmaple.simulation.SimulatedArena
 import org.ironmaple.simulation.drivesims.COTS
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation
@@ -398,6 +399,26 @@ class Robot : LoggedRobot() {
                 )
                 .apply { name = "AutoAlignForScoringCoral" }
 
+        val autoAlignForScoringNet =
+            DriveToPose(
+                    drive,
+                    localizer,
+                    { robotPosition.getActiveNetAlignPose() },
+                    { localizer.estimatedPose },
+                    joystickDriveController,
+                    maxVelocityAcceleration = {
+                        if (
+                            abs(localizer.estimatedPose.y - (FieldConstants.fieldLength / 2)) -
+                                (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.5
+                        ) {
+                            2.0 to 1.0
+                        } else {
+                            null to null
+                        }
+                    },
+                )
+                .apply { name = "AutoAlignForScoringNet" }
+
         val autoAlignForScoringProcessor =
             DriveToPose(
                 drive,
@@ -428,26 +449,17 @@ class Robot : LoggedRobot() {
             .and(!disableAutoAlign)
             .whileTrue(autoAlignForCollectingAlgae)
 
-        //        val netRotationAlign =
-        //            JoystickAimAtAngleController(joystickDriveController, {
-        // Rotation2d.kZero.applyFlip() }, localizer)
-        //        rollers.hasAlgaeTrigger
-        //            .and { robotState.algaeTarget == AlgaeScoringTarget.NET }
-        //            .and {
-        //                val blueSidePose = localizer.estimatedPose.applyFlip()
-        //                blueSidePose.y > FieldConstants.fieldWidth / 2 &&
-        //                    blueSidePose.x > (FieldConstants.fieldLength / 2) - 3.0 &&
-        //                    abs(blueSidePose.rotation.degrees) < 70
-        //            }
-        //            .and(!controllerHasRotationInput)
-        //            .and(!disableAutoAlign)
-        //            .whileTrue(drive.runVelocity({ netRotationAlign.calculate() }))
-
         rollers.hasAlgaeTrigger
             .and { robotState.algaeTarget == AlgaeScoringTarget.PROCESSOR }
             .and(driver.rightBumper())
             .and(!disableAutoAlign)
             .whileTrue(autoAlignForScoringProcessor)
+
+        rollers.hasAlgaeTrigger
+            .and { robotState.algaeTarget == AlgaeScoringTarget.NET }
+            .and(driver.rightBumper())
+            .and(!disableAutoAlign)
+            .whileTrue(autoAlignForScoringNet)
 
         val withinTolerance =
             robotPosition.withinCoralScoringTolerance
@@ -564,8 +576,8 @@ class Robot : LoggedRobot() {
                         } else if (rollers.hasCoral) {
                             when (robotState.coralTarget) {
                                 CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
-                                CoralScoringTarget.L2 -> SuperstructureState.ADAPTIVE_SCORE_L2
-                                CoralScoringTarget.L3 -> SuperstructureState.ADAPTIVE_SCORE_L3
+                                CoralScoringTarget.L2 -> SuperstructureState.SCORE_L2
+                                CoralScoringTarget.L3 -> SuperstructureState.SCORE_L3
                                 CoralScoringTarget.L4 -> {
                                     val shouldFullyExtend =
                                         localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -

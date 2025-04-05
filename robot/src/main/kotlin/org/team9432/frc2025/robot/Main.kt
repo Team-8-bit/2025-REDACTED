@@ -255,24 +255,6 @@ class Robot : LoggedRobot() {
         autoCommands = Auto(robotPosition, localizer, drive, superstructure, rollers, robotState)
         autoChooser = AutoChooser(autoCommands, localizer, drive, superstructure)
 
-        //        Elevator.Goal.ADAPTIVE_SCORE_L2.overrideSetpointSupplier = {
-        //
-        // AdaptiveDistanceLookupTable.L2.getElevatorHeight(robotPosition.nearestBranchDistance)
-        //        }
-        //        Arm.Goal.ADAPTIVE_SCORE_L2.overrideSetpointSupplier = {
-        //
-        // AdaptiveDistanceLookupTable.L2.getArmAngle(robotPosition.nearestBranchDistance)
-        //        }
-        //
-        //        Elevator.Goal.ADAPTIVE_SCORE_L3.overrideSetpointSupplier = {
-        //
-        // AdaptiveDistanceLookupTable.L3.getElevatorHeight(robotPosition.nearestBranchDistance)
-        //        }
-        //        Arm.Goal.ADAPTIVE_SCORE_L3.overrideSetpointSupplier = {
-        //
-        // AdaptiveDistanceLookupTable.L3.getArmAngle(robotPosition.nearestBranchDistance)
-        //        }
-
         bindButtons()
 
         PortForwarder.add(5800, "10.94.32.11", 5800)
@@ -546,12 +528,10 @@ class Robot : LoggedRobot() {
             superstructure.runGoal {
                 val threeToTwo =
                     robotState.coralTarget == CoralScoringTarget.L2 &&
-                        superstructure.currentState in
-                            setOf(SuperstructureState.SCORE_L3, SuperstructureState.ADAPTIVE_SCORE_L3)
+                        superstructure.currentState == SuperstructureState.SCORE_L3
                 val twoToThree =
                     robotState.coralTarget == CoralScoringTarget.L3 &&
-                        superstructure.currentState in
-                            setOf(SuperstructureState.SCORE_L2, SuperstructureState.ADAPTIVE_SCORE_L2)
+                        superstructure.currentState == SuperstructureState.SCORE_L2
 
                 val fourToFour =
                     robotState.coralTarget == CoralScoringTarget.L4 &&

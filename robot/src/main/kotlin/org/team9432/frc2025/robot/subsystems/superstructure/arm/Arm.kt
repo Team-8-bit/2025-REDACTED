@@ -16,7 +16,6 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.robot.Constants
 import org.team9432.frc2025.robot.commands.elevator.StaticCharacterization
-import org.team9432.frc2025.robot.subsystems.superstructure.elevator.Elevator.Goal.SCORE_L2
 
 class Arm(private val io: ArmIO) : SubsystemBase() {
     private val inputs = LoggedArmIOInputs()
@@ -37,8 +36,6 @@ class Arm(private val io: ArmIO) : SubsystemBase() {
         SCORE_L2(LoggedTunableNumber("Arm/Setpoints/ScoreL2", -0.2)),
         SCORE_L3(LoggedTunableNumber("Arm/Setpoints/ScoreL3", -0.2)),
         SCORE_L4(LoggedTunableNumber("Arm/Setpoints/ScoreL4", 0.17)),
-        ADAPTIVE_SCORE_L2(SCORE_L2.angleSupplier),
-        ADAPTIVE_SCORE_L3(SCORE_L3.angleSupplier),
         INTAKE_ALGAE_REEF(LoggedTunableNumber("Arm/Setpoints/IntakeAlgaeReef", -0.15)),
         HOLD_ALGAE_LOW(LoggedTunableNumber("Arm/Setpoints/HoldAlgaeLow", -0.2)),
         PREPARE_PROCESSOR(LoggedTunableNumber("Arm/Setpoints/PrepareProcessor", -0.2)),

@@ -33,7 +33,7 @@ class DriveToPose(
     private val targetPose: () -> Pose2d,
     private val robotPose: () -> Pose2d = { localizer.estimatedPose },
     private val driverInput: JoystickDriveController? = null,
-    private val maxAcceleration: () -> Double = { driveMaxAcceleration.get() },
+    private val maxVelocityAcceleration: () -> Pair<Double?, Double?> = { null to null },
 ) : Command() {
     private val driveController = ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0))
     private val thetaController = ProfiledPIDController(0.0, 0.0, 0.0, TrapezoidProfile.Constraints(0.0, 0.0))
@@ -71,7 +71,14 @@ class DriveToPose(
         )
         lastSetpointTranslation = currentPose.translation
 
-        driveController.constraints = TrapezoidProfile.Constraints(driveMaxVelocity.get(), maxAcceleration())
+        driveController.constraints = getConstraints()
+    }
+
+    private fun getConstraints(): TrapezoidProfile.Constraints {
+        val externalInput = maxVelocityAcceleration()
+        val velocity = externalInput.first ?: driveMaxVelocity.get()
+        val acceleration = externalInput.second ?: driveMaxAcceleration.get()
+        return TrapezoidProfile.Constraints(velocity, acceleration)
     }
 
     override fun execute() {
@@ -80,7 +87,6 @@ class DriveToPose(
         // Update from tunable numbers
         if (
             driveMaxVelocity.hasChanged(hashCode()) ||
-                driveMaxVelocitySlow.hasChanged(hashCode()) ||
                 driveMaxAcceleration.hasChanged(hashCode()) ||
                 driveToleranceInches.hasChanged(hashCode()) ||
                 thetaMaxVelocity.hasChanged(hashCode()) ||
@@ -106,8 +112,7 @@ class DriveToPose(
         val currentPose = robotPose()
         val targetPose = targetPose()
 
-        val driveConstraints = TrapezoidProfile.Constraints(driveController.constraints.maxVelocity, maxAcceleration())
-        driveController.constraints = driveConstraints
+        driveController.constraints = getConstraints()
 
         // Calculate drive speed
         val currentDistance = currentPose.translation.getDistance(targetPose.translation)
@@ -192,7 +197,6 @@ class DriveToPose(
         private val thetakP: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/ThetakP")
         private val thetakD: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/ThetakD")
         private val driveMaxVelocity: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/DriveMaxVelocity")
-        private val driveMaxVelocitySlow: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/DriveMaxVelocitySlow")
         private val driveMaxAcceleration: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/DriveMaxAcceleration")
         private val thetaMaxVelocity: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/ThetaMaxVelocity")
         private val thetaMaxAcceleration: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/ThetaMaxAcceleration")

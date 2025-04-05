@@ -1,7 +1,6 @@
 package org.team9432.frc2025.robot
 
 import com.ctre.phoenix6.SignalLogger
-import edu.wpi.first.math.MathUtil
 import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
@@ -376,13 +375,25 @@ class Robot : LoggedRobot() {
                     },
                     joystickDriveController,
                     {
-                        MathUtil.clamp(
-                            (localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
-                                FieldConstants.Reef.maxRadius -
-                                (DrivetrainConstants.BUMPER_LENGTH / 2)) * 2.0,
-                            2.0,
-                            5.0,
-                        )
+                        //                        val accel = MathUtil.clamp(
+                        //
+                        // (localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                        //                                FieldConstants.Reef.maxRadius -
+                        //                                (DrivetrainConstants.BUMPER_LENGTH / 2)) *
+                        // 2.0,
+                        //                            2.0,
+                        //                            5.0,
+                        //                        )
+
+                        if (
+                            localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                                FieldConstants.Reef.faceToCenter -
+                                (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0
+                        ) {
+                            2.0 to 1.0
+                        } else {
+                            null to null
+                        }
                     },
                 )
                 .apply { name = "AutoAlignForScoringCoral" }

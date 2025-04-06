@@ -66,7 +66,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
     private fun trackToNextState() {
         // If there isn't a command running, but we still have a step state set, the move to that
         // step was just completed
-        if (!currentMovementCommand.isScheduled && step != null) {
+        if (!currentMovementCommand.isScheduled && step != null && !DriverStation.isDisabled()) {
             // Update our current state
             currentState = step!!
             step = null

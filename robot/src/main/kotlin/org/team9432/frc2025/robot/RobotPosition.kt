@@ -11,14 +11,11 @@ import edu.wpi.first.wpilibj2.command.button.Trigger
 import kotlin.math.*
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
-import org.team9432.frc2025.lib.util.applyFlip
-import org.team9432.frc2025.lib.util.distanceTo
-import org.team9432.frc2025.lib.util.flip
-import org.team9432.frc2025.lib.util.velocityLessThan
+import org.team9432.frc2025.lib.util.*
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.util.FieldConstants
 
-class RobotPosition(private val localizer: Localizer) {
+class RobotPosition(private val localizer: Localizer, private val robotState: RobotState) {
     fun outputTelemetry() {
         Logger.recordOutput("RobotPosition/isSafeToUseArm", isSafeToUseArm)
         Logger.recordOutput("RobotPosition/ReefTargetBranch", nearestReefAlignBranch())
@@ -114,10 +111,10 @@ class RobotPosition(private val localizer: Localizer) {
         val yDistance = abs(distance.y)
         val xDistance = abs(distance.x)
 
-        var xOffset = yDistance
-        if (angleFromReef(txTyRobotPose) > 40 && xDistance < 1) {
-            xOffset += 0.5
-        }
+        var xOffset = max(yDistance - 0.5, 0.0)
+        //        if (angleFromReef(txTyRobotPose) > 40 && xDistance < 1.5) {
+        //            xOffset += 0.5
+        //        }
 
         xOffset = min(xOffset, 0.75)
 
@@ -142,10 +139,13 @@ class RobotPosition(private val localizer: Localizer) {
             }
         val target =
             map.minBy {
-                val degMult = 45 // degrees equivalent to one meter of distance when choosing poles
-
+                //                val degMult = 45 // degrees equivalent to one meter of distance
+                // when choosing poles
+                //
                 val (distanceMeters, distanceDegrees) = it.value
-                (distanceDegrees / degMult) + distanceMeters
+                //                (distanceDegrees / degMult) + distanceMeters
+
+                distanceMeters
             }
         return target.key
     }
@@ -170,10 +170,16 @@ class RobotPosition(private val localizer: Localizer) {
         return FieldConstants.Reef.StagedAlgae.entries.minBy { robotPose.distanceTo(it.getPose().applyFlip()) }
     }
 
+    val kCoralBlockageTransform = Transform2d(-Units.inchesToMeters(5.0), 0.0, Rotation2d.kZero)
+
     val withinCoralScoringTolerance = Trigger {
         val branch = nearestReefAlignBranch()
         val robotPose = localizer.getTxTyPose(branch.getTag()) ?: localizer.estimatedPose
-        val scorePose = getBaseBranchAlignPose(branch)
+        var scorePose = getBaseBranchAlignPose(branch)
+
+        if (robotState.coralTarget in setOf(RobotState.CoralScoringTarget.L2, RobotState.CoralScoringTarget.L3)) {
+            scorePose = scorePose.transformBy(kCoralBlockageTransform)
+        }
 
         val difference = robotPose.relativeTo(scorePose)
 

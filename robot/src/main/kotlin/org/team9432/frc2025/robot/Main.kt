@@ -87,7 +87,7 @@ class Robot : LoggedRobot() {
     private val cameras: Set<Camera>
     private val localizer = Localizer()
     private var simUpdateCall: (() -> Unit)? = null
-    private val robotPosition = RobotPosition(localizer)
+    private val robotPosition = RobotPosition(localizer, robotState)
 
     private val autoCommands: Auto
     private val autoChooser: AutoChooser
@@ -316,13 +316,18 @@ class Robot : LoggedRobot() {
             )
 
         var lastBranch: FieldConstants.Reef.Branch? = null
+        var targetBranch: FieldConstants.Reef.Branch? = null
         val autoAlignForScoringCoral =
             DriveToPose(
                     drive,
                     localizer,
                     {
                         var branch =
-                            robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch(localizer.estimatedPose)
+                            robotState.autoBranchTarget
+                                ?: targetBranch
+                                ?: robotPosition.nearestReefAlignBranch(
+                                    localizer.estimatedPose.transformBySpeeds(localizer.fieldVelocity, 0.4)
+                                )
 
                         if (branch != lastBranch) {
                             lastBranch = branch
@@ -348,7 +353,11 @@ class Robot : LoggedRobot() {
                             // Wait to drive all the way until arm is in position
                             target.transformBy(Transform2d(-0.375, 0.0, Rotation2d.kZero))
                         } else {
-                            target
+                            if (robotState.coralTarget in setOf(CoralScoringTarget.L2, CoralScoringTarget.L3)) {
+                                target.transformBy(robotPosition.kCoralBlockageTransform)
+                            } else {
+                                target
+                            }
                         }
                     },
                     {
@@ -357,7 +366,7 @@ class Robot : LoggedRobot() {
                         ) ?: localizer.estimatedPose
                     },
                     joystickDriveController,
-                    {
+                    maxVelocityAcceleration = {
                         //                        val accel = MathUtil.clamp(
                         //
                         // (localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
@@ -373,9 +382,18 @@ class Robot : LoggedRobot() {
                                 FieldConstants.Reef.faceToCenter -
                                 (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0
                         ) {
-                            2.0 to 1.0
+                            if (robotState.coralTarget == CoralScoringTarget.L4) {
+                                2.0 to 1.0
+                            } else {
+                                2.0 to 1.0
+                            }
                         } else {
-                            null to null
+                            if (DriverStation.isAutonomousEnabled()) {
+                                null to null
+                            } else {
+                                //                                3.0 to 2.0
+                                2.0 to 1.0
+                            }
                         }
                     },
                 )
@@ -422,6 +440,14 @@ class Robot : LoggedRobot() {
             .and(!driver.leftBumper())
             .and(!disableAutoAlign)
             .and { robotState.teleCoralTarget != CoralScoringTarget.L1 }
+            .onTrue(
+                Commands.runOnce({
+                    targetBranch =
+                        robotPosition.nearestReefAlignBranch(
+                            localizer.estimatedPose.transformBySpeeds(localizer.fieldVelocity, 0.4)
+                        )
+                })
+            )
             .whileTrue(autoAlignForScoringCoral)
 
         driver
@@ -515,7 +541,11 @@ class Robot : LoggedRobot() {
                     Rollers.State.IDLE
                 } else if (rollers.hasAlgae) {
                     Rollers.State.INTAKE_ALGAE
-                } else if (!rollers.hasCoral && superstructure.currentState == SuperstructureState.STOW) {
+                } else if (
+                    !rollers.hasCoral &&
+                        superstructure.currentState == SuperstructureState.STOW &&
+                        !switches.four.asBoolean
+                ) {
                     Rollers.State.INTAKE_CORAL
                 } else if (superstructure.currentState == SuperstructureState.STOW || switches.four.asBoolean) {
                     Rollers.State.IDLE
@@ -565,8 +595,8 @@ class Robot : LoggedRobot() {
                                             (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0 &&
                                             robotPosition.angleFromReef() < 45
                                     if (
-                                        shouldFullyExtend ||
-                                            (disableAutoAlign.asBoolean && driver.rightBumper().asBoolean)
+                                        (shouldFullyExtend || disableAutoAlign.asBoolean) &&
+                                            driver.rightBumper().asBoolean
                                     ) {
                                         SuperstructureState.SCORE_L4
                                     } else {

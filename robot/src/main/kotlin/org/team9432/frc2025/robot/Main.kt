@@ -343,7 +343,11 @@ class Robot : LoggedRobot() {
                         val isNotReadyForL4 =
                             robotState.coralTarget == CoralScoringTarget.L4 &&
                                 superstructure.currentState !in
-                                    setOf(SuperstructureState.PREP_L4, SuperstructureState.SCORE_L4)
+                                    setOf(
+                                        SuperstructureState.PREP_L4,
+                                        SuperstructureState.PLACE_L4,
+                                        SuperstructureState.SCORE_L4,
+                                    )
                         val isNotReadyForL1 =
                             robotState.coralTarget == CoralScoringTarget.L1 &&
                                 superstructure.currentState == SuperstructureState.SCORE_L1
@@ -474,14 +478,19 @@ class Robot : LoggedRobot() {
                 .debounce(0.05, Debouncer.DebounceType.kRising)
                 .debounce(0.5, Debouncer.DebounceType.kFalling)
 
-        (driver.a().or(withinTolerance))
-            .and { superstructure.goal.isCoralScoring }
-            .and(superstructure::atGoal)
-            .whileTrue(
-                rollers
-                    .runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) }
-                    .finallyDo { interrupted -> robotState.flipBranch = false }
-            )
+        val shouldScoreCoralTrigger =
+            (driver.a().or(withinTolerance))
+                .and { superstructure.goal.isCoralScoring }
+                .and {
+                    superstructure.atGoal() ||
+                        (superstructure.goal == SuperstructureState.SCORE_L4 &&
+                            superstructure.currentState == SuperstructureState.PLACE_L4)
+                }
+        shouldScoreCoralTrigger.whileTrue(
+            rollers
+                .runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) }
+                .finallyDo { interrupted -> robotState.flipBranch = false }
+        )
 
         driver
             .rightBumper()
@@ -554,6 +563,11 @@ class Robot : LoggedRobot() {
                 }
             }
 
+        val shouldGoL4FinalState =
+            Trigger { robotState.coralTarget == CoralScoringTarget.L4 }
+                .and(shouldScoreCoralTrigger)
+                .debounce(0.1, Debouncer.DebounceType.kRising)
+                .debounce(0.5, Debouncer.DebounceType.kFalling)
         superstructure.defaultCommand =
             superstructure.runGoal {
                 val threeToTwo =
@@ -567,6 +581,9 @@ class Robot : LoggedRobot() {
                     robotState.coralTarget == CoralScoringTarget.L4 &&
                         superstructure.currentState == SuperstructureState.PREP_L4
 
+                val shouldFinishL4 = shouldGoL4FinalState.asBoolean
+                val eee = superstructure.currentState == SuperstructureState.PLACE_L4 && shouldFinishL4
+
                 val stowToTwoOrThree =
                     robotState.coralTarget in setOf(CoralScoringTarget.L2, CoralScoringTarget.L3) &&
                         superstructure.currentState == SuperstructureState.STOW
@@ -579,11 +596,12 @@ class Robot : LoggedRobot() {
                             threeToTwo ||
                             twoToThree ||
                             fourToFour ||
-                            stowToTwoOrThree
+                            stowToTwoOrThree ||
+                            eee
                     ) {
                         if (rollers.hasAlgae) {
                             SuperstructureState.ALGAE_STOW
-                        } else if (rollers.hasCoral) {
+                        } else if (rollers.hasCoral || superstructure.currentState == SuperstructureState.PLACE_L4) {
                             when (robotState.coralTarget) {
                                 CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
                                 CoralScoringTarget.L2 -> SuperstructureState.SCORE_L2
@@ -598,7 +616,11 @@ class Robot : LoggedRobot() {
                                         (shouldFullyExtend || disableAutoAlign.asBoolean) &&
                                             driver.rightBumper().asBoolean
                                     ) {
-                                        SuperstructureState.SCORE_L4
+                                        if (shouldFinishL4) {
+                                            SuperstructureState.SCORE_L4
+                                        } else {
+                                            SuperstructureState.PLACE_L4
+                                        }
                                     } else {
                                         SuperstructureState.PREP_L4
                                     }

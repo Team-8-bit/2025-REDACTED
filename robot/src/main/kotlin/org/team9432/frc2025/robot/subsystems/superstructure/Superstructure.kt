@@ -55,6 +55,7 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
         Logger.recordOutput("Superstructure/CurrentState", currentState)
         Logger.recordOutput("Superstructure/StepState", step)
         Logger.recordOutput("Superstructure/GoalState", goal)
+        Logger.recordOutput("Superstructure/atGoal", atGoal())
     }
 
     fun runGoal(goal: () -> SuperstructureState) = run { updateGoal(goal()) }

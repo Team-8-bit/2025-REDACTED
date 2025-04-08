@@ -614,7 +614,7 @@ class Robot : LoggedRobot() {
                                             robotPosition.angleFromReef() < 45
                                     if (
                                         (shouldFullyExtend || disableAutoAlign.asBoolean) &&
-                                            driver.rightBumper().asBoolean
+                                            (driver.rightBumper().asBoolean || DriverStation.isAutonomousEnabled())
                                     ) {
                                         if (shouldFinishL4) {
                                             SuperstructureState.SCORE_L4

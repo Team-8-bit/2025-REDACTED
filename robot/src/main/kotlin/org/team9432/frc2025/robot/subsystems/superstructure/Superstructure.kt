@@ -155,6 +155,10 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
         return nextState
     }
 
+    fun isArmUp() = arm.positionRotations > 0.145
+
+    fun isArmDown() = arm.positionRotations < -0.195
+
     fun homeSystem(): Command =
         Commands.sequence(
                 elevator.clearHome(),

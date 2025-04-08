@@ -346,13 +346,7 @@ class Robot : LoggedRobot() {
                         val target = robotPosition.getActiveBranchAlignPose(branch)
 
                         val isNotReadyForL4 =
-                            robotState.coralTarget == CoralScoringTarget.L4 &&
-                                superstructure.currentState !in
-                                    setOf(
-                                        SuperstructureState.PREP_L4,
-                                        SuperstructureState.PLACE_L4,
-                                        SuperstructureState.SCORE_L4,
-                                    )
+                            robotState.coralTarget == CoralScoringTarget.L4 && !superstructure.isArmUp()
                         val isNotReadyForL1 =
                             robotState.coralTarget == CoralScoringTarget.L1 &&
                                 superstructure.currentState == SuperstructureState.SCORE_L1
@@ -419,7 +413,6 @@ class Robot : LoggedRobot() {
                         if (elevatorIsReady) {
                             target
                         } else {
-                            // Wait to drive all the way until arm is in position
                             target.transformBy(Transform2d(-0.375, 0.0, Rotation2d.kZero))
                         }
                     },
@@ -452,7 +445,7 @@ class Robot : LoggedRobot() {
         (driver.rightBumper().or(RobotModeTriggers.autonomous()))
             .and({ robotState.autoAlgaePickupTarget == null })
             .and({ robotState.autoCoralStationPose == null })
-            .and((!rollers.hasAlgaeTrigger).or { isAutonomousEnabled && robotState.autoCoralStationPose == null })
+            .and(!rollers.hasAlgaeTrigger)
             .and { !superstructure.currentState.isAlgaeScoring }
             .and(!driver.leftBumper())
             .and(!disableAutoAlign)

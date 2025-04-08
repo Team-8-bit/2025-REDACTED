@@ -501,6 +501,8 @@ class Robot : LoggedRobot() {
                 .finallyDo { interrupted -> robotState.flipBranch = false }
         )
 
+        shouldScoreCoralTrigger.whileTrue(driver.rumbleCommand())
+
         (driver.rightBumper().or {
                 isAutonomousEnabled && rollers.hasAlgae && robotState.autoAlgaePickupTarget == null
             })

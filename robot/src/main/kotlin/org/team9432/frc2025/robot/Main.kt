@@ -600,7 +600,24 @@ class Robot : LoggedRobot() {
                     } else if (rollers.hasCoral || superstructure.currentState == SuperstructureState.PLACE_L4) {
                         val target =
                             when (robotState.coralTarget) {
-                                CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
+                                CoralScoringTarget.L1 -> {
+                                    val robotPose = localizer.estimatedPose
+
+                                    val tooCloseToCoralStation =
+                                        FieldConstants.CoralStation.entries.any {
+                                            it.centerPose.applyFlip().distanceTo(robotPose) -
+                                                (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0
+                                        }
+                                    if (tooCloseToCoralStation && !isAutonomousEnabled) {
+                                        if (superstructure.isArmUp()) {
+                                            superstructure.goal
+                                        } else {
+                                            SuperstructureState.ARM_ABOVE_BUMPER
+                                        }
+                                    } else {
+                                        SuperstructureState.SCORE_L1
+                                    }
+                                }
                                 CoralScoringTarget.L2 -> SuperstructureState.SCORE_L2
                                 CoralScoringTarget.L3 -> SuperstructureState.SCORE_L3
                                 CoralScoringTarget.L4 -> {
@@ -619,7 +636,22 @@ class Robot : LoggedRobot() {
                                             SuperstructureState.PLACE_L4
                                         }
                                     } else {
-                                        SuperstructureState.PREP_L4
+                                        val robotPose = localizer.estimatedPose
+
+                                        val tooCloseToCoralStation =
+                                            FieldConstants.CoralStation.entries.any {
+                                                it.centerPose.applyFlip().distanceTo(robotPose) -
+                                                    (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0
+                                            }
+                                        if (tooCloseToCoralStation && !isAutonomousEnabled) {
+                                            if (superstructure.isArmUp()) {
+                                                superstructure.goal
+                                            } else {
+                                                SuperstructureState.ARM_ABOVE_BUMPER
+                                            }
+                                        } else {
+                                            SuperstructureState.PREP_L4
+                                        }
                                     }
                                 }
                             }

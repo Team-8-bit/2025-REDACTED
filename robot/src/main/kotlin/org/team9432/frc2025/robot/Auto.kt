@@ -15,6 +15,7 @@ import org.team9432.frc2025.robot.subsystems.rollers.Rollers
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
 import org.team9432.frc2025.robot.util.FieldConstants.CoralStation
 import org.team9432.frc2025.robot.util.FieldConstants.Reef.Branch
+import org.team9432.frc2025.robot.util.FieldConstants.Reef.StagedAlgae
 
 class Auto(
     private val robotPosition: RobotPosition,
@@ -43,7 +44,7 @@ class Auto(
     fun onlyL4(branch: Branch): Command =
         Commands.defer({ initializeAuto().andThen(preloadAndScore(branch, CoralScoringTarget.L4)) }, emptySet())
 
-    fun auto(moves: List<Pair<Branch, CoralScoringTarget>>, coralStation: CoralStation): Command =
+    fun coralAuto(moves: List<Pair<Branch, CoralScoringTarget>>, coralStation: CoralStation): Command =
         Commands.defer(
             {
                 if (moves.isEmpty()) return@defer Commands.none()
@@ -80,7 +81,7 @@ class Auto(
     fun maxL4Left(): Command =
         Commands.defer(
             {
-                auto(
+                coralAuto(
                     listOf(
                         Pair(Branch.J, CoralScoringTarget.L4),
                         Pair(Branch.K, CoralScoringTarget.L4),
@@ -96,7 +97,7 @@ class Auto(
     fun maxL4Right(): Command =
         Commands.defer(
             {
-                auto(
+                coralAuto(
                     listOf(
                         Pair(Branch.E, CoralScoringTarget.L4),
                         Pair(Branch.D, CoralScoringTarget.L4),
@@ -143,5 +144,26 @@ class Auto(
                 .withTimeout(2.0),
             Commands.waitUntil(!rollers.hasCoralTrigger),
             Commands.waitSeconds(0.3),
+        )
+
+    fun algaeAuto(vararg algae: StagedAlgae) =
+        Commands.defer(
+            {
+                initializeAuto()
+                    .andThen(preloadAndScore(Branch.H, CoralScoringTarget.L4))
+                    .andThen(*algae.map { pickupAndNetAlgae(it) }.toTypedArray())
+            },
+            emptySet(),
+        )
+
+    private fun pickupAndNetAlgae(position: StagedAlgae) =
+        Commands.sequence(
+            Commands.runOnce({ robotState.autoAlgaePickupTarget = position }),
+            Commands.waitUntil(rollers.hasAlgaeTrigger.and(robotPosition.isSafeToUseArm)),
+            Commands.runOnce({
+                robotState.autoAlgaePickupTarget = null
+            }), // Algae autoalign will drive back, this lets it start the net score
+            Commands.waitUntil(!rollers.hasAlgaeTrigger),
+            Commands.waitSeconds(0.25),
         )
 }

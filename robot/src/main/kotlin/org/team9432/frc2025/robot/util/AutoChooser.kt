@@ -9,6 +9,7 @@ import org.team9432.frc2025.robot.commands.drive.WheelRadiusCharacterization
 import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.superstructure.Superstructure
 import org.team9432.frc2025.robot.util.FieldConstants.Reef.Branch
+import org.team9432.frc2025.robot.util.FieldConstants.Reef.StagedAlgae
 
 class AutoChooser(
     private val autoCommands: Auto,
@@ -29,6 +30,11 @@ class AutoChooser(
 
                     addOption("Max L4 Left", { autoCommands.maxL4Left() })
                     addOption("Max L4 Right", { autoCommands.maxL4Right() })
+
+                    addOption("Algae CLR", { autoCommands.algaeAuto(StagedAlgae.GH, StagedAlgae.IJ, StagedAlgae.EF) })
+                    addOption("Algae CRL", { autoCommands.algaeAuto(StagedAlgae.GH, StagedAlgae.EF, StagedAlgae.IJ) })
+                    addOption("Algae CLL", { autoCommands.algaeAuto(StagedAlgae.GH, StagedAlgae.IJ, StagedAlgae.KL) })
+                    addOption("Algae CRR", { autoCommands.algaeAuto(StagedAlgae.GH, StagedAlgae.EF, StagedAlgae.CD) })
 
                     addOption("Only L2") {
                         addQuestion("Side", { command = it }) {

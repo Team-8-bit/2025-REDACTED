@@ -20,7 +20,6 @@ import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers
 import edu.wpi.first.wpilibj2.command.button.Trigger
-import kotlin.math.abs
 import org.ironmaple.simulation.SimulatedArena
 import org.ironmaple.simulation.drivesims.COTS
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation
@@ -171,7 +170,10 @@ class Robot : LoggedRobot() {
                                     Meters.of(DrivetrainConstants.BUMPER_LENGTH),
                                 )
                                 .withRobotMass(Pounds.of(135.0)),
-                            /* initialPoseOnField = */ Pose2d(7.0, 6.175, Rotation2d.fromDegrees(225.0)),
+                            /* initialPoseOnField = */ Pose2d(7.2, FieldConstants.fieldWidth / 2, Rotation2d.k180deg)
+                                .applyFlip(),
+                            //                            /* initialPoseOnField = */ Pose2d(7.0,
+                            // 6.175, Rotation2d.fromDegrees(225.0)),
                         )
 
                     val gyroIO = GyroIOSim(swerveSim.gyroSimulation, odometryThread)
@@ -294,26 +296,29 @@ class Robot : LoggedRobot() {
 
         val autoAlignForCollectingAlgae =
             DriveToPose(
-                drive,
-                localizer,
-                {
-                    val branch = robotPosition.nearestAlgaePickup(localizer.estimatedPose)
-                    val pose = robotPosition.getActiveAlgaeAlignPose(branch)
-                    if (rollers.hasAlgae) {
-                        // Drive back after pickup
-                        pose.transformBy(Transform2d(-0.5, 0.0, Rotation2d.kZero))
-                    } else if (
-                        !(superstructure.currentState == SuperstructureState.INTAKE_ALGAE_LOW ||
-                            superstructure.currentState == SuperstructureState.INTAKE_ALGAE_HIGH)
-                    ) {
-                        // Wait to lower algae arm
-                        pose.transformBy(Transform2d(-0.25, 0.0, Rotation2d.kZero))
-                    } else {
-                        pose
-                    }
-                },
-                { localizer.getTxTyPose(robotPosition.nearestAlgaePickup().getTag()) ?: localizer.estimatedPose },
-            )
+                    drive,
+                    localizer,
+                    {
+                        val face =
+                            robotState.autoAlgaePickupTarget
+                                ?: robotPosition.nearestAlgaePickup(localizer.estimatedPose)
+                        val pose = robotPosition.getActiveAlgaeAlignPose(face)
+                        if (rollers.hasAlgae) {
+                            // Drive back after pickup
+                            pose.transformBy(Transform2d(-0.5, 0.0, Rotation2d.kZero))
+                        } else if (
+                            !(superstructure.currentState == SuperstructureState.INTAKE_ALGAE_LOW ||
+                                superstructure.currentState == SuperstructureState.INTAKE_ALGAE_HIGH)
+                        ) {
+                            // Wait to lower algae arm
+                            pose.transformBy(Transform2d(-0.3, 0.0, Rotation2d.kZero))
+                        } else {
+                            pose
+                        }
+                    },
+                    { localizer.getTxTyPose(robotPosition.nearestAlgaePickup().getTag()) ?: localizer.estimatedPose },
+                )
+                .apply { name = "AutoAlignForCollectingAlgae" }
 
         var lastBranch: FieldConstants.Reef.Branch? = null
         var targetBranch: FieldConstants.Reef.Branch? = null
@@ -407,14 +412,21 @@ class Robot : LoggedRobot() {
             DriveToPose(
                     drive,
                     localizer,
-                    { robotPosition.getActiveNetAlignPose() },
+                    {
+                        val target = robotPosition.getActiveNetAlignPose()
+
+                        val elevatorIsReady = superstructure.currentState == SuperstructureState.SCORE_NET
+                        if (elevatorIsReady) {
+                            target
+                        } else {
+                            // Wait to drive all the way until arm is in position
+                            target.transformBy(Transform2d(-0.375, 0.0, Rotation2d.kZero))
+                        }
+                    },
                     { localizer.estimatedPose },
                     joystickDriveController,
                     maxVelocityAcceleration = {
-                        if (
-                            abs(localizer.estimatedPose.y - (FieldConstants.fieldLength / 2)) -
-                                (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.5
-                        ) {
+                        if (robotPosition.withinNetDistance(2.0)) {
                             2.0 to 1.0
                         } else {
                             null to null
@@ -438,6 +450,7 @@ class Robot : LoggedRobot() {
             .whileTrue(autoCommands.autoAlignForStationPickup)
 
         (driver.rightBumper().or(RobotModeTriggers.autonomous()))
+            .and({ robotState.autoAlgaePickupTarget == null })
             .and({ robotState.autoCoralStationPose == null })
             .and((!rollers.hasAlgaeTrigger).or { isAutonomousEnabled && robotState.autoCoralStationPose == null })
             .and { !superstructure.currentState.isAlgaeScoring }
@@ -454,8 +467,7 @@ class Robot : LoggedRobot() {
             )
             .whileTrue(autoAlignForScoringCoral)
 
-        driver
-            .leftBumper()
+        (driver.leftBumper().or(RobotModeTriggers.autonomous().and({ robotState.autoAlgaePickupTarget != null })))
             .and(!rollers.hasCoralTrigger)
             .and(!controllerHasDriveInput)
             .and(!disableAutoAlign)
@@ -468,8 +480,12 @@ class Robot : LoggedRobot() {
             .whileTrue(autoAlignForScoringProcessor)
 
         rollers.hasAlgaeTrigger
-            .and { robotState.algaeTarget == AlgaeScoringTarget.NET }
-            .and(driver.rightBumper())
+            .and { robotState.algaeTarget == AlgaeScoringTarget.NET || isAutonomousEnabled }
+            .and(
+                driver
+                    .rightBumper()
+                    .or({ DriverStation.isAutonomousEnabled() && robotState.autoAlgaePickupTarget == null })
+            )
             .and(!disableAutoAlign)
             .whileTrue(autoAlignForScoringNet)
 
@@ -492,19 +508,27 @@ class Robot : LoggedRobot() {
                 .finallyDo { interrupted -> robotState.flipBranch = false }
         )
 
-        driver
-            .rightBumper()
+        (driver.rightBumper().or {
+                isAutonomousEnabled && rollers.hasAlgae && robotState.autoAlgaePickupTarget == null
+            })
             .whileTrue(
                 (superstructure
                         .runGoal {
                             when (robotState.algaeTarget) {
                                 AlgaeScoringTarget.PROCESSOR -> SuperstructureState.PROCESSOR
-                                AlgaeScoringTarget.NET -> SuperstructureState.PREP_NET
+                                AlgaeScoringTarget.NET ->
+                                    if (robotPosition.withinNetDistance(2.0)) {
+                                        SuperstructureState.SCORE_NET
+                                    } else {
+                                        SuperstructureState.PREP_NET
+                                    }
                             }
                         }
                         .until(
                             (driver.a().or {
-                                    autoAlignForScoringProcessor.withinTolerance(1.5, Units.degreesToRotations(1.5))
+                                    autoAlignForScoringProcessor.withinTolerance(1.5, Units.degreesToRotations(1.5)) ||
+                                        (autoAlignForScoringNet.withinTolerance(1.5, Units.degreesToRotations(1.5)) &&
+                                            robotPosition.withinNetTolerance())
                                 })
                                 .and(superstructure::atGoal)
                         )
@@ -513,23 +537,22 @@ class Robot : LoggedRobot() {
                     .onlyIf(rollers.hasAlgaeTrigger)
             )
 
-        driver
-            .leftBumper()
-            .whileTrue(
-                superstructure
-                    .runGoal {
-                        if (!robotPosition.isSafeToUseArm.asBoolean) {
-                            superstructure.goal
+        (driver.leftBumper().or({ robotState.autoAlgaePickupTarget != null })).whileTrue(
+            superstructure
+                .runGoal {
+                    if (!robotPosition.isSafeToUseArm.asBoolean) {
+                        superstructure.goal
+                    } else {
+                        val nextAlgae = robotState.autoAlgaePickupTarget ?: robotPosition.nearestAlgaePickup()
+                        if (nextAlgae.isHigh) {
+                            SuperstructureState.INTAKE_ALGAE_HIGH
                         } else {
-                            if (robotPosition.nearestAlgaePickup().isHigh) {
-                                SuperstructureState.INTAKE_ALGAE_HIGH
-                            } else {
-                                SuperstructureState.INTAKE_ALGAE_LOW
-                            }
+                            SuperstructureState.INTAKE_ALGAE_LOW
                         }
                     }
-                    .alongWith(rollers.runGoal(Rollers.State.INTAKE_ALGAE))
-            )
+                }
+                .alongWith(rollers.runGoal(Rollers.State.INTAKE_ALGAE))
+        )
 
         rollers.hasAlgaeTrigger.onTrue(driver.rumbleCommand().withTimeout(0.5))
 
@@ -695,7 +718,8 @@ class Robot : LoggedRobot() {
         LEDState.isAutoAligning = {
             autoAlignForScoringCoral.running ||
                 autoAlignForCollectingAlgae.running ||
-                autoAlignForScoringProcessor.running
+                autoAlignForScoringProcessor.running ||
+                autoAlignForScoringNet.running
         }
     }
 

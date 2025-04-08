@@ -62,6 +62,8 @@ class TransitionCommands(private val elevator: Elevator, private val arm: Arm) {
         for (algaeIntakeGoal in setOf(INTAKE_ALGAE_HIGH, INTAKE_ALGAE_LOW)) {
             addSymmetricParallel(algaeIntakeGoal, ARM_ABOVE_BUMPER)
             addSymmetricParallel(algaeIntakeGoal, ALGAE_STOW)
+            addSymmetricParallel(algaeIntakeGoal, PREP_NET)
+            addSymmetricParallel(algaeIntakeGoal, SCORE_NET)
         }
 
         addSymmetricParallel(INTAKE_ALGAE_LOW, INTAKE_ALGAE_HIGH)

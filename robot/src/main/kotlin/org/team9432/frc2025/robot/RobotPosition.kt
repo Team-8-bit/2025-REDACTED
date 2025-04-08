@@ -55,7 +55,7 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
             if (onBlueSide) {
                 abs(MathUtil.angleModulus(estimatedPose.rotation.radians) - 0.0) > Units.degreesToRadians(80.0)
             } else {
-                abs(MathUtil.angleModulus(estimatedPose.rotation.radians) - Math.PI) > Units.degreesToRadians(80.0)
+                abs(MathUtil.angleModulus(estimatedPose.rotation.radians - Math.PI)) > Units.degreesToRadians(80.0)
             }
         (reefDistanceGood || reefRotationGood) && (bargeDistanceGood || bargeRotationGood)
     }
@@ -76,23 +76,20 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
         return abs(Math.toDegrees(MathUtil.angleModulus(angleToPointAtReef - estimatedPose.rotation.radians)))
     }
 
+    private val blueNetStart = (FieldConstants.fieldWidth / 2) + (DrivetrainConstants.BUMPER_LENGTH / 2) + 0.2
+    private val netXConstant =
+        (FieldConstants.fieldLength / 2) - (FieldConstants.Barge.netWidth / 2) - (DrivetrainConstants.BUMPER_LENGTH / 2)
+
     fun getActiveNetAlignPose(): Pose2d {
         val robotPose = localizer.estimatedPose.applyFlip()
-        val blueNetStart = (FieldConstants.fieldWidth / 2) + (DrivetrainConstants.BUMPER_LENGTH / 2) + 0.1
         val isOnNetSide = robotPose.y > blueNetStart
 
-        val xConstant =
-            (FieldConstants.fieldLength / 2) -
-                (FieldConstants.Barge.netWidth / 2) -
-                (DrivetrainConstants.BUMPER_LENGTH / 2) -
-                0.2
-
-        val actualX = if (isOnNetSide) xConstant else xConstant - 0.5
+        val actualX = if (isOnNetSide) netXConstant - netOffsetMeters.get() else netXConstant - 0.5
 
         val actualY =
             MathUtil.clamp(
                 robotPose.y,
-                blueNetStart,
+                blueNetStart + Units.inchesToMeters(6.0),
                 FieldConstants.fieldWidth - (DrivetrainConstants.BUMPER_LENGTH / 2) - 0.1,
             )
 
@@ -100,6 +97,15 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
 
         return Pose2d(actualX, actualY, actualRotation).applyFlip()
     }
+
+    fun withinNetDistance(meters: Double): Boolean {
+        val robotPose = localizer.estimatedPose.applyFlip()
+        val isOnNetSide = robotPose.y > blueNetStart
+
+        return isOnNetSide && abs(robotPose.x - (netXConstant - netOffsetMeters.get())) < meters
+    }
+
+    fun withinNetTolerance() = withinNetDistance(Units.inchesToMeters(1.5))
 
     private val reefAlignTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)
 
@@ -151,7 +157,7 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
     }
 
     private val algaeAlignTransform =
-        Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2 + Units.inchesToMeters(2.0), 0.0, Rotation2d.k180deg)
+        Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2 + Units.inchesToMeters(1.5), 0.0, Rotation2d.k180deg)
 
     fun getActiveAlgaeAlignPose(stagedAlgae: FieldConstants.Reef.StagedAlgae): Pose2d {
         val alignPose = stagedAlgae.getPose().applyFlip().transformBy(algaeAlignTransform)
@@ -159,11 +165,15 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
 
         val yDistance = abs(txTyRobotPose.relativeTo(alignPose).y)
 
-        var xOffset = -(yDistance * 1.5)
-        if (angleFromReef(txTyRobotPose) > 40) {
-            xOffset -= 0.5
-        }
-        return alignPose.transformBy(Transform2d(xOffset, 0.0, Rotation2d.kZero))
+        //        var xOffset = (yDistance * 1.5)
+        //        if (angleFromReef(txTyRobotPose) > 40) {
+        //            xOffset += 0.5
+        //        }
+
+        var xOffset = max(yDistance - 0.5, 0.0)
+        xOffset = min(xOffset, 0.75)
+
+        return alignPose.transformBy(Transform2d(-xOffset, 0.0, Rotation2d.kZero))
     }
 
     fun nearestAlgaePickup(robotPose: Pose2d = localizer.estimatedPose): FieldConstants.Reef.StagedAlgae {
@@ -214,5 +224,6 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
     companion object {
         val coralScoringToleranceInches = LoggedTunableNumber("RobotPosition/CoralToleranceInches", 1.5)
         val coralScoringToleranceDegrees = LoggedTunableNumber("RobotPosition/CoralToleranceDegrees", 1.0)
+        val netOffsetMeters = LoggedTunableNumber("RobotPosition/NetOffsetMeters", 0.05)
     }
 }

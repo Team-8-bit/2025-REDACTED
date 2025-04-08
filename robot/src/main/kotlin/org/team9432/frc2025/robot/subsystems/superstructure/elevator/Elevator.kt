@@ -52,7 +52,7 @@ class Elevator(private val io: ElevatorIO) : SubsystemBase() {
         HOLD_ALGAE_LOW(LoggedTunableNumber("Elevator/Setpoints/HoldAlgaeLow", 0.1)),
         UNJAM_CORAL(LoggedTunableNumber("Elevator/Setpoints/UnjamCoral", 0.25)),
         PREPARE_PROCESSOR(LoggedTunableNumber("Elevator/Setpoints/PrepareProcessor", 0.1)),
-        PREP_NET(LoggedTunableNumber("Elevator/Setpoints/PrepNet", ElevatorConstants.MAX_POSITION)),
+        PREP_NET(LoggedTunableNumber("Elevator/Setpoints/PrepNet", 0.625)),
         SCORE_NET(LoggedTunableNumber("Elevator/Setpoints/ScoreNet", ElevatorConstants.MAX_POSITION));
 
         val meters

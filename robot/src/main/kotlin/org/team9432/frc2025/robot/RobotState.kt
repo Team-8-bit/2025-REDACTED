@@ -1,16 +1,22 @@
 package org.team9432.frc2025.robot
 
 import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.wpilibj.DriverStation
 import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.robot.util.FieldConstants
 
 class RobotState {
     var teleCoralTarget = CoralScoringTarget.L4
     var algaeTarget = AlgaeScoringTarget.PROCESSOR
+        get() {
+            return if (DriverStation.isAutonomousEnabled()) AlgaeScoringTarget.NET else field
+        }
 
     var autoCoralTarget: CoralScoringTarget? = null
     var autoBranchTarget: FieldConstants.Reef.Branch? = null
     var autoCoralStationPose: Pose2d? = null
+
+    var autoAlgaePickupTarget: FieldConstants.Reef.StagedAlgae? = null
 
     var flipBranch = false
 
@@ -18,17 +24,19 @@ class RobotState {
         autoCoralTarget = null
         autoBranchTarget = null
         autoCoralStationPose = null
+        autoAlgaePickupTarget = null
     }
 
     val coralTarget
         get() = autoCoralTarget ?: teleCoralTarget
 
     fun log() {
-        Logger.recordOutput("ScoringState/teleCoralTarget", teleCoralTarget)
-        Logger.recordOutput("ScoringState/algaeTarget", algaeTarget)
-        Logger.recordOutput("ScoringState/autoCoralTarget", autoCoralTarget)
-        Logger.recordOutput("ScoringState/autoBranchTarget", autoBranchTarget)
-        Logger.recordOutput("ScoringState/autoCoralStationPose", autoCoralStationPose ?: Pose2d())
+        Logger.recordOutput("RobotState/teleCoralTarget", teleCoralTarget)
+        Logger.recordOutput("RobotState/algaeTarget", algaeTarget)
+        Logger.recordOutput("RobotState/autoCoralTarget", autoCoralTarget)
+        Logger.recordOutput("RobotState/autoBranchTarget", autoBranchTarget)
+        Logger.recordOutput("RobotState/autoAlgaePickupTarget", autoAlgaePickupTarget?.name ?: "null")
+        Logger.recordOutput("RobotState/autoCoralStationPose", autoCoralStationPose ?: Pose2d())
     }
 
     enum class CoralScoringTarget {

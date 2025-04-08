@@ -473,7 +473,7 @@ class Robot : LoggedRobot() {
             .whileTrue(autoAlignForScoringProcessor)
 
         rollers.hasAlgaeTrigger
-            .and { robotState.algaeTarget == AlgaeScoringTarget.NET || isAutonomousEnabled }
+            .and { robotState.algaeTarget == AlgaeScoringTarget.NET }
             .and(
                 driver
                     .rightBumper()
@@ -586,38 +586,17 @@ class Robot : LoggedRobot() {
                 .debounce(0.5, Debouncer.DebounceType.kFalling)
         superstructure.defaultCommand =
             superstructure.runGoal {
-                val threeToTwo =
-                    robotState.coralTarget == CoralScoringTarget.L2 &&
-                        superstructure.currentState == SuperstructureState.SCORE_L3
-                val twoToThree =
-                    robotState.coralTarget == CoralScoringTarget.L3 &&
-                        superstructure.currentState == SuperstructureState.SCORE_L2
-
-                val fourToFour =
-                    robotState.coralTarget == CoralScoringTarget.L4 &&
-                        superstructure.currentState == SuperstructureState.PREP_L4
-
-                val shouldFinishL4 = shouldGoL4FinalState.asBoolean
-                val eee = superstructure.currentState == SuperstructureState.PLACE_L4 && shouldFinishL4
-
-                val stowToTwoOrThree =
-                    robotState.coralTarget in setOf(CoralScoringTarget.L2, CoralScoringTarget.L3) &&
-                        superstructure.currentState == SuperstructureState.STOW
-
                 if (driver.a().asBoolean) {
                     superstructure.goal
                 } else {
-                    if (
-                        robotPosition.isSafeToUseArm.asBoolean ||
-                            threeToTwo ||
-                            twoToThree ||
-                            fourToFour ||
-                            stowToTwoOrThree ||
-                            eee
-                    ) {
-                        if (rollers.hasAlgae) {
+                    if (rollers.hasAlgae) {
+                        if (robotPosition.isSafeToUseArm.asBoolean) {
                             SuperstructureState.ALGAE_STOW
-                        } else if (rollers.hasCoral || superstructure.currentState == SuperstructureState.PLACE_L4) {
+                        } else {
+                            superstructure.goal
+                        }
+                    } else if (rollers.hasCoral || superstructure.currentState == SuperstructureState.PLACE_L4) {
+                        val target =
                             when (robotState.coralTarget) {
                                 CoralScoringTarget.L1 -> SuperstructureState.SCORE_L1
                                 CoralScoringTarget.L2 -> SuperstructureState.SCORE_L2
@@ -632,7 +611,7 @@ class Robot : LoggedRobot() {
                                         (shouldFullyExtend || disableAutoAlign.asBoolean) &&
                                             (driver.rightBumper().asBoolean || DriverStation.isAutonomousEnabled())
                                     ) {
-                                        if (shouldFinishL4) {
+                                        if (shouldGoL4FinalState.asBoolean) {
                                             SuperstructureState.SCORE_L4
                                         } else {
                                             SuperstructureState.PLACE_L4
@@ -642,11 +621,26 @@ class Robot : LoggedRobot() {
                                     }
                                 }
                             }
+
+                        val isLowTransition =
+                            target in setOf(SuperstructureState.SCORE_L2, SuperstructureState.SCORE_L3) &&
+                                superstructure.isArmDown()
+
+                        val isHighTransition =
+                            target in setOf(SuperstructureState.PLACE_L4, SuperstructureState.SCORE_L4) &&
+                                superstructure.isArmUp()
+
+                        if (robotPosition.isSafeToUseArm.asBoolean || isLowTransition || isHighTransition) {
+                            target
                         } else {
-                            SuperstructureState.STOW
+                            superstructure.goal
                         }
                     } else {
-                        superstructure.goal
+                        if (robotPosition.isSafeToUseArm.asBoolean) {
+                            SuperstructureState.STOW
+                        } else {
+                            superstructure.goal
+                        }
                     }
                 }
             }

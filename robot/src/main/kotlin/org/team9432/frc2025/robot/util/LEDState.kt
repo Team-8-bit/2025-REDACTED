@@ -13,7 +13,7 @@ object LEDState {
         LEDPattern.gradient(LEDPattern.GradientType.kContinuous, Color.kBisque, Color.kPurple)
             .scrollAtAbsoluteSpeed(MetersPerSecond.of(1.0), spacing)
 
-    private const val INIT_LOOP_COUNT = 200
+    private const val INIT_LOOP_COUNT = 100
     private var initLoops = 0
 
     private val codeLoadingPattern = LEDPattern.solid(Color.kBisque)

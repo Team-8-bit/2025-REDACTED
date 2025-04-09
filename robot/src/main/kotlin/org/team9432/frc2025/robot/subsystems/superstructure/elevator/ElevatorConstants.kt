@@ -10,7 +10,7 @@ object ElevatorConstants {
 
     val POSITION_TOLERANCE = Units.inchesToMeters(0.5)
     val MIN_POSITION = Units.inchesToMeters(0.0)
-    val MAX_POSITION = Units.inchesToMeters(53.25)
+    val MAX_POSITION = Units.inchesToMeters(53.2)
 
     const val PEAK_TORQUE_AMPS = 60.0
 }

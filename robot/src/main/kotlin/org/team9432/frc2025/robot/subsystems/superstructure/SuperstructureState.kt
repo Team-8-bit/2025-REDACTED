@@ -9,10 +9,9 @@ enum class SuperstructureState(val elevatorGoal: Elevator.Goal, val armGoal: Arm
     SCORE_L1(elevatorGoal = Elevator.Goal.SCORE_L1, armGoal = Arm.Goal.SCORE_L1),
     SCORE_L2(elevatorGoal = Elevator.Goal.SCORE_L2, armGoal = Arm.Goal.SCORE_L2),
     SCORE_L3(elevatorGoal = Elevator.Goal.SCORE_L3, armGoal = Arm.Goal.SCORE_L3),
+    PLACE_L4(elevatorGoal = Elevator.Goal.PLACE_L4, armGoal = Arm.Goal.PLACE_L4),
     SCORE_L4(elevatorGoal = Elevator.Goal.SCORE_L4, armGoal = Arm.Goal.SCORE_L4),
-    ADAPTIVE_SCORE_L2(elevatorGoal = Elevator.Goal.ADAPTIVE_SCORE_L2, armGoal = Arm.Goal.ADAPTIVE_SCORE_L2),
-    ADAPTIVE_SCORE_L3(elevatorGoal = Elevator.Goal.ADAPTIVE_SCORE_L3, armGoal = Arm.Goal.ADAPTIVE_SCORE_L3),
-    PREP_L4(elevatorGoal = Elevator.Goal.PREP_L4, armGoal = Arm.Goal.SCORE_L4),
+    PREP_L4(elevatorGoal = Elevator.Goal.PREP_L4, armGoal = Arm.Goal.PREP_L4),
     ALGAE_STOW(elevatorGoal = Elevator.Goal.HOLD_ALGAE_LOW, armGoal = Arm.Goal.HOLD_ALGAE_LOW),
     INTAKE_ALGAE_LOW(elevatorGoal = Elevator.Goal.INTAKE_ALGAE_REEF_LOW, armGoal = Arm.Goal.INTAKE_ALGAE_REEF),
     INTAKE_ALGAE_HIGH(elevatorGoal = Elevator.Goal.INTAKE_ALGAE_REEF_HIGH, armGoal = Arm.Goal.INTAKE_ALGAE_REEF),
@@ -23,7 +22,7 @@ enum class SuperstructureState(val elevatorGoal: Elevator.Goal, val armGoal: Arm
     PROCESSOR(elevatorGoal = Elevator.Goal.PREPARE_PROCESSOR, armGoal = Arm.Goal.PREPARE_PROCESSOR);
 
     val isCoralScoring
-        get() = this in setOf(SCORE_L1, SCORE_L2, SCORE_L3, SCORE_L4, PREP_L4, ADAPTIVE_SCORE_L3, ADAPTIVE_SCORE_L2)
+        get() = this in setOf(SCORE_L1, SCORE_L2, SCORE_L3, PLACE_L4, SCORE_L4)
 
     val isAlgaeScoring
         get() = this in setOf(PREP_NET, SCORE_NET, PROCESSOR)

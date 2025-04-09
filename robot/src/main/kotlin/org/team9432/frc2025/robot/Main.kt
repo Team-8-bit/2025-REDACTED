@@ -568,11 +568,7 @@ class Robot : LoggedRobot() {
                     Rollers.State.IDLE
                 } else if (rollers.hasAlgae) {
                     Rollers.State.INTAKE_ALGAE
-                } else if (
-                    !rollers.hasCoral &&
-                        superstructure.currentState == SuperstructureState.STOW &&
-                        !switches.four.asBoolean
-                ) {
+                } else if (!rollers.hasCoral && superstructure.currentState == SuperstructureState.STOW) {
                     Rollers.State.INTAKE_CORAL
                 } else if (superstructure.currentState == SuperstructureState.STOW || switches.four.asBoolean) {
                     Rollers.State.IDLE

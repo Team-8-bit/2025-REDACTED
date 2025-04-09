@@ -320,6 +320,28 @@ class Robot : LoggedRobot() {
                 )
                 .apply { name = "AutoAlignForCollectingAlgae" }
 
+        val withinTolerance =
+            robotPosition.withinCoralScoringTolerance
+                .debounce(0.05, Debouncer.DebounceType.kRising)
+                .debounce(0.5, Debouncer.DebounceType.kFalling)
+
+        val shouldScoreCoralTrigger =
+            (driver.a().or(withinTolerance))
+                .and { superstructure.goal.isCoralScoring }
+                .and {
+                    superstructure.atGoal() ||
+                        (superstructure.goal == SuperstructureState.SCORE_L4 &&
+                            superstructure.currentState == SuperstructureState.PLACE_L4)
+                }
+        shouldScoreCoralTrigger.whileTrue(
+            rollers
+                .runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) }
+                .finallyDo { interrupted -> robotState.flipBranch = false }
+        )
+
+        val shouldDriveBackL4 = shouldScoreCoralTrigger.debounce(0.25, Debouncer.DebounceType.kRising)
+        val shouldDriveBackL23 = shouldScoreCoralTrigger.debounce(0.25, Debouncer.DebounceType.kRising)
+        var hasDrivenBack = false
         var lastBranch: FieldConstants.Reef.Branch? = null
         var targetBranch: FieldConstants.Reef.Branch? = null
         val autoAlignForScoringCoral =
@@ -327,6 +349,10 @@ class Robot : LoggedRobot() {
                     drive,
                     localizer,
                     {
+                        if (rollers.hasCoral) {
+                            hasDrivenBack = false
+                        }
+
                         var branch =
                             robotState.autoBranchTarget
                                 ?: targetBranch
@@ -346,14 +372,26 @@ class Robot : LoggedRobot() {
                         val target = robotPosition.getActiveBranchAlignPose(branch)
 
                         val isNotReadyForL4 =
-                            robotState.coralTarget == CoralScoringTarget.L4 && !superstructure.isArmUp()
+                            robotState.coralTarget == CoralScoringTarget.L4 &&
+                                !superstructure.isArmUp() &&
+                                (superstructure.currentState !in
+                                    setOf(SuperstructureState.PLACE_L4, SuperstructureState.SCORE_L4))
                         val isNotReadyForL1 =
                             robotState.coralTarget == CoralScoringTarget.L1 &&
                                 superstructure.currentState == SuperstructureState.SCORE_L1
 
                         val armNotReady = isNotReadyForL1 || isNotReadyForL4
+
                         if (armNotReady) {
                             // Wait to drive all the way until arm is in position
+                            target.transformBy(Transform2d(-0.375, 0.0, Rotation2d.kZero))
+                        } else if (
+                            hasDrivenBack ||
+                                (robotState.coralTarget == CoralScoringTarget.L4 && shouldDriveBackL4.asBoolean) ||
+                                (robotState.coralTarget in setOf(CoralScoringTarget.L2, CoralScoringTarget.L3) &&
+                                    shouldDriveBackL23.asBoolean)
+                        ) {
+                            hasDrivenBack = true
                             target.transformBy(Transform2d(-0.375, 0.0, Rotation2d.kZero))
                         } else {
                             if (robotState.coralTarget in setOf(CoralScoringTarget.L2, CoralScoringTarget.L3)) {
@@ -402,16 +440,27 @@ class Robot : LoggedRobot() {
                 )
                 .apply { name = "AutoAlignForScoringCoral" }
 
+        val netAlgaeShouldDriveBack = rollers.hasAlgaeTrigger.negate().debounce(0.25, Debouncer.DebounceType.kRising)
+        var netAlgaeHasDrivenBack = false
         val autoAlignForScoringNet =
             DriveToPose(
                     drive,
                     localizer,
                     {
+                        if (rollers.hasAlgae) {
+                            netAlgaeHasDrivenBack = false
+                        }
+
                         val target = robotPosition.getActiveNetAlignPose()
 
                         val elevatorIsReady = superstructure.currentState == SuperstructureState.SCORE_NET
                         if (elevatorIsReady) {
-                            target
+                            if (netAlgaeHasDrivenBack || netAlgaeShouldDriveBack.asBoolean) {
+                                netAlgaeHasDrivenBack = true
+                                target.transformBy(Transform2d(-0.5, 0.0, Rotation2d.kZero))
+                            } else {
+                                target
+                            }
                         } else {
                             target.transformBy(Transform2d(-0.375, 0.0, Rotation2d.kZero))
                         }
@@ -454,7 +503,7 @@ class Robot : LoggedRobot() {
                 Commands.runOnce({
                     targetBranch =
                         robotPosition.nearestReefAlignBranch(
-                            localizer.estimatedPose.transformBySpeeds(localizer.fieldVelocity, 0.4)
+                            localizer.estimatedPose.transformBySpeeds(localizer.fieldVelocity, 0.3)
                         )
                 })
             )
@@ -472,34 +521,13 @@ class Robot : LoggedRobot() {
             .and(!disableAutoAlign)
             .whileTrue(autoAlignForScoringProcessor)
 
-        rollers.hasAlgaeTrigger
+        driver
+            .rightBumper()
+            .or({ DriverStation.isAutonomousEnabled() && robotState.autoAlgaePickupTarget == null })
             .and { robotState.algaeTarget == AlgaeScoringTarget.NET }
-            .and(
-                driver
-                    .rightBumper()
-                    .or({ DriverStation.isAutonomousEnabled() && robotState.autoAlgaePickupTarget == null })
-            )
             .and(!disableAutoAlign)
-            .whileTrue(autoAlignForScoringNet)
-
-        val withinTolerance =
-            robotPosition.withinCoralScoringTolerance
-                .debounce(0.05, Debouncer.DebounceType.kRising)
-                .debounce(0.5, Debouncer.DebounceType.kFalling)
-
-        val shouldScoreCoralTrigger =
-            (driver.a().or(withinTolerance))
-                .and { superstructure.goal.isCoralScoring }
-                .and {
-                    superstructure.atGoal() ||
-                        (superstructure.goal == SuperstructureState.SCORE_L4 &&
-                            superstructure.currentState == SuperstructureState.PLACE_L4)
-                }
-        shouldScoreCoralTrigger.whileTrue(
-            rollers
-                .runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) }
-                .finallyDo { interrupted -> robotState.flipBranch = false }
-        )
+            // The .asProxy() lets it cancel via onlyIf() without interrupting other commands
+            .whileTrue(autoAlignForScoringNet.asProxy().onlyIf(rollers.hasAlgaeTrigger))
 
         shouldScoreCoralTrigger.whileTrue(driver.rumbleCommand())
 
@@ -658,7 +686,8 @@ class Robot : LoggedRobot() {
 
                         val isHighTransition =
                             target in setOf(SuperstructureState.PLACE_L4, SuperstructureState.SCORE_L4) &&
-                                superstructure.isArmUp()
+                                (superstructure.isArmUp() ||
+                                    superstructure.currentState == SuperstructureState.PLACE_L4)
 
                         if (robotPosition.isSafeToUseArm.asBoolean || isLowTransition || isHighTransition) {
                             target

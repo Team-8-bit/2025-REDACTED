@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.util.Units
 import org.team9432.frc2025.lib.AllianceTracker
+import org.team9432.frc2025.lib.util.flip
 import org.team9432.frc2025.robot.vision.VisionConstants
 
 /**
@@ -21,49 +22,64 @@ import org.team9432.frc2025.robot.vision.VisionConstants
 object FieldConstants {
     val fieldLength: Double = VisionConstants.aprilTagLayout.fieldLength
     val fieldWidth: Double = VisionConstants.aprilTagLayout.fieldWidth
-    val startingLineX: Double = Units.inchesToMeters(299.438) // Measured from the inside of starting line
-    val algaeDiameter: Double = Units.inchesToMeters(16.0)
+    //    val startingLineX: Double = Units.inchesToMeters(299.438) // Measured from the inside of
+    // starting line
 
-    val aprilTagWidth: Double = Units.inchesToMeters(6.50)
+    //    val aprilTagWidth: Double = Units.inchesToMeters(6.50)
     const val APRIL_TAG_COUNT: Int = 22
 
     object Processor {
-        val centerFace: Pose2d =
+        val blueCenterFace =
             Pose2d(VisionConstants.aprilTagLayout.getTagPose(16).get().x, 0.0, Rotation2d.fromDegrees(90.0))
+        val redCenterFace = blueCenterFace.flip()
     }
 
     object Barge {
         val netWidth: Double = Units.inchesToMeters(40.0)
-        val netHeight: Double = Units.inchesToMeters(88.0)
+        //        val netHeight: Double = Units.inchesToMeters(88.0)
 
-        val farCage: Translation2d = Translation2d(Units.inchesToMeters(345.428), Units.inchesToMeters(286.779))
-        val middleCage: Translation2d = Translation2d(Units.inchesToMeters(345.428), Units.inchesToMeters(242.855))
-        val closeCage: Translation2d = Translation2d(Units.inchesToMeters(345.428), Units.inchesToMeters(199.947))
+        //        val farCage: Translation2d = Translation2d(Units.inchesToMeters(345.428),
+        // Units.inchesToMeters(286.779))
+        //        val middleCage: Translation2d = Translation2d(Units.inchesToMeters(345.428),
+        // Units.inchesToMeters(242.855))
+        //        val closeCage: Translation2d = Translation2d(Units.inchesToMeters(345.428),
+        // Units.inchesToMeters(199.947))
 
         // Measured from floor to bottom of cage
-        val deepHeight: Double = Units.inchesToMeters(3.125)
-        val shallowHeight: Double = Units.inchesToMeters(30.125)
+        //        val deepHeight: Double = Units.inchesToMeters(3.125)
+        //        val shallowHeight: Double = Units.inchesToMeters(30.125)
     }
 
-    enum class CoralStation(val centerPose: Pose2d) {
-        RIGHT(Pose2d(Units.inchesToMeters(33.526), Units.inchesToMeters(25.824), Rotation2d.fromDegrees(144.011 - 90))),
-        LEFT(
-            Pose2d(
-                RIGHT.centerPose.x,
-                fieldWidth - RIGHT.centerPose.y,
-                Rotation2d.fromRadians(-RIGHT.centerPose.rotation.radians),
-            )
-        );
+    object CoralStation {
+        private val BLUE_RIGHT =
+            Pose2d(Units.inchesToMeters(33.526), Units.inchesToMeters(25.824), Rotation2d.fromDegrees(144.011 - 90))
+        private val BLUE_LEFT =
+            Pose2d(BLUE_RIGHT.x, fieldWidth - BLUE_RIGHT.y, Rotation2d.fromRadians(-BLUE_RIGHT.rotation.radians))
+        private val BLUE_POSES = setOf(BLUE_RIGHT, BLUE_LEFT)
 
-        companion object {
-            val stationLength: Double = Units.inchesToMeters(79.750)
-        }
+        private val RED_RIGHT = BLUE_RIGHT.flip()
+        private val RED_LEFT = BLUE_LEFT.flip()
+        private val RED_POSES = setOf(RED_RIGHT, RED_LEFT)
+
+        val ALLIANCE_RIGHT
+            get() = AllianceTracker.switch(blue = BLUE_RIGHT, red = RED_RIGHT)
+
+        val ALLIANCE_LEFT
+            get() = AllianceTracker.switch(blue = BLUE_LEFT, red = RED_LEFT)
+
+        val ALLIANCE_POSES
+            get() = AllianceTracker.switch(blue = BLUE_POSES, red = RED_POSES)
     }
 
     object Reef {
-        val faceLength: Double = Units.inchesToMeters(36.792600)
-        val center: Translation2d = Translation2d(Units.inchesToMeters(176.746), fieldWidth / 2.0)
-        val faceToZoneLine: Double = Units.inchesToMeters(12.0) // Side of the reef to the inside of the reef zone line
+        //        val faceLength: Double = Units.inchesToMeters(36.792600)
+        private val BLUE_CENTER = Translation2d(Units.inchesToMeters(176.746), fieldWidth / 2.0)
+        private val RED_CENTER = BLUE_CENTER.flip()
+        //        val faceToZoneLine: Double = Units.inchesToMeters(12.0) // Side of the reef to the
+        // inside of the reef zone line
+
+        val ALLIANCE_CENTER
+            get() = AllianceTracker.switch(blue = BLUE_CENTER, red = RED_CENTER)
 
         val maxRadius: Double = Units.inchesToMeters(76.0 / 2)
         val faceToCenter: Double = Units.inchesToMeters(65.491090 / 2)
@@ -84,7 +100,7 @@ object FieldConstants {
 
             // Initialize branch positions
             for (face in 0..5) {
-                val poseDirection = Pose2d(center, Rotation2d.fromDegrees((180 + (60 * face)).toDouble()))
+                val poseDirection = Pose2d(BLUE_CENTER, Rotation2d.fromDegrees((180 + (60 * face)).toDouble()))
                 val adjustX = Units.inchesToMeters(65.491090 / 2)
                 val adjustY = Units.inchesToMeters(6.469)
 
@@ -110,21 +126,21 @@ object FieldConstants {
             }
         }
 
-        enum class Branch {
-            A,
-            B,
-            C,
-            D,
-            E,
-            F,
-            G,
-            H,
-            I,
-            J,
-            K,
-            L;
+        enum class Branch(index: Int) {
+            A(0),
+            B(1),
+            C(2),
+            D(3),
+            E(4),
+            F(5),
+            G(6),
+            H(7),
+            I(8),
+            J(9),
+            K(10),
+            L(11);
 
-            fun getTag(): Int {
+            fun getAllianceTag(): Int {
                 return when (this) {
                     A,
                     B -> AllianceTracker.switch(blue = 18, red = 7)
@@ -146,44 +162,14 @@ object FieldConstants {
                 }
             }
 
-            fun getPose() = branchPositions2d[entries.indexOf(this)]
+            private val bluePose = branchPositions2d[index]
+            private val redPose = bluePose.flip()
 
-            val mirror
-                get() =
-                    when (this) {
-                        A -> B
-                        B -> A
-                        L -> C
-                        C -> L
-                        K -> D
-                        D -> K
-                        J -> E
-                        E -> J
-                        I -> F
-                        F -> I
-                        H -> G
-                        G -> H
-                    }
-
-            val oppositeOnFace
-                get() =
-                    when (this) {
-                        A -> B
-                        B -> A
-                        C -> D
-                        D -> C
-                        E -> F
-                        F -> E
-                        G -> H
-                        H -> G
-                        I -> J
-                        J -> I
-                        K -> L
-                        L -> K
-                    }
+            val alliancePose
+                get() = AllianceTracker.switch(blue = bluePose, red = redPose)
         }
 
-        enum class StagedAlgae(private val high: Boolean, val centerFace: Int) {
+        enum class StagedAlgae(private val high: Boolean, centerFace: Int) {
             AB(high = true, 0),
             CD(high = false, 5),
             EF(high = true, 4),
@@ -207,15 +193,22 @@ object FieldConstants {
                     KL -> AllianceTracker.switch(blue = 19, red = 6)
                 }
 
-            fun getPose() = centerFaces[centerFace]!!
+            private val bluePose = centerFaces[centerFace]!!
+            private val redPose = bluePose.flip()
+
+            val alliancePose
+                get() = AllianceTracker.switch(blue = bluePose, red = redPose)
         }
     }
 
-    object StagingPositions {
-        // Measured from the center of the ice cream
-        val separation: Double = Units.inchesToMeters(72.0)
-        val middleIceCream: Pose2d = Pose2d(Units.inchesToMeters(48.0), fieldWidth / 2.0, Rotation2d())
-        val leftIceCream: Pose2d = Pose2d(Units.inchesToMeters(48.0), middleIceCream.y + separation, Rotation2d())
-        val rightIceCream: Pose2d = Pose2d(Units.inchesToMeters(48.0), middleIceCream.y - separation, Rotation2d())
-    }
+    //    object StagingPositions {
+    // Measured from the center of the ice cream
+    //        val separation: Double = Units.inchesToMeters(72.0)
+    //        val middleIceCream: Pose2d = Pose2d(Units.inchesToMeters(48.0), fieldWidth / 2.0,
+    // Rotation2d())
+    //        val leftIceCream: Pose2d = Pose2d(Units.inchesToMeters(48.0), middleIceCream.y +
+    // separation, Rotation2d())
+    //        val rightIceCream: Pose2d = Pose2d(Units.inchesToMeters(48.0), middleIceCream.y -
+    // separation, Rotation2d())
+    //    }
 }

@@ -11,7 +11,6 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.distanceTo
-import org.team9432.frc2025.lib.util.flip
 import org.team9432.frc2025.lib.util.velocityLessThan
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.util.FieldConstants
@@ -37,15 +36,15 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
         val angleToReef = let {
             val angleToPointAtReef =
                 atan2(
-                    FieldConstants.Reef.center.applyFlip().y - estimatedPose.y,
-                    FieldConstants.Reef.center.applyFlip().x - estimatedPose.x,
+                    FieldConstants.Reef.ALLIANCE_CENTER.y - estimatedPose.y,
+                    FieldConstants.Reef.ALLIANCE_CENTER.x - estimatedPose.x,
                 )
             abs(Math.toDegrees(MathUtil.angleModulus(angleToPointAtReef - estimatedPose.rotation.radians)))
         }
 
         val isSafeToUseArm = let {
             val reefDistanceGood =
-                estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
+                estimatedPose.distanceTo(FieldConstants.Reef.ALLIANCE_CENTER) -
                     FieldConstants.Reef.maxRadius -
                     (DrivetrainConstants.BUMPER_LENGTH / 2) > Units.inchesToMeters(8.0)
             val reefRotationGood = angleToReef > 55
@@ -72,7 +71,7 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
     ): Pose2d {
         val alignPose = getBaseBranchAlignPose(branch, shouldUseBlockedPosition)
 
-        val txTyRobotPose = localizer.getReefPose(branch.getTag(), alignPose)
+        val txTyRobotPose = localizer.getReefPose(branch.getAllianceTag(), alignPose)
 
         val error = txTyRobotPose.relativeTo(alignPose)
         val yDistance = abs(error.y)
@@ -115,14 +114,14 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
 
     private fun getBaseBranchAlignPose(branch: FieldConstants.Reef.Branch, blocked: Boolean = false): Pose2d {
         return if (blocked) {
-            branch.getPose().applyFlip().transformBy(REEF_ALIGN_BLOCKED_TRANSFORM)
+            branch.alliancePose.transformBy(REEF_ALIGN_BLOCKED_TRANSFORM)
         } else {
-            branch.getPose().applyFlip().transformBy(REEF_ALIGN_TRANSFORM)
+            branch.alliancePose.transformBy(REEF_ALIGN_TRANSFORM)
         }
     }
 
     fun distanceToReef(): Double {
-        val centerToCenter = localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip())
+        val centerToCenter = localizer.estimatedPose.distanceTo(FieldConstants.Reef.ALLIANCE_CENTER)
         val reefRadius = FieldConstants.Reef.faceToCenter
         val robotRadius = DrivetrainConstants.BUMPER_LENGTH / 2
         return centerToCenter - reefRadius - robotRadius
@@ -136,7 +135,7 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
         stagedAlgae: FieldConstants.Reef.StagedAlgae,
         additionalDriveBackDistance: Double,
     ): Pose2d {
-        val alignPose = stagedAlgae.getPose().applyFlip().transformBy(ALGAE_PICKUP_ALIGN_TRANSFORM)
+        val alignPose = stagedAlgae.alliancePose.transformBy(ALGAE_PICKUP_ALIGN_TRANSFORM)
         val txTyRobotPose = localizer.getReefPose(stagedAlgae.getTag(), alignPose)
 
         val yDistance = abs(txTyRobotPose.relativeTo(alignPose).y)
@@ -150,11 +149,11 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
     }
 
     fun nearestAlgaePickup() =
-        FieldConstants.Reef.StagedAlgae.entries.minBy { localizer.estimatedPose.distanceTo(it.getPose().applyFlip()) }
+        FieldConstants.Reef.StagedAlgae.entries.minBy { localizer.estimatedPose.distanceTo(it.alliancePose) }
 
     val withinCoralScoringTolerance = Trigger {
         val branch = nearestReefAlignBranch()
-        val robotPose = localizer.getTxTyPose(branch.getTag()) ?: localizer.estimatedPose
+        val robotPose = localizer.getTxTyPose(branch.getAllianceTag()) ?: localizer.estimatedPose
         val shouldUseBlockedPose =
             robotState.coralTarget in setOf(RobotState.CoralScoringTarget.L2, RobotState.CoralScoringTarget.L3)
         val scorePose = getBaseBranchAlignPose(branch, blocked = shouldUseBlockedPose)
@@ -169,7 +168,7 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
 
     fun getActiveProcessorAlignPose(): Pose2d {
         val processorPose =
-            if (cache.isOnBlueSide) FieldConstants.Processor.centerFace else FieldConstants.Processor.centerFace.flip()
+            if (cache.isOnBlueSide) FieldConstants.Processor.blueCenterFace else FieldConstants.Processor.redCenterFace
 
         val alignPose = processorPose.transformBy(PROCESSOR_ALIGN_TRANSFORM)
 

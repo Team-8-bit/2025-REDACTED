@@ -385,7 +385,7 @@ class Robot : LoggedRobot() {
                     },
                     {
                         localizer.getTxTyPose(
-                            (robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch()).getTag()
+                            (robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch()).getAllianceTag()
                         ) ?: localizer.estimatedPose
                     },
                     joystickDriveController,
@@ -403,7 +403,11 @@ class Robot : LoggedRobot() {
         }
 
         val autoAlignForScoringNet = let {
-            val shouldDriveBack = rollers.hasAlgaeTrigger.negate().debounce(0.3, Debouncer.DebounceType.kRising)
+            val shouldDriveBack =
+                rollers.hasAlgaeTrigger
+                    .negate()
+                    .debounce(0.3, Debouncer.DebounceType.kRising)
+                    .and(!RobotModeTriggers.autonomous())
             var hasDrivenBack = false
 
             DriveToPose(
@@ -494,38 +498,33 @@ class Robot : LoggedRobot() {
 
         shouldScoreCoralTrigger.whileTrue(driver.rumbleCommand())
 
-        (driver.rightBumper().or {
-                isAutonomousEnabled && rollers.hasAlgae && robotState.autoAlgaePickupTarget == null
-            })
-            .whileTrue(
-                (superstructure
-                        .runGoal {
-                            when (robotState.algaeTarget) {
-                                AlgaeScoringTarget.PROCESSOR -> SuperstructureState.PROCESSOR
-                                AlgaeScoringTarget.NET ->
-                                    if (robotPosition.withinNetDistance(2.0)) {
-                                        SuperstructureState.SCORE_NET
-                                    } else {
-                                        SuperstructureState.PREP_NET
-                                    }
-                            }
+        (driver.rightBumper().or { isAutonomousEnabled && robotState.autoAlgaePickupTarget == null }).whileTrue(
+            (superstructure
+                    .runGoal {
+                        when (robotState.algaeTarget) {
+                            AlgaeScoringTarget.PROCESSOR -> SuperstructureState.PROCESSOR
+                            AlgaeScoringTarget.NET ->
+                                if (robotPosition.withinNetDistance(2.0)) {
+                                    SuperstructureState.SCORE_NET
+                                } else {
+                                    SuperstructureState.PREP_NET
+                                }
                         }
-                        .until(
-                            (driver.a().or {
-                                    autoAlignForScoringProcessor.withinTolerance(1.5, Units.degreesToRotations(1.5)) ||
-                                        (autoAlignForScoringNet.withinTolerance(1.5, Units.degreesToRotations(1.5)) &&
-                                            robotPosition.withinNetTolerance())
-                                })
-                                .and(superstructure::atGoal)
-                        )
-                        .andThen(
-                            rollers
-                                .runGoal(Rollers.State.SCORE_ALGAE)
-                                .alongWith(driver.rumbleCommand().withTimeout(1.0))
-                        ))
-                    .asProxy()
-                    .onlyIf(rollers.hasAlgaeTrigger)
-            )
+                    }
+                    .until(
+                        (driver.a().or {
+                                autoAlignForScoringProcessor.withinTolerance(1.5, Units.degreesToRotations(1.5)) ||
+                                    (autoAlignForScoringNet.withinTolerance(1.5, Units.degreesToRotations(1.5)) &&
+                                        robotPosition.withinNetTolerance())
+                            })
+                            .and(superstructure::atGoal)
+                    )
+                    .andThen(
+                        rollers.runGoal(Rollers.State.SCORE_ALGAE).alongWith(driver.rumbleCommand().withTimeout(1.0))
+                    ))
+                .asProxy()
+                .onlyIf(rollers.hasAlgaeTrigger)
+        )
 
         (driver.leftBumper().or({ robotState.autoAlgaePickupTarget != null })).whileTrue(
             superstructure
@@ -590,24 +589,20 @@ class Robot : LoggedRobot() {
                             superstructure.goal
                         }
                     } else if (rollers.hasCoral || superstructure.currentState == SuperstructureState.PLACE_L4) {
+                        val tooCloseToCoralStation =
+                            FieldConstants.CoralStation.ALLIANCE_POSES.any {
+                                it.distanceTo(localizer.estimatedPose) - (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0
+                            }
+
                         val target =
                             when (robotState.coralTarget) {
                                 CoralScoringTarget.L1 -> {
-                                    val robotPose = localizer.estimatedPose
-
-                                    val tooCloseToCoralStation =
-                                        FieldConstants.CoralStation.entries.any {
-                                            it.centerPose.applyFlip().distanceTo(robotPose) -
-                                                (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0
-                                        }
-                                    if (tooCloseToCoralStation && !isAutonomousEnabled) {
-                                        if (superstructure.isArmUp()) {
-                                            superstructure.goal
-                                        } else {
-                                            SuperstructureState.ARM_ABOVE_BUMPER
-                                        }
-                                    } else {
+                                    if (!tooCloseToCoralStation || isAutonomousEnabled) {
                                         SuperstructureState.SCORE_L1
+                                    } else if (superstructure.isArmUp()) {
+                                        superstructure.goal
+                                    } else {
+                                        SuperstructureState.ARM_ABOVE_BUMPER
                                     }
                                 }
 
@@ -626,21 +621,12 @@ class Robot : LoggedRobot() {
                                             SuperstructureState.PLACE_L4
                                         }
                                     } else {
-                                        val robotPose = localizer.estimatedPose
-
-                                        val tooCloseToCoralStation =
-                                            FieldConstants.CoralStation.entries.any {
-                                                it.centerPose.applyFlip().distanceTo(robotPose) -
-                                                    (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0
-                                            }
-                                        if (tooCloseToCoralStation && !isAutonomousEnabled) {
-                                            if (superstructure.isArmUp()) {
-                                                superstructure.goal
-                                            } else {
-                                                SuperstructureState.ARM_ABOVE_BUMPER
-                                            }
-                                        } else {
+                                        if (!tooCloseToCoralStation || isAutonomousEnabled) {
                                             SuperstructureState.PREP_L4
+                                        } else if (superstructure.isArmUp()) {
+                                            superstructure.goal
+                                        } else {
+                                            SuperstructureState.ARM_ABOVE_BUMPER
                                         }
                                     }
                                 }

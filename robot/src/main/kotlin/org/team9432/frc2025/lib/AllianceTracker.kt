@@ -5,6 +5,19 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance
 object AllianceTracker {
     /** The current alliance the robot is on, or null if no alliance has been provided yet. Must be set by user code. */
     var currentAlliance: Alliance? = null
+        set(value) {
+            var shouldRunUpdates = false
+            if (field != value) {
+                shouldRunUpdates = true
+            }
+
+            // Make sure to update the field before calling the update functions
+            field = value
+
+            if (shouldRunUpdates) {
+                runOnChange.forEach { it.invoke() }
+            }
+        }
 
     /** Returns either [blue] or [red] depending on the alliance color. */
     fun <T> switch(blue: T, red: T): T = if (currentAlliance == Alliance.Blue) blue else red
@@ -17,5 +30,11 @@ object AllianceTracker {
     /** Calls the given block if the robot is on the blue alliance. */
     fun ifBlue(block: () -> Unit) {
         if (currentAlliance == Alliance.Blue) block.invoke()
+    }
+
+    private val runOnChange = mutableSetOf<() -> Unit>()
+
+    fun onChange(run: () -> Unit) {
+        runOnChange.add(run)
     }
 }

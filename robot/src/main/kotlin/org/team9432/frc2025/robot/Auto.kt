@@ -1,11 +1,11 @@
 package org.team9432.frc2025.robot
 
+import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
-import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.not
 import org.team9432.frc2025.robot.RobotState.CoralScoringTarget
 import org.team9432.frc2025.robot.commands.drive.DriveToPose
@@ -33,7 +33,7 @@ class Auto(
         DriveToPose(
                 drive,
                 localizer,
-                { robotState.autoCoralStationPose?.applyFlip() ?: localizer.estimatedPose },
+                { robotState.autoCoralStationPose ?: localizer.estimatedPose },
                 { localizer.estimatedPose },
             )
             .apply { name = "AutoAlignForStationPickup" }
@@ -44,7 +44,7 @@ class Auto(
     fun onlyL4(branch: Branch): Command =
         Commands.defer({ initializeAuto().andThen(preloadAndScore(branch, CoralScoringTarget.L4)) }, emptySet())
 
-    fun coralAuto(moves: List<Pair<Branch, CoralScoringTarget>>, coralStation: CoralStation): Command =
+    fun coralAuto(moves: List<Pair<Branch, CoralScoringTarget>>, coralStationPose: Pose2d): Command =
         Commands.defer(
             {
                 if (moves.isEmpty()) return@defer Commands.none()
@@ -62,7 +62,7 @@ class Auto(
                                     Commands.none()
                                 } else {
                                     val (branch, level) = moveQueue.first()
-                                    pickupAndScore(branch, level, coralStation) {
+                                    pickupAndScore(branch, level, coralStationPose) {
                                         // Successful coral pickup, this branch will be scored on
                                         moveQueue.removeFirst()
                                     }
@@ -88,7 +88,7 @@ class Auto(
                         Pair(Branch.L, CoralScoringTarget.L4),
                         Pair(Branch.A, CoralScoringTarget.L4),
                     ),
-                    CoralStation.LEFT,
+                    CoralStation.ALLIANCE_LEFT,
                 )
             },
             emptySet(),
@@ -104,7 +104,7 @@ class Auto(
                         Pair(Branch.C, CoralScoringTarget.L4),
                         Pair(Branch.B, CoralScoringTarget.L4),
                     ),
-                    CoralStation.RIGHT,
+                    CoralStation.ALLIANCE_RIGHT,
                 )
             },
             emptySet(),
@@ -123,14 +123,14 @@ class Auto(
     private fun pickupAndScore(
         branch: Branch,
         level: CoralScoringTarget,
-        coralStation: CoralStation,
+        coralStationPose: Pose2d,
         onCoralPickup: () -> Unit = {},
     ) =
         Commands.sequence(
             Commands.runOnce({
                 robotState.autoCoralTarget = level
                 robotState.autoBranchTarget = branch
-                robotState.autoCoralStationPose = coralStation.centerPose.transformBy(coralStationTransform)
+                robotState.autoCoralStationPose = coralStationPose.transformBy(coralStationTransform)
             }),
             Commands.waitUntil(
                 rollers.hasCoralTrigger.or {
@@ -164,6 +164,6 @@ class Auto(
                 robotState.autoAlgaePickupTarget = null
             }), // Algae autoalign will drive back, this lets it start the net score
             Commands.waitUntil(!rollers.hasAlgaeTrigger),
-            Commands.waitSeconds(0.25),
+            Commands.waitSeconds(0.4),
         )
 }

@@ -317,7 +317,7 @@ class Robot : LoggedRobot() {
                         robotPosition.getActiveAlgaeAlignPose(face, additionalDriveBackDistance)
                     },
                     { localizer.getTxTyPose(robotPosition.nearestAlgaePickup().getTag()) ?: localizer.estimatedPose },
-                    maxVelocityAcceleration = { 2.0 to 2.0 },
+                    maxVelocityAcceleration = { if (isAutonomousEnabled) null to null else 2.0 to 2.0 },
                 )
                 .apply { name = "AutoAlignForCollectingAlgae" }
         }
@@ -339,7 +339,6 @@ class Robot : LoggedRobot() {
 
         shouldScoreCoralTrigger.whileTrue(rollers.runGoal { rollers.getScoringStateForTarget(robotState.coralTarget) })
 
-        var targetBranch: FieldConstants.Reef.Branch? = null
         val autoAlignForScoringCoral = let {
             val shouldDriveBackL4 = shouldScoreCoralTrigger.debounce(0.25, Debouncer.DebounceType.kRising)
             val shouldDriveBackL23 = shouldScoreCoralTrigger.debounce(0.25, Debouncer.DebounceType.kRising)
@@ -350,15 +349,6 @@ class Robot : LoggedRobot() {
                     drive,
                     localizer,
                     {
-                        val branch =
-                            robotState.autoBranchTarget
-                                ?: targetBranch
-                                ?: robotPosition.nearestReefAlignBranch(
-                                    localizer.estimatedPose.transformBySpeeds(localizer.fieldVelocity, 0.4)
-                                )
-
-                        val shouldUseBlockedPosition = robotState.coralTarget.isL2OrL3()
-
                         val additionalDriveBackDistance: Double
 
                         val readyToDriveUpL4 = superstructure.isArmUp() || superstructure.elevatorHeight() > 1.25
@@ -378,16 +368,12 @@ class Robot : LoggedRobot() {
                         }
 
                         robotPosition.getActiveCoralAlignPose(
-                            branch,
-                            shouldUseBlockedPosition,
+                            robotState.branchTarget,
+                            shouldUseBlockedPosition = robotState.coralTarget.isL2OrL3(),
                             additionalDriveBackDistance,
                         )
                     },
-                    {
-                        localizer.getTxTyPose(
-                            (robotState.autoBranchTarget ?: robotPosition.nearestReefAlignBranch()).getAllianceTag()
-                        ) ?: localizer.estimatedPose
-                    },
+                    { localizer.getTxTyPose(robotState.branchTarget.getAllianceTag()) ?: localizer.estimatedPose },
                     joystickDriveController,
                     maxVelocityAcceleration = {
                         val nearingReef = robotPosition.distanceToReef() < 1.0
@@ -466,14 +452,7 @@ class Robot : LoggedRobot() {
             .and(!driver.leftBumper())
             .and(!disableAutoAlign)
             .and { robotState.teleCoralTarget != CoralScoringTarget.L1 }
-            .onTrue(
-                Commands.runOnce({
-                    targetBranch =
-                        robotPosition.nearestReefAlignBranch(
-                            localizer.estimatedPose.transformBySpeeds(localizer.fieldVelocity, 0.3)
-                        )
-                })
-            )
+            .onTrue(Commands.runOnce({ robotState.teleBranchTarget = robotPosition.getCurrentTeleopBranchTarget() }))
             .whileTrue(autoAlignForScoringCoral)
 
         (driver.leftBumper().or(RobotModeTriggers.autonomous().and({ robotState.autoAlgaePickupTarget != null })))

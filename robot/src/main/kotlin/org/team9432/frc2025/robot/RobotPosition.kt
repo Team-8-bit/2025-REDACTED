@@ -4,6 +4,7 @@ import edu.wpi.first.math.MathUtil
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
+import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import kotlin.math.*
@@ -11,26 +12,27 @@ import org.littletonrobotics.junction.Logger
 import org.team9432.frc2025.lib.dashboard.LoggedTunableNumber
 import org.team9432.frc2025.lib.util.applyFlip
 import org.team9432.frc2025.lib.util.distanceTo
+import org.team9432.frc2025.lib.util.transformBySpeeds
 import org.team9432.frc2025.lib.util.velocityLessThan
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.util.FieldConstants
 
 class RobotPosition(private val localizer: Localizer, private val robotState: RobotState) {
-    private var cache = CachedSnapshotData(localizer.estimatedPose)
+    private var cache = CachedSnapshotData(localizer.estimatedPose, localizer.fieldVelocity)
 
     fun resetCache() {
-        cache = CachedSnapshotData(localizer.estimatedPose)
+        cache = CachedSnapshotData(localizer.estimatedPose, localizer.fieldVelocity)
     }
 
     fun outputTelemetry() {
         Logger.recordOutput("RobotPosition/isSafeToUseArm", isSafeToUseArm)
-        Logger.recordOutput("RobotPosition/ReefTargetBranch", nearestReefAlignBranch())
+        Logger.recordOutput("RobotPosition/TeleopNearestBranchTarget", getCurrentTeleopBranchTarget())
         Logger.recordOutput("RobotPosition/AngleFromReef", angleToReef())
         Logger.recordOutput("RobotPosition/WithinCoralTolerance", withinCoralScoringTolerance)
         Logger.recordOutput("RobotPosition/isOnBlueSide", cache.isOnBlueSide)
     }
 
-    private class CachedSnapshotData(estimatedPose: Pose2d) {
+    private class CachedSnapshotData(estimatedPose: Pose2d, fieldVelocity: ChassisSpeeds) {
         val isOnBlueSide = (estimatedPose.x - FieldConstants.fieldLength / 2).sign == -1.0
 
         val angleToReef = let {
@@ -62,6 +64,14 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
                 }
             (reefDistanceGood || reefRotationGood) && (bargeDistanceGood || bargeRotationGood)
         }
+
+        val teleopBranchTarget =
+            FieldConstants.Reef.Branch.entries.minBy {
+                estimatedPose.transformBySpeeds(fieldVelocity, 0.3).distanceTo(it.allianceNormalAlignPose)
+            }
+
+        val nearestAlgaePickup =
+            FieldConstants.Reef.StagedAlgae.entries.minBy { estimatedPose.distanceTo(it.alliancePose) }
     }
 
     fun getActiveCoralAlignPose(
@@ -69,7 +79,8 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
         shouldUseBlockedPosition: Boolean,
         additionalDriveBackDistance: Double,
     ): Pose2d {
-        val alignPose = getBaseBranchAlignPose(branch, shouldUseBlockedPosition)
+        val alignPose =
+            if (shouldUseBlockedPosition) branch.allianceBlockedAlignPose else branch.allianceNormalAlignPose
 
         val txTyRobotPose = localizer.getReefPose(branch.getAllianceTag(), alignPose)
 
@@ -84,6 +95,8 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
 
         return alignPose.transformBy(Transform2d(-backwardsOffset, 0.0, Rotation2d.kZero))
     }
+
+    fun getCurrentTeleopBranchTarget() = cache.teleopBranchTarget
 
     fun getActiveNetAlignPose(additionalDriveBackDistance: Double): Pose2d {
         val robotPose = localizer.estimatedPose.applyFlip()
@@ -112,23 +125,11 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
 
     fun withinNetTolerance() = withinNetDistance(Units.inchesToMeters(1.5))
 
-    private fun getBaseBranchAlignPose(branch: FieldConstants.Reef.Branch, blocked: Boolean = false): Pose2d {
-        return if (blocked) {
-            branch.alliancePose.transformBy(REEF_ALIGN_BLOCKED_TRANSFORM)
-        } else {
-            branch.alliancePose.transformBy(REEF_ALIGN_TRANSFORM)
-        }
-    }
-
     fun distanceToReef(): Double {
         val centerToCenter = localizer.estimatedPose.distanceTo(FieldConstants.Reef.ALLIANCE_CENTER)
         val reefRadius = FieldConstants.Reef.faceToCenter
         val robotRadius = DrivetrainConstants.BUMPER_LENGTH / 2
         return centerToCenter - reefRadius - robotRadius
-    }
-
-    fun nearestReefAlignBranch(robotPose: Pose2d = localizer.estimatedPose): FieldConstants.Reef.Branch {
-        return FieldConstants.Reef.Branch.entries.minBy { robotPose.distanceTo(getBaseBranchAlignPose(it)) }
     }
 
     fun getActiveAlgaeAlignPose(
@@ -148,15 +149,14 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
         return alignPose.transformBy(Transform2d(-backwardsOffset, 0.0, Rotation2d.kZero))
     }
 
-    fun nearestAlgaePickup() =
-        FieldConstants.Reef.StagedAlgae.entries.minBy { localizer.estimatedPose.distanceTo(it.alliancePose) }
+    fun nearestAlgaePickup() = cache.nearestAlgaePickup
 
     val withinCoralScoringTolerance = Trigger {
-        val branch = nearestReefAlignBranch()
+        val branch = robotState.branchTarget
         val robotPose = localizer.getTxTyPose(branch.getAllianceTag()) ?: localizer.estimatedPose
         val shouldUseBlockedPose =
             robotState.coralTarget in setOf(RobotState.CoralScoringTarget.L2, RobotState.CoralScoringTarget.L3)
-        val scorePose = getBaseBranchAlignPose(branch, blocked = shouldUseBlockedPose)
+        val scorePose = if (shouldUseBlockedPose) branch.allianceBlockedAlignPose else branch.allianceNormalAlignPose
         val difference = robotPose.relativeTo(scorePose)
         val velocityLow = localizer.robotVelocity.velocityLessThan(0.2, Units.degreesToRadians(4.0))
 

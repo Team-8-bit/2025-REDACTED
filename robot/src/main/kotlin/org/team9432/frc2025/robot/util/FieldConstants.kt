@@ -13,6 +13,7 @@ import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.util.Units
 import org.team9432.frc2025.lib.AllianceTracker
 import org.team9432.frc2025.lib.util.flip
+import org.team9432.frc2025.robot.RobotPosition
 import org.team9432.frc2025.robot.vision.VisionConstants
 
 /**
@@ -164,6 +165,18 @@ object FieldConstants {
 
             private val bluePose = branchPositions2d[index]
             private val redPose = bluePose.flip()
+
+            private val alignPoseNormalBlue = bluePose.transformBy(RobotPosition.REEF_ALIGN_TRANSFORM)
+            private val alignPoseNormalRed = redPose.transformBy(RobotPosition.REEF_ALIGN_TRANSFORM)
+
+            private val alignPoseBlockedBlue = bluePose.transformBy(RobotPosition.REEF_ALIGN_BLOCKED_TRANSFORM)
+            private val alignPoseBlockedRed = redPose.transformBy(RobotPosition.REEF_ALIGN_BLOCKED_TRANSFORM)
+
+            val allianceNormalAlignPose: Pose2d
+                get() = AllianceTracker.switch(blue = alignPoseNormalBlue, red = alignPoseNormalRed)
+
+            val allianceBlockedAlignPose: Pose2d
+                get() = AllianceTracker.switch(blue = alignPoseBlockedBlue, red = alignPoseBlockedRed)
 
             val alliancePose
                 get() = AllianceTracker.switch(blue = bluePose, red = redPose)

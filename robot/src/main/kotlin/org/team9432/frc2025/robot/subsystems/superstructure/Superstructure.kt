@@ -161,6 +161,8 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
 
     fun elevatorHeight() = elevator.positionMeters
 
+    fun armRotation() = arm.positionRotations
+
     fun homeSystem(): Command =
         Commands.sequence(
                 elevator.clearHome(),

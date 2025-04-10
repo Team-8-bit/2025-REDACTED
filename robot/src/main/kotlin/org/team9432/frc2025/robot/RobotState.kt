@@ -7,6 +7,7 @@ import org.team9432.frc2025.robot.util.FieldConstants
 
 class RobotState {
     var teleCoralTarget = CoralScoringTarget.L4
+    var teleBranchTarget: FieldConstants.Reef.Branch = FieldConstants.Reef.Branch.A
     var algaeTarget = AlgaeScoringTarget.PROCESSOR
         get() {
             return if (DriverStation.isAutonomousEnabled()) AlgaeScoringTarget.NET else field
@@ -27,6 +28,9 @@ class RobotState {
 
     val coralTarget
         get() = autoCoralTarget ?: teleCoralTarget
+
+    val branchTarget
+        get() = autoBranchTarget ?: teleBranchTarget
 
     fun log() {
         Logger.recordOutput("RobotState/teleCoralTarget", teleCoralTarget)

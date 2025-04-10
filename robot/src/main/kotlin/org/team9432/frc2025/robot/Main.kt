@@ -385,13 +385,9 @@ class Robot : LoggedRobot() {
 
                         var backwardsOffset = max(yDistance - 0.5, 0.0)
 
-                        val L4ArmNotReady =
-                            robotState.coralTarget == CoralScoringTarget.L4 &&
-                                !superstructure.isArmUp() &&
-                                (superstructure.currentState !in
-                                    setOf(SuperstructureState.PLACE_L4, SuperstructureState.SCORE_L4))
+                        val L4ReadyToDriveUp = superstructure.isArmUp() || superstructure.elevatorHeight() > 1.25
 
-                        if (L4ArmNotReady) {
+                        if (robotState.coralTarget == CoralScoringTarget.L4 && !L4ReadyToDriveUp) {
                             // Wait to drive all the way until arm is in position
                             backwardsOffset = max(backwardsOffset, 0.375)
                         } else if (

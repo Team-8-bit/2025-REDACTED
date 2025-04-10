@@ -86,6 +86,8 @@ class Drive(
 
         localizer.robotVelocity = robotRelativeSpeeds
 
+        localizer.finishDriveUpdates()
+
         // Update gyro alert
         gyroDisconnectedAlert.set(!gyroInputs.connected)
     }

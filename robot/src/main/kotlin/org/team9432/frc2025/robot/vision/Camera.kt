@@ -93,5 +93,7 @@ class Camera(
                 )
             )
         }
+
+        localizer.finishCameraUpdates()
     }
 }

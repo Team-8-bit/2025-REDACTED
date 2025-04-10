@@ -18,8 +18,6 @@ class RobotState {
 
     var autoAlgaePickupTarget: FieldConstants.Reef.StagedAlgae? = null
 
-    var flipBranch = false
-
     fun clearAutoState() {
         autoCoralTarget = null
         autoBranchTarget = null
@@ -43,7 +41,17 @@ class RobotState {
         L1,
         L2,
         L3,
-        L4,
+        L4;
+
+        fun isL1() = this == L1
+
+        fun isL2() = this == L2
+
+        fun isL3() = this == L3
+
+        fun isL4() = this == L4
+
+        fun isL2OrL3() = this == L2 || this == L3
     }
 
     enum class AlgaeScoringTarget {

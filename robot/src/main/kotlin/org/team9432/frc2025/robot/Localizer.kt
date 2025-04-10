@@ -209,6 +209,31 @@ class Localizer {
 
     private var simulatedPoseSupplier: (() -> Pose2d)? = null
 
+    private var drivetrainPeriodicRun = false
+    private var cameraPeriodicRun = false
+
+    fun finishDriveUpdates() {
+        drivetrainPeriodicRun = true
+        if (cameraPeriodicRun) resetCachedValues()
+    }
+
+    fun finishCameraUpdates() {
+        cameraPeriodicRun = true
+        if (drivetrainPeriodicRun) resetCachedValues()
+    }
+
+    private val onNewValues = mutableSetOf<() -> Unit>()
+
+    fun onNewLoopedValues(run: () -> Unit) {
+        onNewValues.add(run)
+    }
+
+    private fun resetCachedValues() {
+        drivetrainPeriodicRun = false
+        cameraPeriodicRun = false
+        onNewValues.forEach { it.invoke() }
+    }
+
     fun log() {
         Logger.recordOutput("Localizer/OdometryPose", odometryPose)
         Logger.recordOutput("Localizer/EstimatedPose", estimatedPose)

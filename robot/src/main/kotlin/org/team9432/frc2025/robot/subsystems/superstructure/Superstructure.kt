@@ -159,6 +159,8 @@ class Superstructure(private val elevator: Elevator, private val arm: Arm) : Sub
 
     fun isArmDown() = arm.positionRotations < -0.195
 
+    fun elevatorHeight() = elevator.positionMeters
+
     fun homeSystem(): Command =
         Commands.sequence(
                 elevator.clearHome(),

@@ -208,14 +208,14 @@ class DriveToPose(
         private val ffMaxRadius: LoggedTunableNumber = LoggedTunableNumber("DriveToPose/FFMaxRadius")
 
         init {
-            drivekP.initDefault(2.0)
-            drivekD.initDefault(0.05) // .25
-            thetakP.initDefault(4.0) // 6
-            thetakD.initDefault(0.4)
+            drivekP.initDefault(6.0)
+            drivekD.initDefault(0.075)
+            thetakP.initDefault(4.0)
+            thetakD.initDefault(0.3)
             driveMaxVelocity.initDefault(4.0)
             driveMaxAcceleration.initDefault(3.0)
-            thetaMaxVelocity.initDefault(1.0) // .5
-            thetaMaxAcceleration.initDefault(1.5) // 1
+            thetaMaxVelocity.initDefault(1.0)
+            thetaMaxAcceleration.initDefault(0.75)
             driveToleranceInches.initDefault(1.0)
             thetaToleranceDegrees.initDefault(1.0)
         }

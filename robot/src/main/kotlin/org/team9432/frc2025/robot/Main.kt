@@ -20,6 +20,9 @@ import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers
 import edu.wpi.first.wpilibj2.command.button.Trigger
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 import org.ironmaple.simulation.SimulatedArena
 import org.ironmaple.simulation.drivesims.COTS
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation
@@ -45,6 +48,7 @@ import org.team9432.frc2025.robot.subsystems.drive.Drive
 import org.team9432.frc2025.robot.subsystems.drive.DrivetrainConstants
 import org.team9432.frc2025.robot.subsystems.drive.ModuleConfig
 import org.team9432.frc2025.robot.subsystems.drive.OdometryThread
+import org.team9432.frc2025.robot.subsystems.drive.controllers.JoystickAimAtAngleController
 import org.team9432.frc2025.robot.subsystems.drive.controllers.JoystickDriveController
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIO
 import org.team9432.frc2025.robot.subsystems.drive.gyro.GyroIOPigeon2
@@ -317,6 +321,7 @@ class Robot : LoggedRobot() {
                         }
                     },
                     { localizer.getTxTyPose(robotPosition.nearestAlgaePickup().getTag()) ?: localizer.estimatedPose },
+                    maxVelocityAcceleration = { 2.0 to 2.0 },
                 )
                 .apply { name = "AutoAlignForCollectingAlgae" }
 
@@ -369,22 +374,26 @@ class Robot : LoggedRobot() {
                             branch = branch.oppositeOnFace
                         }
 
-                        val target = robotPosition.getActiveBranchAlignPose(branch)
+                        val shouldUseBlockedPosition =
+                            robotState.coralTarget in setOf(CoralScoringTarget.L2, CoralScoringTarget.L3)
+                        val alignPose = robotPosition.getBaseBranchAlignPose(branch, shouldUseBlockedPosition)
 
-                        val isNotReadyForL4 =
+                        val txTyRobotPose = localizer.getReefPose(branch.getTag(), alignPose)
+
+                        val error = txTyRobotPose.relativeTo(alignPose)
+                        val yDistance = abs(error.y)
+
+                        var backwardsOffset = max(yDistance - 0.5, 0.0)
+
+                        val L4ArmNotReady =
                             robotState.coralTarget == CoralScoringTarget.L4 &&
                                 !superstructure.isArmUp() &&
                                 (superstructure.currentState !in
                                     setOf(SuperstructureState.PLACE_L4, SuperstructureState.SCORE_L4))
-                        val isNotReadyForL1 =
-                            robotState.coralTarget == CoralScoringTarget.L1 &&
-                                superstructure.currentState == SuperstructureState.SCORE_L1
 
-                        val armNotReady = isNotReadyForL1 || isNotReadyForL4
-
-                        if (armNotReady) {
+                        if (L4ArmNotReady) {
                             // Wait to drive all the way until arm is in position
-                            target.transformBy(Transform2d(-0.375, 0.0, Rotation2d.kZero))
+                            backwardsOffset = max(backwardsOffset, 0.375)
                         } else if (
                             hasDrivenBack ||
                                 (robotState.coralTarget == CoralScoringTarget.L4 && shouldDriveBackL4.asBoolean) ||
@@ -392,14 +401,11 @@ class Robot : LoggedRobot() {
                                     shouldDriveBackL23.asBoolean)
                         ) {
                             hasDrivenBack = true
-                            target.transformBy(Transform2d(-0.375, 0.0, Rotation2d.kZero))
-                        } else {
-                            if (robotState.coralTarget in setOf(CoralScoringTarget.L2, CoralScoringTarget.L3)) {
-                                target.transformBy(robotPosition.kCoralBlockageTransform)
-                            } else {
-                                target
-                            }
+                            backwardsOffset = max(backwardsOffset, 0.375)
                         }
+
+                        backwardsOffset = min(backwardsOffset, 0.75)
+                        alignPose.transformBy(Transform2d(-backwardsOffset, 0.0, Rotation2d.kZero))
                     },
                     {
                         localizer.getTxTyPose(
@@ -408,22 +414,12 @@ class Robot : LoggedRobot() {
                     },
                     joystickDriveController,
                     maxVelocityAcceleration = {
-                        //                        val accel = MathUtil.clamp(
-                        //
-                        // (localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
-                        //                                FieldConstants.Reef.maxRadius -
-                        //                                (DrivetrainConstants.BUMPER_LENGTH / 2)) *
-                        // 2.0,
-                        //                            2.0,
-                        //                            5.0,
-                        //                        )
-
                         if (
                             localizer.estimatedPose.distanceTo(FieldConstants.Reef.center.applyFlip()) -
                                 FieldConstants.Reef.faceToCenter -
                                 (DrivetrainConstants.BUMPER_LENGTH / 2) < 1.0
                         ) {
-                            if (robotState.coralTarget == CoralScoringTarget.L4) {
+                            if (superstructure.elevatorHeight() > 1.0) {
                                 2.0 to 1.0
                             } else {
                                 2.0 to 1.0
@@ -432,7 +428,6 @@ class Robot : LoggedRobot() {
                             if (DriverStation.isAutonomousEnabled()) {
                                 null to null
                             } else {
-                                //                                3.0 to 2.0
                                 2.0 to 1.0
                             }
                         }
@@ -490,6 +485,24 @@ class Robot : LoggedRobot() {
             .and(!rollers.hasCoralTrigger)
             .and { robotState.autoCoralStationPose != null }
             .whileTrue(autoCommands.autoAlignForStationPickup)
+
+        val pointAtReefController =
+            JoystickAimAtAngleController(
+                joystickDriveController,
+                {
+                    Rotation2d(
+                        localizer.estimatedPose
+                            //
+                            // .transformBySpeeds(localizer.fieldVelocity, 0.0)
+                            .applyFlip()
+                            .angleTo(FieldConstants.Reef.center)
+                    )
+                },
+                localizer,
+            )
+
+        val pointAtReefCommand =
+            drive.runVelocity({ pointAtReefController.calculate() }).apply { name = "Teleop Point At Reef" }
 
         (driver.rightBumper().or(RobotModeTriggers.autonomous()))
             .and({ robotState.autoAlgaePickupTarget == null })
@@ -642,6 +655,7 @@ class Robot : LoggedRobot() {
                                         SuperstructureState.SCORE_L1
                                     }
                                 }
+
                                 CoralScoringTarget.L2 -> SuperstructureState.SCORE_L2
                                 CoralScoringTarget.L3 -> SuperstructureState.SCORE_L3
                                 CoralScoringTarget.L4 -> {
@@ -652,6 +666,7 @@ class Robot : LoggedRobot() {
                                             robotPosition.angleFromReef() < 45
                                     if (
                                         (shouldFullyExtend || disableAutoAlign.asBoolean) &&
+                                            !pointAtReefCommand.isScheduled &&
                                             (driver.rightBumper().asBoolean || DriverStation.isAutonomousEnabled())
                                     ) {
                                         if (shouldGoL4FinalState.asBoolean) {

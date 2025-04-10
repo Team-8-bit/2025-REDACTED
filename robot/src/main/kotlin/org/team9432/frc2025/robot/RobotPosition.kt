@@ -107,7 +107,9 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
 
     fun withinNetTolerance() = withinNetDistance(Units.inchesToMeters(1.5))
 
-    private val reefAlignTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)
+    val reefAlignTransform = Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2, 0.0, Rotation2d.k180deg)
+    val kCoralBlockageTransform =
+        Transform2d(DrivetrainConstants.BUMPER_LENGTH / 2 + Units.inchesToMeters(4.5), 0.0, Rotation2d.k180deg)
 
     fun getActiveBranchAlignPose(branch: FieldConstants.Reef.Branch): Pose2d {
         val alignPose = branch.getPose().applyFlip().transformBy(reefAlignTransform)
@@ -129,8 +131,12 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
         return activeAlignPose
     }
 
-    fun getBaseBranchAlignPose(branch: FieldConstants.Reef.Branch): Pose2d {
-        return branch.getPose().applyFlip().transformBy(reefAlignTransform)
+    fun getBaseBranchAlignPose(branch: FieldConstants.Reef.Branch, blocked: Boolean = false): Pose2d {
+        return if (blocked) {
+            branch.getPose().applyFlip().transformBy(kCoralBlockageTransform)
+        } else {
+            branch.getPose().applyFlip().transformBy(reefAlignTransform)
+        }
     }
 
     fun nearestReefAlignBranch(robotPose: Pose2d = localizer.estimatedPose): FieldConstants.Reef.Branch {
@@ -180,19 +186,13 @@ class RobotPosition(private val localizer: Localizer, private val robotState: Ro
         return FieldConstants.Reef.StagedAlgae.entries.minBy { robotPose.distanceTo(it.getPose().applyFlip()) }
     }
 
-    val kCoralBlockageTransform = Transform2d(-Units.inchesToMeters(5.0), 0.0, Rotation2d.kZero)
-
     val withinCoralScoringTolerance = Trigger {
         val branch = nearestReefAlignBranch()
         val robotPose = localizer.getTxTyPose(branch.getTag()) ?: localizer.estimatedPose
-        var scorePose = getBaseBranchAlignPose(branch)
-
-        if (robotState.coralTarget in setOf(RobotState.CoralScoringTarget.L2, RobotState.CoralScoringTarget.L3)) {
-            scorePose = scorePose.transformBy(kCoralBlockageTransform)
-        }
-
+        val shouldUseBlockedPose =
+            robotState.coralTarget in setOf(RobotState.CoralScoringTarget.L2, RobotState.CoralScoringTarget.L3)
+        val scorePose = getBaseBranchAlignPose(branch, blocked = shouldUseBlockedPose)
         val difference = robotPose.relativeTo(scorePose)
-
         val velocityLow = localizer.robotVelocity.velocityLessThan(0.2, Units.degreesToRadians(4.0))
 
         return@Trigger Units.metersToInches(abs(hypot(difference.x, difference.y))) <
